@@ -20,6 +20,12 @@ func resourceWAFConfigurationV1() *schema.Resource {
 				Computed:    true,
 				Description: "Unique id of the WAF configuration resource",
 			},
+			"service_id": {
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The service the waf belongs to",
+			},
 			"comment": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -115,6 +121,66 @@ func resourceWAFConfigurationV1() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "The maximum number of arguments allowed (default 255).",
+			},
+			"notice_anomaly_score": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Score value to add for notice anomalies (default 4).",
+			},
+			"paranoia_level": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "The configured paranoia level (default 1).",
+			},
+			"php_injection_score_threshold": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "PHP injection threshold.",
+			},
+			"rce_score_threshold": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Remote code execution threshold.",
+			},
+			"restricted_extensions": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "A space-separated list of allowed file extensions (default .asa/ .asax/ .ascx/ .axd/ .backup/ .bak/ .bat/ .cdx/ .cer/ .cfg/ .cmd/ .com/ .config/ .conf/ .cs/ .csproj/ .csr/ .dat/ .db/ .dbf/ .dll/ .dos/ .htr/ .htw/ .ida/ .idc/ .idq/ .inc/ .ini/ .key/ .licx/ .lnk/ .log/ .mdb/ .old/ .pass/ .pdb/ .pol/ .printer/ .pwd/ .resources/ .resx/ .sql/ .sys/ .vb/ .vbs/ .vbproj/ .vsdisco/ .webinfo/ .xsd/ .xsx).",
+			},
+			"restricted_headers": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "A space-separated list of allowed header names (default /proxy/ /lock-token/ /content-range/ /translate/ /if/).",
+			},
+			"rfi_score_threshold": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Remote file inclusion attack threshold.",
+			},
+			"session_fixation_score_threshold": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Session fixation attack threshold.",
+			},
+			"sql_injection_score_threshold": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "SQL injection attack threshold.",
+			},
+			"total_arg_length": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "The maximum size of argument names and values (default 6400).",
+			},
+			"warning_anomaly_score": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Score value to add for warning anomalies.",
+			},
+			"xss_score_threshold": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "XSS attack threshold.",
 			},
 		},
 	}
