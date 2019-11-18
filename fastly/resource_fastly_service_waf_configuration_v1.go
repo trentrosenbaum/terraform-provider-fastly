@@ -173,38 +173,6 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 	}
 }
 
-var attributes = []string{
-	"comment",
-	"allowed_http_versions",
-	"allowed_methods",
-	"allowed_request_content_type",
-	"allowed_request_content_type_charset",
-	"arg_length",
-	"arg_name_length",
-	"combined_file_sizes",
-	"critical_anomaly_score",
-	"crs_validate_utf8_encoding",
-	"error_anomaly_score",
-	"high_risk_country_codes",
-	"http_violation_score_threshold",
-	"inbound_anomaly_score_threshold",
-	"lfi_score_threshold",
-	"max_file_size",
-	"max_num_args",
-	"notice_anomaly_score",
-	"paranoia_level",
-	"php_injection_score_threshold",
-	"rce_score_threshold",
-	"restricted_extensions",
-	"restricted_headers",
-	"rfi_score_threshold",
-	"session_fixation_score_threshold",
-	"sql_injection_score_threshold",
-	"total_arg_length",
-	"warning_anomaly_score",
-	"xss_score_threshold",
-}
-
 func resourceServiceWAFConfigurationV1Create(d *schema.ResourceData, meta interface{}) error {
 	return resourceServiceWAFConfigurationV1Update(d, meta)
 }
