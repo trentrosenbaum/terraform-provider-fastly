@@ -245,6 +245,8 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 		}
 	}
 
+	// TODO: Remove all rules from WAF version
+
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
 		WAFID:      WAFID,
 		WAFVersion: latestVersion.Number,
