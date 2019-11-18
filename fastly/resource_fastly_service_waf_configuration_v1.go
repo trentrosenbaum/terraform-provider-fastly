@@ -262,7 +262,7 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 	conn := meta.(*FastlyClient).conn
 
 	WAFID := d.Get("waf_id").(string)
-	resp, err := conn.ListWAFVersions(&gofastly.ListWAFVersionsInput{
+	resp, err := conn.ListAllWAFVersions(&gofastly.ListWAFVersionsInput{
 		WAFID: WAFID,
 	})
 	if err != nil {
