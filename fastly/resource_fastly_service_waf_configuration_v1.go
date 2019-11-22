@@ -169,6 +169,24 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Optional:    true,
 				Description: "XSS attack threshold.",
 			},
+			"rules": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The firewall rule status. Allowed values are (log, block and score)",
+						},
+						"modsec_rule_id": {
+							Type:        schema.TypeInt,
+							Required:    true,
+							Description: "The web firewall's prefetch condition",
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -202,6 +220,10 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 		return err
 	}
 
+	if d.HasChange("rules") {
+		updateRules(d, meta, WAFID, latestVersion.Number)
+	}
+
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
 		WAFID:      WAFID,
 		WAFVersion: latestVersion.Number,
@@ -220,9 +242,25 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 		return err
 	}
 	log.Printf("[DEBUG] latest waf version is %d", latestVersion.Number)
-	if err = refreshWAFVersion(d, latestVersion); err != nil {
+	if err = refreshWAFConfig(d, latestVersion); err != nil {
 		return err
 	}
+
+	conn := meta.(*FastlyClient).conn
+	WAFID := d.Get("waf_id").(string)
+	resp, err := conn.ListAllWAFActiveRules(&gofastly.ListWAFActiveRulesInput{
+		WAFID:     WAFID,
+		WAFNumber: latestVersion.Number,
+	})
+	if err != nil {
+		return err
+	}
+
+	rules := flattenWAFRules(resp.Items)
+	if err := d.Set("rules", rules); err != nil {
+		log.Printf("[WARN] Error setting WAF rules for (%s): %s", d.Id(), err)
+	}
+
 	return nil
 }
 
@@ -311,7 +349,7 @@ func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.U
 	}
 }
 
-func refreshWAFVersion(d *schema.ResourceData, version *gofastly.WAFVersion) error {
+func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) error {
 
 	pairings := composePairings(version)
 
@@ -374,6 +412,20 @@ func composePairings(version *gofastly.WAFVersion) map[string]interface{} {
 	}
 }
 
+func flattenWAFRules(rules []*gofastly.WAFActiveRule) []map[string]interface{} {
+	var rl []map[string]interface{}
+	for _, r := range rules {
+
+		ruleMapString := map[string]interface{}{
+			"modsec_rule_id": r.ModSecID,
+			"status":         r.Status,
+		}
+
+		rl = append(rl, ruleMapString)
+	}
+	return rl
+}
+
 func determineLatestVersion(l []*gofastly.WAFVersion) *gofastly.WAFVersion {
 
 	if len(l) > 1 {
@@ -382,4 +434,49 @@ func determineLatestVersion(l []*gofastly.WAFVersion) *gofastly.WAFVersion {
 		})
 	}
 	return l[0]
+}
+
+func updateRules(d *schema.ResourceData, meta interface{}, WAFID string, Number int) error {
+	conn := meta.(*FastlyClient).conn
+	os, ns := d.GetChange("rules")
+	if os == nil {
+		os = new(schema.Set)
+	}
+	if ns == nil {
+		ns = new(schema.Set)
+	}
+
+	oss := os.(*schema.Set)
+	nss := ns.(*schema.Set)
+
+	//remove := oss.Difference(nss).List()
+	add := nss.Difference(oss).List()
+
+	opts := buildWAFRulesInput(add, WAFID, Number)
+
+	log.Printf("[DEBUG] WAF rules create opts: %#v", opts)
+	_, err := conn.CreateWAFActiveRule(&opts)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func buildWAFRulesInput(add []interface{}, WAFID string, WAFNumber int) gofastly.CreateWAFActiveRuleInput {
+
+	var rules []*gofastly.WAFActiveRule
+	for _, rRaw := range add {
+		rf := rRaw.(map[string]interface{})
+
+		rules = append(rules, &gofastly.WAFActiveRule{
+			ModSecID: rf["modsec_rule_id"].(int),
+			Status:   rf["status"].(string),
+		})
+	}
+
+	return gofastly.CreateWAFActiveRuleInput{
+		WAFID:     WAFID,
+		WAFNumber: WAFNumber,
+		Rules:     rules,
+	}
 }
