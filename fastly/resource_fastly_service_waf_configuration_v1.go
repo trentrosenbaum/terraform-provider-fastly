@@ -21,7 +21,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "The service the waf belongs to",
+				Description: "The service the waf belongs to.",
 			},
 			"comment": {
 				Type:        schema.TypeString,
