@@ -169,15 +169,16 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Optional:    true,
 				Description: "XSS attack threshold.",
 			},
-			"rules": {
+			"rule": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"status": {
-							Type:        schema.TypeString,
-							Required:    true,
-							Description: "The firewall rule status. Allowed values are (log, block and score)",
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "The firewall rule status. Allowed values are (log, block and score)",
+							ValidateFunc: validateRuleStatusType(),
 						},
 						"modsec_rule_id": {
 							Type:        schema.TypeInt,
@@ -220,7 +221,7 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	if d.HasChange("rules") {
+	if d.HasChange("rule") {
 		updateRules(d, meta, WAFID, latestVersion.Number)
 	}
 
@@ -438,7 +439,7 @@ func determineLatestVersion(l []*gofastly.WAFVersion) *gofastly.WAFVersion {
 
 func updateRules(d *schema.ResourceData, meta interface{}, WAFID string, Number int) error {
 	conn := meta.(*FastlyClient).conn
-	os, ns := d.GetChange("rules")
+	os, ns := d.GetChange("rule")
 	if os == nil {
 		os = new(schema.Set)
 	}
