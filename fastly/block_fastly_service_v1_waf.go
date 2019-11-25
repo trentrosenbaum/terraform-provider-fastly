@@ -29,7 +29,7 @@ var wafSchema = &schema.Schema{
 			"waf_id": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "The web firewall id",
+				Description: "The Web Application Firewall (WAF) ID",
 			},
 		},
 	},
