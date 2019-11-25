@@ -3650,7 +3650,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 			log.Printf("[WARN] Error setting Dictionary for (%s): %s", d.Id(), err)
 		}
 
-		// refresh WAF
+		// Refresh WAF.
 		if err := readWAF(conn, d, s); err != nil {
 			return err
 		}
