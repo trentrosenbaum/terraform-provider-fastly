@@ -24,7 +24,7 @@ var wafSchema = &schema.Schema{
 			"prefetch_condition": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The web firewall's prefetch condition",
+				Description: "The Web Application Firewall's (WAF) prefetch condition",
 			},
 			"waf_id": {
 				Type:        schema.TypeString,
