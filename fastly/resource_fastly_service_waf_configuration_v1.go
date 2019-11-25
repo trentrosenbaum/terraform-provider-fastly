@@ -4,6 +4,7 @@ import (
 	"fmt"
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"reflect"
 	"sort"
@@ -85,19 +86,22 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "A space-separated list of country codes in ISO 3166-1 (two-letter) format.",
 			},
 			"http_violation_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "HTTP violation threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "HTTP violation threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"inbound_anomaly_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Inbound anomaly threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Inbound anomaly threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"lfi_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Local file inclusion attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Local file inclusion attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"max_file_size": {
 				Type:        schema.TypeInt,
@@ -120,14 +124,16 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "The configured paranoia level (default 1).",
 			},
 			"php_injection_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "PHP injection threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "PHP injection threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"rce_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Remote code execution threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Remote code execution threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"restricted_extensions": {
 				Type:        schema.TypeString,
@@ -140,19 +146,22 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "A space-separated list of allowed header names (default /proxy/ /lock-token/ /content-range/ /translate/ /if/).",
 			},
 			"rfi_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Remote file inclusion attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Remote file inclusion attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"session_fixation_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Session fixation attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Session fixation attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"sql_injection_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "SQL injection attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "SQL injection attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"total_arg_length": {
 				Type:        schema.TypeInt,
@@ -165,9 +174,10 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "Score value to add for warning anomalies.",
 			},
 			"xss_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "XSS attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "XSS attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 		},
 	}
