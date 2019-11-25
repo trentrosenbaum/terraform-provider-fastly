@@ -21,13 +21,13 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "The service the waf belongs to.",
+				Description: "The service the WAF belongs to.",
 			},
 			"comment": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "Managed by Terraform",
-				Description: "A short version comment summarizing changes included in a specific firewall version.",
+				Description: "A short version comment summarizing changes included in a specific WAF version.",
 			},
 			"allowed_http_versions": {
 				Type:        schema.TypeString,
