@@ -19,7 +19,7 @@ var wafSchema = &schema.Schema{
 			"response_object": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The web firewall's response object",
+				Description: "The Web Application Firewall's (WAF) response object",
 			},
 			"prefetch_condition": {
 				Type:        schema.TypeString,
