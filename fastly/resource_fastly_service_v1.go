@@ -3149,7 +3149,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 
-		// Find differences in WAF
+		// Find differences in WAF.
 		if d.HasChange("waf") {
 			if err := processWAF(d, conn, latestVersion); err != nil {
 				return err
