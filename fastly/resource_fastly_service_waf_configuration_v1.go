@@ -198,8 +198,8 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	WAFID := d.Get("waf_id").(string)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
-			WAFID:      WAFID,
-			WAFVersion: latestVersion.Number,
+			WAFID:            WAFID,
+			WAFVersionNumber: latestVersion.Number,
 		})
 		if err != nil {
 			return err
@@ -213,8 +213,8 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	}
 
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
-		WAFID:      WAFID,
-		WAFVersion: latestVersion.Number,
+		WAFID:            WAFID,
+		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
 		return err
@@ -247,8 +247,8 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	WAFID := d.Get("waf_id").(string)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
-			WAFID:      WAFID,
-			WAFVersion: latestVersion.Number,
+			WAFID:            WAFID,
+			WAFVersionNumber: latestVersion.Number,
 		})
 		if err != nil {
 			return err
@@ -258,8 +258,8 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	// TODO: Remove all rules from WAF version
 
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
-		WAFID:      WAFID,
-		WAFVersion: latestVersion.Number,
+		WAFID:            WAFID,
+		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
 		return err
@@ -272,7 +272,7 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 	conn := meta.(*FastlyClient).conn
 
 	WAFID := d.Get("waf_id").(string)
-	resp, err := conn.ListAllWAFVersions(&gofastly.ListWAFVersionsInput{
+	resp, err := conn.ListAllWAFVersions(&gofastly.ListAllWAFVersionsInput{
 		WAFID: WAFID,
 	})
 	if err != nil {
@@ -286,8 +286,8 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 
 func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.UpdateWAFVersionInput {
 	return &gofastly.UpdateWAFVersionInput{
-		ID:                               id,
-		WAFVersion:                       number,
+		WAFVersionID:                     id,
+		WAFVersionNumber:                 number,
 		WAFID:                            d.Get("waf_id").(string),
 		Comment:                          d.Get("comment").(string),
 		AllowedHTTPVersions:              d.Get("allowed_http_versions").(string),
