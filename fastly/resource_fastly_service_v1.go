@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1645,7 +1644,6 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		// configuraiton objects (Backends, Request Headers, etc)
 
 		// Find difference in Conditions
-		var removeConditions []interface{}
 		if d.HasChange("condition") {
 			// Note: we don't utilize the PUT endpoint to update these objects, we simply
 			// destroy any that have changed, and create new ones with the updated
@@ -1663,8 +1661,28 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 
 			ocs := oc.(*schema.Set)
 			ncs := nc.(*schema.Set)
-			removeConditions = ocs.Difference(ncs).List()
+			removeConditions := ocs.Difference(ncs).List()
 			addConditions := ncs.Difference(ocs).List()
+
+			// DELETE old Conditions
+			for _, cRaw := range removeConditions {
+				cf := cRaw.(map[string]interface{})
+				opts := gofastly.DeleteConditionInput{
+					Service: d.Id(),
+					Version: latestVersion,
+					Name:    cf["name"].(string),
+				}
+
+				log.Printf("[DEBUG] Fastly Conditions Removal opts: %#v", opts)
+				err := conn.DeleteCondition(&opts)
+				if errRes, ok := err.(*gofastly.HTTPError); ok {
+					if errRes.StatusCode != 404 {
+						return err
+					}
+				} else if err != nil {
+					return err
+				}
+			}
 
 			// POST new Conditions
 			for _, cRaw := range addConditions {
@@ -2673,7 +2691,6 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		// find difference in Response Object
-		var removeResponseObject []interface{}
 		if d.HasChange("response_object") {
 			or, nr := d.GetChange("response_object")
 			if or == nil {
@@ -2685,8 +2702,28 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 
 			ors := or.(*schema.Set)
 			nrs := nr.(*schema.Set)
-			removeResponseObject = ors.Difference(nrs).List()
+			removeResponseObject := ors.Difference(nrs).List()
 			addResponseObject := nrs.Difference(ors).List()
+
+			// DELETE old response object configurations
+			for _, rRaw := range removeResponseObject {
+				rf := rRaw.(map[string]interface{})
+				opts := gofastly.DeleteResponseObjectInput{
+					Service: d.Id(),
+					Version: latestVersion,
+					Name:    rf["name"].(string),
+				}
+
+				log.Printf("[DEBUG] Fastly Response Object removal opts: %#v", opts)
+				err := conn.DeleteResponseObject(&opts)
+				if errRes, ok := err.(*gofastly.HTTPError); ok {
+					if errRes.StatusCode != 404 {
+						return err
+					}
+				} else if err != nil {
+					return err
+				}
+			}
 
 			// POST new/updated Response Object
 			for _, rRaw := range addResponseObject {
@@ -3112,20 +3149,11 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 
-		// Find differences in WAF
+		// Find differences in WAF.
 		if d.HasChange("waf") {
 			if err := processWAF(d, conn, latestVersion); err != nil {
 				return err
 			}
-		}
-		// The deletion of response objects and condition is done after any updates on the waf block. this is
-		// because those 2 objects can't be deleted while referenced by the waf
-		if err := deleteResponses(removeResponseObject, conn, d.Id(), latestVersion); err != nil {
-			return err
-		}
-
-		if err := deleteConditions(removeConditions, conn, d.Id(), latestVersion); err != nil {
-			return err
 		}
 
 		// validate version
@@ -3166,50 +3194,6 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return resourceServiceV1Read(d, meta)
-}
-
-func deleteResponses(responsesToDelete []interface{}, conn *gofastly.Client, serviceID string, serviceVersion int) error {
-	for _, rRaw := range responsesToDelete {
-		rf := rRaw.(map[string]interface{})
-		opts := gofastly.DeleteResponseObjectInput{
-			Service: serviceID,
-			Version: serviceVersion,
-			Name:    rf["name"].(string),
-		}
-
-		log.Printf("[DEBUG] Fastly Response Object removal opts: %#v", opts)
-		err := conn.DeleteResponseObject(&opts)
-		if errRes, ok := err.(*gofastly.HTTPError); ok {
-			if errRes.StatusCode != 404 {
-				return err
-			}
-		} else if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func deleteConditions(conditionsToRemove []interface{}, conn *gofastly.Client, serviceID string, serviceVersion int) error {
-	for _, cRaw := range conditionsToRemove {
-		cf := cRaw.(map[string]interface{})
-		opts := gofastly.DeleteConditionInput{
-			Service: serviceID,
-			Version: serviceVersion,
-			Name:    cf["name"].(string),
-		}
-
-		log.Printf("[DEBUG] Fastly Conditions Removal opts: %#v", opts)
-		err := conn.DeleteCondition(&opts)
-		if errRes, ok := err.(*gofastly.HTTPError); ok {
-			if errRes.StatusCode != 404 {
-				return err
-			}
-		} else if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
@@ -3666,22 +3650,10 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 			log.Printf("[WARN] Error setting Dictionary for (%s): %s", d.Id(), err)
 		}
 
-		// refresh WAFs
-		log.Printf("[DEBUG] Refreshing WAFs for (%s)", d.Id())
-		wafList, err := conn.ListWAFs(&gofastly.ListWAFsInput{
-			Service: d.Id(),
-			Version: strconv.Itoa(s.ActiveVersion.Number),
-		})
-		if err != nil {
-			return fmt.Errorf("[ERR] Error looking up WAFs for (%s), version (%v): %s", d.Id(), s.ActiveVersion.Number, err)
+		// Refresh WAF.
+		if err := readWAF(conn, d, s); err != nil {
+			return err
 		}
-
-		waf := flattenWAFs(wafList)
-
-		if err := d.Set("waf", waf); err != nil {
-			log.Printf("[WARN] Error setting waf for (%s): %s", d.Id(), err)
-		}
-
 	} else {
 		log.Printf("[DEBUG] Active Version for Service (%s) is empty, no state to refresh", d.Id())
 	}

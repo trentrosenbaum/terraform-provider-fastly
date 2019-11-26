@@ -3,7 +3,6 @@ package fastly
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"testing"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
@@ -15,6 +14,20 @@ import (
 var serviceRef = "fastly_service_v1.foo"
 var condition = "prefetch"
 var response = "response"
+var extraResponse = `
+  response_object {
+	name = "UpdatedResponse"
+	status = "403"
+	response = "Forbidden"
+	content = "content"
+  }`
+
+var extraCondition = `
+  condition {
+	name = "UpdatedPrefetch"
+	type = "PREFETCH"
+	statement = "req.url~+\"index.html\""
+  }`
 
 func TestResourceFastlyFlattenWAF(t *testing.T) {
 	cases := []struct {
@@ -49,6 +62,7 @@ func TestResourceFastlyFlattenWAF(t *testing.T) {
 func TestAccFastlyServiceV1WAFAdd(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+	waf := composeWAF(condition, response)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -56,7 +70,7 @@ func TestAccFastlyServiceV1WAFAdd(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1(name, response, condition, true),
+				Config: testAccServiceV1WAF(name, "", waf),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1AttributesWAF(&service, name, response, condition),
@@ -69,6 +83,7 @@ func TestAccFastlyServiceV1WAFAdd(t *testing.T) {
 func TestAccFastlyServiceV1WAFAddAndRemove(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+	waf := composeWAF(condition, response)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -76,20 +91,20 @@ func TestAccFastlyServiceV1WAFAddAndRemove(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1(name, response, condition, false),
+				Config: testAccServiceV1WAF(name, "", ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 				),
 			},
 			{
-				Config: testAccServiceV1(name, response, condition, true),
+				Config: testAccServiceV1WAF(name, "", waf),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1AttributesWAF(&service, name, response, condition),
 				),
 			},
 			{
-				Config: testAccServiceV1(name, response, condition, false),
+				Config: testAccServiceV1WAF(name, "", ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1DeletedWAF(&service),
@@ -103,6 +118,8 @@ func TestAccFastlyServiceV1WAFUpdateResponse(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	updateResponse := "UpdatedResponse"
+	waf := composeWAF(condition, response)
+	updatedWaf := composeWAF(condition, updateResponse)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -110,14 +127,14 @@ func TestAccFastlyServiceV1WAFUpdateResponse(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1(name, response, condition, true),
+				Config: testAccServiceV1WAF(name, "", waf),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1AttributesWAF(&service, name, response, condition),
 				),
 			},
 			{
-				Config: testAccServiceV1(name, updateResponse, condition, true),
+				Config: testAccServiceV1WAF(name, extraResponse, updatedWaf),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1AttributesWAF(&service, name, updateResponse, condition),
@@ -131,6 +148,8 @@ func TestAccFastlyServiceV1WAFUpdateCondition(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	updatedCondition := "UpdatedPrefetch"
+	waf := composeWAF(condition, response)
+	updatedWaf := composeWAF(updatedCondition, response)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -138,14 +157,14 @@ func TestAccFastlyServiceV1WAFUpdateCondition(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1(name, response, condition, true),
+				Config: testAccServiceV1WAF(name, "", waf),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1AttributesWAF(&service, name, response, condition),
 				),
 			},
 			{
-				Config: testAccServiceV1(name, response, updatedCondition, true),
+				Config: testAccServiceV1WAF(name, extraCondition, updatedWaf),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceV1AttributesWAF(&service, name, response, updatedCondition),
@@ -159,16 +178,16 @@ func testAccCheckFastlyServiceV1DeletedWAF(service *gofastly.ServiceDetail) reso
 	return func(s *terraform.State) error {
 
 		conn := testAccProvider.Meta().(*FastlyClient).conn
-		wafs, err := conn.ListWAFs(&gofastly.ListWAFsInput{
-			Service: service.ID,
-			Version: strconv.Itoa(service.ActiveVersion.Number),
+		resp, err := conn.ListWAFs(&gofastly.ListWAFsInput{
+			FilterService: service.ID,
+			FilterVersion: service.ActiveVersion.Number,
 		})
 		if err != nil {
 			return err
 		}
 
-		if len(wafs) > 0 {
-			return fmt.Errorf("[ERR] Error WAF %s should not be present for (%s), version (%v): %s", wafs[0].ID, service.ID, service.ActiveVersion.Number, err)
+		if len(resp.Items) > 0 {
+			return fmt.Errorf("[ERR] Error WAF %s should not be present for (%s), version (%v): %s", resp.Items[0].ID, service.ID, service.ActiveVersion.Number, err)
 		}
 		return nil
 	}
@@ -182,43 +201,40 @@ func testAccCheckFastlyServiceV1AttributesWAF(service *gofastly.ServiceDetail, n
 		}
 
 		conn := testAccProvider.Meta().(*FastlyClient).conn
-		wafs, err := conn.ListWAFs(&gofastly.ListWAFsInput{
-			Service: service.ID,
-			Version: strconv.Itoa(service.ActiveVersion.Number),
-		})
-
-		waf, err := conn.GetWAF(&gofastly.GetWAFInput{
-			Service: service.ID,
-			Version: strconv.Itoa(service.ActiveVersion.Number),
-			ID:      wafs[0].ID,
+		resp, err := conn.ListWAFs(&gofastly.ListWAFsInput{
+			FilterService: service.ID,
+			FilterVersion: service.ActiveVersion.Number,
 		})
 
 		if err != nil {
 			return fmt.Errorf("[ERR] Error looking up WAF records for (%s), version (%v): %s", service.Name, service.ActiveVersion.Number, err)
 		}
 
-		if waf.Response != response {
-			return fmt.Errorf("WAF response mismatch, expected: %s, got: %#v", response, waf.Response)
+		if len(resp.Items) != 1 {
+			return fmt.Errorf("[ERR] Expected result size (%d), got (%d)", 1, len(resp.Items))
 		}
 
-		if waf.PrefetchCondition != condition {
-			return fmt.Errorf("WAF condition mismatch, expected: %#v, got: %#v", condition, waf.PrefetchCondition)
+		if resp.Items[0].Response != response {
+			return fmt.Errorf("WAF response mismatch, expected: %s, got: %#v", response, resp.Items[0].Response)
+		}
+
+		if resp.Items[0].PrefetchCondition != condition {
+			return fmt.Errorf("WAF condition mismatch, expected: %#v, got: %#v", condition, resp.Items[0].PrefetchCondition)
 		}
 
 		return nil
 	}
 }
 
-func testAccServiceV1(name, response, condition string, withWAF bool) string {
-
-	var waf string
-	if withWAF {
-		waf = fmt.Sprintf(`
+func composeWAF(condition, response string) string {
+	return fmt.Sprintf(`
 		waf { 
 			prefetch_condition = "%s" 
 			response_object = "%s"
 		}`, condition, response)
-	}
+}
+
+func testAccServiceV1WAF(name, extraHCL, waf string) string {
 
 	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
 	domainName := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
@@ -237,14 +253,16 @@ resource "fastly_service_v1" "foo" {
     name    = "tf -test backend"
   }
 
+  %s
+
   condition {
-	name = "%s"
+	name = "prefetch"
 	type = "PREFETCH"
 	statement = "req.url~+\"index.html\""
   }
 
   response_object {
-	name = "%s"
+	name = "response"
 	status = "403"
 	response = "Forbidden"
 	content = "content"
@@ -253,6 +271,6 @@ resource "fastly_service_v1" "foo" {
   %s
 
   force_destroy = true
-}`, name, domainName, backendName, condition, response, waf)
+}`, name, domainName, backendName, extraHCL, waf)
 
 }
