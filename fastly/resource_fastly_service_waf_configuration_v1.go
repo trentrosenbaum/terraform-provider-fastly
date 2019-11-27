@@ -4,6 +4,7 @@ import (
 	"fmt"
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"reflect"
 	"sort"
@@ -21,13 +22,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "The service the waf belongs to",
-			},
-			"comment": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "Managed by Terraform",
-				Description: "A short version comment summarizing changes included in a specific firewall version.",
+				Description: "The service the WAF belongs to.",
 			},
 			"allowed_http_versions": {
 				Type:        schema.TypeString,
@@ -85,19 +80,22 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "A space-separated list of country codes in ISO 3166-1 (two-letter) format.",
 			},
 			"http_violation_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "HTTP violation threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "HTTP violation threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"inbound_anomaly_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Inbound anomaly threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Inbound anomaly threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"lfi_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Local file inclusion attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Local file inclusion attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"max_file_size": {
 				Type:        schema.TypeInt,
@@ -120,14 +118,16 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "The configured paranoia level (default 1).",
 			},
 			"php_injection_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "PHP injection threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "PHP injection threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"rce_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Remote code execution threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Remote code execution threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"restricted_extensions": {
 				Type:        schema.TypeString,
@@ -140,19 +140,22 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "A space-separated list of allowed header names (default /proxy/ /lock-token/ /content-range/ /translate/ /if/).",
 			},
 			"rfi_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Remote file inclusion attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Remote file inclusion attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"session_fixation_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "Session fixation attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "Session fixation attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"sql_injection_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "SQL injection attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "SQL injection attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"total_arg_length": {
 				Type:        schema.TypeInt,
@@ -165,9 +168,10 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				Description: "Score value to add for warning anomalies.",
 			},
 			"xss_score_threshold": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "XSS attack threshold.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Description:  "XSS attack threshold.",
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"rule": {
 				Type:     schema.TypeSet,
@@ -177,13 +181,18 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 						"status": {
 							Type:         schema.TypeString,
 							Required:     true,
-							Description:  "The firewall rule status. Allowed values are (log, block and score)",
+							Description:  "The Web Application Firewall's rule status. Allowed values are (log, block and score)",
 							ValidateFunc: validateRuleStatusType(),
 						},
 						"modsec_rule_id": {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "The web firewall's prefetch condition",
+							Description: "The Web Application Firewall's rule modsec id",
+						},
+						"revision": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "The Web Application Firewall's rule revision",
 						},
 					},
 				},
@@ -204,11 +213,11 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	WAFID := d.Get("waf_id").(string)
+	wafID := d.Get("waf_id").(string)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
-			WAFID:      WAFID,
-			WAFVersion: latestVersion.Number,
+			WAFID:            wafID,
+			WAFVersionNumber: latestVersion.Number,
 		})
 		if err != nil {
 			return err
@@ -222,12 +231,14 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	}
 
 	if d.HasChange("rule") {
-		updateRules(d, meta, WAFID, latestVersion.Number)
+		if err := updateRules(d, meta, wafID, latestVersion.Number); err != nil {
+			return err
+		}
 	}
 
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
-		WAFID:      WAFID,
-		WAFVersion: latestVersion.Number,
+		WAFID:            wafID,
+		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
 		return err
@@ -248,10 +259,10 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 	}
 
 	conn := meta.(*FastlyClient).conn
-	WAFID := d.Get("waf_id").(string)
-	resp, err := conn.ListAllWAFActiveRules(&gofastly.ListWAFActiveRulesInput{
-		WAFID:     WAFID,
-		WAFNumber: latestVersion.Number,
+	wafID := d.Get("waf_id").(string)
+	resp, err := conn.ListAllWAFActiveRules(&gofastly.ListAllWAFActiveRulesInput{
+		WAFID:            wafID,
+		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
 		return err
@@ -273,11 +284,11 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	WAFID := d.Get("waf_id").(string)
+	wafID := d.Get("waf_id").(string)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
-			WAFID:      WAFID,
-			WAFVersion: latestVersion.Number,
+			WAFID:            wafID,
+			WAFVersionNumber: latestVersion.Number,
 		})
 		if err != nil {
 			return err
@@ -287,8 +298,8 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	// TODO: Remove all rules from WAF version
 
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
-		WAFID:      WAFID,
-		WAFVersion: latestVersion.Number,
+		WAFID:            wafID,
+		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
 		return err
@@ -300,25 +311,24 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVersion, error) {
 	conn := meta.(*FastlyClient).conn
 
-	WAFID := d.Get("waf_id").(string)
-	resp, err := conn.ListAllWAFVersions(&gofastly.ListWAFVersionsInput{
-		WAFID: WAFID,
+	wafID := d.Get("waf_id").(string)
+	resp, err := conn.ListAllWAFVersions(&gofastly.ListAllWAFVersionsInput{
+		WAFID: wafID,
 	})
 	if err != nil {
 		return nil, err
 	}
 	if len(resp.Items) < 1 {
-		return nil, fmt.Errorf("[ERR] Error looking up WAF id: %s", WAFID)
+		return nil, fmt.Errorf("[ERR] Error looking up WAF id: %s", wafID)
 	}
 	return determineLatestVersion(resp.Items), nil
 }
 
 func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.UpdateWAFVersionInput {
 	return &gofastly.UpdateWAFVersionInput{
-		ID:                               id,
-		WAFVersion:                       number,
+		WAFVersionID:                     id,
+		WAFVersionNumber:                 number,
 		WAFID:                            d.Get("waf_id").(string),
-		Comment:                          d.Get("comment").(string),
 		AllowedHTTPVersions:              d.Get("allowed_http_versions").(string),
 		AllowedMethods:                   d.Get("allowed_methods").(string),
 		AllowedRequestContentType:        d.Get("allowed_request_content_type").(string),
@@ -381,7 +391,6 @@ func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) erro
 
 func composePairings(version *gofastly.WAFVersion) map[string]interface{} {
 	return map[string]interface{}{
-		"comment":                              version.Comment,
 		"allowed_http_versions":                version.AllowedHTTPVersions,
 		"allowed_methods":                      version.AllowedMethods,
 		"allowed_request_content_type":         version.AllowedRequestContentType,
@@ -419,6 +428,7 @@ func flattenWAFRules(rules []*gofastly.WAFActiveRule) []map[string]interface{} {
 
 		ruleMapString := map[string]interface{}{
 			"modsec_rule_id": r.ModSecID,
+			"revision":       r.Revision,
 			"status":         r.Status,
 		}
 
@@ -427,17 +437,17 @@ func flattenWAFRules(rules []*gofastly.WAFActiveRule) []map[string]interface{} {
 	return rl
 }
 
-func determineLatestVersion(l []*gofastly.WAFVersion) *gofastly.WAFVersion {
+func determineLatestVersion(versions []*gofastly.WAFVersion) *gofastly.WAFVersion {
 
-	if len(l) > 1 {
-		sort.Slice(l, func(i, j int) bool {
-			return l[i].Number > l[j].Number
+	if len(versions) > 1 {
+		sort.Slice(versions, func(i, j int) bool {
+			return versions[i].Number > versions[j].Number
 		})
 	}
-	return l[0]
+	return versions[0]
 }
 
-func updateRules(d *schema.ResourceData, meta interface{}, WAFID string, Number int) error {
+func updateRules(d *schema.ResourceData, meta interface{}, wafID string, Number int) error {
 	conn := meta.(*FastlyClient).conn
 	os, ns := d.GetChange("rule")
 	if os == nil {
@@ -453,17 +463,17 @@ func updateRules(d *schema.ResourceData, meta interface{}, WAFID string, Number 
 	//remove := oss.Difference(nss).List()
 	add := nss.Difference(oss).List()
 
-	opts := buildWAFRulesInput(add, WAFID, Number)
+	opts := buildWAFRulesInput(add, wafID, Number)
 
 	log.Printf("[DEBUG] WAF rules create opts: %#v", opts)
-	_, err := conn.CreateWAFActiveRule(&opts)
+	_, err := conn.CreateWAFActiveRules(&opts)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func buildWAFRulesInput(add []interface{}, WAFID string, WAFNumber int) gofastly.CreateWAFActiveRuleInput {
+func buildWAFRulesInput(add []interface{}, wafID string, WAFVersionNumber int) gofastly.CreateWAFActiveRulesInput {
 
 	var rules []*gofastly.WAFActiveRule
 	for _, rRaw := range add {
@@ -471,13 +481,14 @@ func buildWAFRulesInput(add []interface{}, WAFID string, WAFNumber int) gofastly
 
 		rules = append(rules, &gofastly.WAFActiveRule{
 			ModSecID: rf["modsec_rule_id"].(int),
+			Revision: rf["revision"].(int),
 			Status:   rf["status"].(string),
 		})
 	}
 
-	return gofastly.CreateWAFActiveRuleInput{
-		WAFID:     WAFID,
-		WAFNumber: WAFNumber,
-		Rules:     rules,
+	return gofastly.CreateWAFActiveRulesInput{
+		WAFID:            wafID,
+		WAFVersionNumber: WAFVersionNumber,
+		Rules:            rules,
 	}
 }

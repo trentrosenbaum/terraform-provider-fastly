@@ -3149,7 +3149,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 
-		// Find differences in WAF
+		// Find differences in WAF.
 		if d.HasChange("waf") {
 			if err := processWAF(d, conn, latestVersion); err != nil {
 				return err
@@ -3650,7 +3650,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 			log.Printf("[WARN] Error setting Dictionary for (%s): %s", d.Id(), err)
 		}
 
-		// refresh WAF
+		// Refresh WAF.
 		if err := readWAF(conn, d, s); err != nil {
 			return err
 		}

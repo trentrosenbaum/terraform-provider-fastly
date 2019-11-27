@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"reflect"
 	"sort"
 	"testing"
 )
@@ -17,12 +18,25 @@ func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 		local  int
 	}{
 		{
-			remote: []*gofastly.WAFVersion{{Number: 1}, {Number: 2}},
-			local:  2,
+			remote: []*gofastly.WAFVersion{
+				{Number: 1},
+			},
+			local: 1,
 		},
 		{
-			remote: []*gofastly.WAFVersion{{Number: 3}, {Number: 2}, {Number: 1}},
-			local:  3,
+			remote: []*gofastly.WAFVersion{
+				{Number: 1},
+				{Number: 2},
+			},
+			local: 2,
+		},
+		{
+			remote: []*gofastly.WAFVersion{
+				{Number: 3},
+				{Number: 2},
+				{Number: 1},
+			},
+			local: 3,
 		},
 	}
 
@@ -37,8 +51,8 @@ func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	threshold := 100
-	wafVer := composeWAFConfiguration(threshold, "")
+	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
+	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -46,10 +60,10 @@ func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1WAFVersion(name, wafVer),
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, threshold, 1),
+					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, wafVerInput, 1),
 				),
 			},
 		},
@@ -59,7 +73,7 @@ func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
 func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	threshold := 100
+
 	rules := []gofastly.WAFActiveRule{
 		{
 			ModSecID: 2029718,
@@ -70,8 +84,9 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 			Status:   "log",
 		},
 	}
-	rulesTF := composeWAFRule(rules)
-	wafVer := composeWAFConfiguration(threshold, rulesTF)
+	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
+	rulesTF := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRuled(rules)
+	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -79,7 +94,7 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1WAFVersion(name, wafVer),
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 					testAccCheckFastlyServiceWAFVersionV1CheckRules(&service, rules, 1),
@@ -92,8 +107,8 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	threshold := 1001
-	wafVer := composeWAFConfiguration(threshold, "")
+	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
+	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -101,16 +116,16 @@ func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1WAFVersion(name, ""),
+				Config: testAccFastlyServiceWAFVersionV1(name, ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
 				),
 			},
 			{
-				Config: testAccServiceV1WAFVersion(name, wafVer),
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, threshold, 1),
+					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, wafVerInput, 1),
 				),
 			},
 		},
@@ -120,10 +135,12 @@ func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
 func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	thresholdVersion1 := 1001
-	wafVer1 := composeWAFConfiguration(thresholdVersion1, "")
-	thresholdVersion2 := 1002
-	wafVer2 := composeWAFConfiguration(thresholdVersion2, "")
+
+	wafVerInput1 := testAccFastlyServiceWAFVersionV1BuildConfig(20)
+	wafVer1 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput1, "")
+
+	wafVerInput2 := testAccFastlyServiceWAFVersionV1BuildConfig(22)
+	wafVer2 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput2, "")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -131,65 +148,17 @@ func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1WAFVersion(name, wafVer1),
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, thresholdVersion1, 1),
+					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, wafVerInput1, 1),
 				),
 			},
 			{
-				Config: testAccServiceV1WAFVersion(name, wafVer2),
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, thresholdVersion2, 2),
-				),
-			},
-		},
-	})
-}
-
-func TestAccFastlyServiceWAFVersionV1AddUpdateRules(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	threshold := 100
-	rules := []gofastly.WAFActiveRule{
-		{
-			ModSecID: 2029718,
-			Status:   "log",
-		},
-		{
-			ModSecID: 2037405,
-			Status:   "log",
-		},
-	}
-	rulesTF := composeWAFRule(rules)
-	wafVer := composeWAFConfiguration(threshold, rulesTF)
-
-	updatedRules := append(rules, gofastly.WAFActiveRule{
-		ModSecID: 2074106,
-		Status:   "block",
-	})
-	updatedRules[0].Status = "block"
-	updatedRulesTF := composeWAFRule(updatedRules)
-	updatedWAFVer := composeWAFConfiguration(threshold, updatedRulesTF)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccServiceV1WAFVersion(name, wafVer),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckRules(&service, rules, 1),
-				),
-			},
-			{
-				Config: testAccServiceV1WAFVersion(name, updatedWAFVer),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckRules(&service, updatedRules, 2),
+					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, wafVerInput2, 2),
 				),
 			},
 		},
@@ -199,8 +168,8 @@ func TestAccFastlyServiceWAFVersionV1AddUpdateRules(t *testing.T) {
 func TestAccFastlyServiceWAFVersionV1Delete(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	thresholdVersion1 := 1001
-	wafVer1 := composeWAFConfiguration(thresholdVersion1, "")
+	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
+	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -208,24 +177,24 @@ func TestAccFastlyServiceWAFVersionV1Delete(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1WAFVersion(name, wafVer1),
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, thresholdVersion1, 1),
+					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, wafVerInput, 1),
 				),
 			},
 			{
-				Config: testAccServiceV1WAFVersion(name, ""),
+				Config: testAccFastlyServiceWAFVersionV1(name, ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(serviceRef, &service),
-					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, thresholdVersion1, 2),
+					testAccCheckFastlyServiceWAFVersionV1CheckAttributes(&service, wafVerInput, 2),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckFastlyServiceWAFVersionV1CheckAttributes(service *gofastly.ServiceDetail, threshold, latestVersion int) resource.TestCheckFunc {
+func testAccCheckFastlyServiceWAFVersionV1CheckAttributes(service *gofastly.ServiceDetail, local map[string]interface{}, latestVersion int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		conn := testAccProvider.Meta().(*FastlyClient).conn
@@ -253,21 +222,51 @@ func testAccCheckFastlyServiceWAFVersionV1CheckAttributes(service *gofastly.Serv
 			return fmt.Errorf("[ERR] Expected result size (%d), got (%d)", 1, len(verResp.Items))
 		}
 
-		wafVersion := verResp.Items[0]
-
-		if threshold != wafVersion.InboundAnomalyScoreThreshold {
-			return fmt.Errorf("WAF InboundAnomalyScoreThreshold mismatch, expected: %d, got: %d", threshold, wafVersion.InboundAnomalyScoreThreshold)
+		latestVersion, err := testAccFastlyServiceWAFVersionV1GetVersionNumber(verResp.Items, latestVersion)
+		if err != nil {
+			return err
 		}
 
-		if threshold != wafVersion.LFIScoreThreshold {
-			return fmt.Errorf("WAF LFIScoreThreshold mismatch, expected: %d, got: %d", threshold, wafVersion.LFIScoreThreshold)
-		}
-
-		if latestVersion != wafVersion.Number {
-			return fmt.Errorf("WAF lastest vwrsion mismatch, expected: %d, got: %d", latestVersion, wafVersion.Number)
+		remote := testAccFastlyServiceWAFVersionV1ToMap(latestVersion)
+		if !reflect.DeepEqual(remote, local) {
+			return fmt.Errorf("Error matching:\nexpected: %#v\nand  got: %#v", local, remote)
 		}
 		return nil
 	}
+}
+
+func testAccFastlyServiceWAFVersionV1GetVersionNumber(versions []*gofastly.WAFVersion, number int) (gofastly.WAFVersion, error) {
+	for _, v := range versions {
+		if v.Number == number {
+			return *v, nil
+		}
+	}
+	return gofastly.WAFVersion{}, fmt.Errorf("version number %d not found", number)
+}
+
+func testAccFastlyServiceWAFVersionV1ComposeConfiguration(m map[string]interface{}, rules string) string {
+
+	hcl := `
+        resource "fastly_service_waf_configuration_v1" "waf" {
+          waf_id = fastly_service_v1.foo.waf[0].waf_id
+         `
+
+	for k, v := range m {
+
+		switch t := reflect.TypeOf(v).String(); t {
+		case "string":
+			hcl = hcl + fmt.Sprintf(` %s = "%s"
+         `, k, v)
+		case "int":
+			hcl = hcl + fmt.Sprintf(` %s = %d
+         `, k, v)
+		case "bool":
+			hcl = hcl + fmt.Sprintf(` %s = %v
+         `, k, v)
+		}
+	}
+	return hcl + fmt.Sprintf(`%s
+        }`, rules)
 }
 
 func testAccCheckFastlyServiceWAFVersionV1CheckRules(service *gofastly.ServiceDetail, expected []gofastly.WAFActiveRule, wafVerNo int) resource.TestCheckFunc {
@@ -288,8 +287,8 @@ func testAccCheckFastlyServiceWAFVersionV1CheckRules(service *gofastly.ServiceDe
 
 		waf := wafResp.Items[0]
 		ruleResp, err := conn.ListWAFActiveRules(&gofastly.ListWAFActiveRulesInput{
-			WAFID:     waf.ID,
-			WAFNumber: wafVerNo,
+			WAFID:            waf.ID,
+			WAFVersionNumber: wafVerNo,
 		})
 		if err != nil {
 			return fmt.Errorf("[ERR] Error looking up WAF records for (%s), version (%v): %s", service.Name, service.ActiveVersion.Number, err)
@@ -318,30 +317,21 @@ func testAccCheckFastlyServiceWAFVersionV1CheckRules(service *gofastly.ServiceDe
 	}
 }
 
-func composeWAFConfiguration(threshold int, rules string) string {
-	return fmt.Sprintf(`
-		resource "fastly_service_waf_configuration_v1" "waf" {
-  			waf_id = fastly_service_v1.foo.waf[0].waf_id
-  			inbound_anomaly_score_threshold = %d
-  			lfi_score_threshold = %d
-            %s
-}`, threshold, threshold, rules)
-}
-
-func composeWAFRule(rules []gofastly.WAFActiveRule) string {
+func testAccCheckFastlyServiceWAFVersionV1ComposeWAFRuled(rules []gofastly.WAFActiveRule) string {
 	var result string
 	for _, r := range rules {
 		rule := fmt.Sprintf(`
-		  rule {
-    		modsec_rule_id = %d
-    		status = "%s"
-  		}`, r.ModSecID, r.Status)
+          rule {
+            modsec_rule_id = %d
+            revision = %d
+            status = "%s"
+          }`, r.ModSecID, r.Revision, r.Status)
 		result = result + rule
 	}
 	return result
 }
 
-func testAccServiceV1WAFVersion(name, extraHCL string) string {
+func testAccFastlyServiceWAFVersionV1(name, extraHCL string) string {
 
 	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
 	domainName := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
@@ -382,4 +372,70 @@ resource "fastly_service_v1" "foo" {
 }
   %s
 `, name, domainName, backendName, extraHCL)
+}
+
+func testAccFastlyServiceWAFVersionV1BuildConfig(threshold int) map[string]interface{} {
+	return map[string]interface{}{
+		"allowed_http_versions":                "HTTP/1.0 HTTP/1.1",
+		"allowed_methods":                      "GET HEAD POST",
+		"allowed_request_content_type":         "application/x-www-form-urlencoded|multipart/form-data|text/xml|application/xml",
+		"allowed_request_content_type_charset": "utf-8|iso-8859-1",
+		"arg_length":                           800,
+		"arg_name_length":                      200,
+		"combined_file_sizes":                  20000000,
+		"critical_anomaly_score":               12,
+		"crs_validate_utf8_encoding":           true,
+		"error_anomaly_score":                  10,
+		"high_risk_country_codes":              "gb",
+		"http_violation_score_threshold":       threshold,
+		"inbound_anomaly_score_threshold":      threshold,
+		"lfi_score_threshold":                  threshold,
+		"max_file_size":                        20000000,
+		"max_num_args":                         510,
+		"notice_anomaly_score":                 8,
+		"paranoia_level":                       2,
+		"php_injection_score_threshold":        threshold,
+		"rce_score_threshold":                  threshold,
+		"restricted_extensions":                ".asa/ .asax/ .ascx/ .axd/ .backup/ .bak/ .bat/ .cdx/ .cer/ .cfg/ .cmd/ .com/",
+		"restricted_headers":                   "/proxy/ /lock-token/",
+		"rfi_score_threshold":                  threshold,
+		"session_fixation_score_threshold":     threshold,
+		"sql_injection_score_threshold":        threshold,
+		"total_arg_length":                     12800,
+		"warning_anomaly_score":                20,
+		"xss_score_threshold":                  threshold,
+	}
+}
+
+func testAccFastlyServiceWAFVersionV1ToMap(v gofastly.WAFVersion) map[string]interface{} {
+	return map[string]interface{}{
+		"allowed_http_versions":                v.AllowedHTTPVersions,
+		"allowed_methods":                      v.AllowedMethods,
+		"allowed_request_content_type":         v.AllowedRequestContentType,
+		"allowed_request_content_type_charset": v.AllowedRequestContentTypeCharset,
+		"arg_length":                           v.ArgLength,
+		"arg_name_length":                      v.ArgNameLength,
+		"combined_file_sizes":                  v.CombinedFileSizes,
+		"critical_anomaly_score":               v.CriticalAnomalyScore,
+		"crs_validate_utf8_encoding":           v.CRSValidateUTF8Encoding,
+		"error_anomaly_score":                  v.ErrorAnomalyScore,
+		"high_risk_country_codes":              v.HighRiskCountryCodes,
+		"http_violation_score_threshold":       v.HTTPViolationScoreThreshold,
+		"inbound_anomaly_score_threshold":      v.InboundAnomalyScoreThreshold,
+		"lfi_score_threshold":                  v.LFIScoreThreshold,
+		"max_file_size":                        v.MaxFileSize,
+		"max_num_args":                         v.MaxNumArgs,
+		"notice_anomaly_score":                 v.NoticeAnomalyScore,
+		"paranoia_level":                       v.ParanoiaLevel,
+		"php_injection_score_threshold":        v.PHPInjectionScoreThreshold,
+		"rce_score_threshold":                  v.RCEScoreThreshold,
+		"restricted_extensions":                v.RestrictedExtensions,
+		"restricted_headers":                   v.RestrictedHeaders,
+		"rfi_score_threshold":                  v.RFIScoreThreshold,
+		"session_fixation_score_threshold":     v.SessionFixationScoreThreshold,
+		"sql_injection_score_threshold":        v.SQLInjectionScoreThreshold,
+		"total_arg_length":                     v.TotalArgLength,
+		"warning_anomaly_score":                v.WarningAnomalyScore,
+		"xss_score_threshold":                  v.XSSScoreThreshold,
+	}
 }
