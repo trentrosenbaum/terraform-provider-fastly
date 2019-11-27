@@ -24,12 +24,6 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 				ForceNew:    true,
 				Description: "The service the WAF belongs to.",
 			},
-			"comment": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "Managed by Terraform",
-				Description: "A short version comment summarizing changes included in a specific WAF version.",
-			},
 			"allowed_http_versions": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -195,10 +189,10 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	WAFID := d.Get("waf_id").(string)
+	wafID := d.Get("waf_id").(string)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
-			WAFID:            WAFID,
+			WAFID:            wafID,
 			WAFVersionNumber: latestVersion.Number,
 		})
 		if err != nil {
@@ -213,7 +207,7 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	}
 
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
-		WAFID:            WAFID,
+		WAFID:            wafID,
 		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
@@ -244,10 +238,10 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	WAFID := d.Get("waf_id").(string)
+	wafID := d.Get("waf_id").(string)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
-			WAFID:            WAFID,
+			WAFID:            wafID,
 			WAFVersionNumber: latestVersion.Number,
 		})
 		if err != nil {
@@ -258,7 +252,7 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	// TODO: Remove all rules from WAF version
 
 	err = conn.DeployWAFVersion(&gofastly.DeployWAFVersionInput{
-		WAFID:            WAFID,
+		WAFID:            wafID,
 		WAFVersionNumber: latestVersion.Number,
 	})
 	if err != nil {
@@ -271,15 +265,15 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVersion, error) {
 	conn := meta.(*FastlyClient).conn
 
-	WAFID := d.Get("waf_id").(string)
+	wafID := d.Get("waf_id").(string)
 	resp, err := conn.ListAllWAFVersions(&gofastly.ListAllWAFVersionsInput{
-		WAFID: WAFID,
+		WAFID: wafID,
 	})
 	if err != nil {
 		return nil, err
 	}
 	if len(resp.Items) < 1 {
-		return nil, fmt.Errorf("[ERR] Error looking up WAF id: %s", WAFID)
+		return nil, fmt.Errorf("[ERR] Error looking up WAF id: %s", wafID)
 	}
 	return determineLatestVersion(resp.Items), nil
 }
@@ -289,7 +283,6 @@ func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.U
 		WAFVersionID:                     id,
 		WAFVersionNumber:                 number,
 		WAFID:                            d.Get("waf_id").(string),
-		Comment:                          d.Get("comment").(string),
 		AllowedHTTPVersions:              d.Get("allowed_http_versions").(string),
 		AllowedMethods:                   d.Get("allowed_methods").(string),
 		AllowedRequestContentType:        d.Get("allowed_request_content_type").(string),
@@ -352,7 +345,6 @@ func refreshWAFVersion(d *schema.ResourceData, version *gofastly.WAFVersion) err
 
 func composePairings(version *gofastly.WAFVersion) map[string]interface{} {
 	return map[string]interface{}{
-		"comment":                              version.Comment,
 		"allowed_http_versions":                version.AllowedHTTPVersions,
 		"allowed_methods":                      version.AllowedMethods,
 		"allowed_request_content_type":         version.AllowedRequestContentType,
@@ -384,12 +376,12 @@ func composePairings(version *gofastly.WAFVersion) map[string]interface{} {
 	}
 }
 
-func determineLatestVersion(l []*gofastly.WAFVersion) *gofastly.WAFVersion {
+func determineLatestVersion(versions []*gofastly.WAFVersion) *gofastly.WAFVersion {
 
-	if len(l) > 1 {
-		sort.Slice(l, func(i, j int) bool {
-			return l[i].Number > l[j].Number
+	if len(versions) > 1 {
+		sort.Slice(versions, func(i, j int) bool {
+			return versions[i].Number > versions[j].Number
 		})
 	}
-	return l[0]
+	return versions[0]
 }

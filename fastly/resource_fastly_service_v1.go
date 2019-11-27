@@ -1472,7 +1472,7 @@ func resourceServiceV1() *schema.Resource {
 					},
 				},
 			},
-			"waf": WAFSchema,
+			"waf": wafSchema,
 		},
 	}
 }

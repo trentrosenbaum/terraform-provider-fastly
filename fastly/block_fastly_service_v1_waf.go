@@ -10,7 +10,7 @@ import (
 )
 
 // WAFSchema the WAF block schema
-var WAFSchema = &schema.Schema{
+var wafSchema = &schema.Schema{
 	Type:     schema.TypeList,
 	Optional: true,
 	MaxItems: 1,
