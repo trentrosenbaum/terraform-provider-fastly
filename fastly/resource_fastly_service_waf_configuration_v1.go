@@ -178,7 +178,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 	}
 }
 
-// this method calls update the creation of the waf (within the service resource) automatically creates
+// this method calls update because the creation of the waf (within the service resource) automatically creates
 // the first waf version, and this makes both a create and an updating exactly the same operation.
 func resourceServiceWAFConfigurationV1Create(d *schema.ResourceData, meta interface{}) error {
 	return resourceServiceWAFConfigurationV1Update(d, meta)
@@ -283,9 +283,9 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 	return latest, nil
 }
 
-func buildUpdateInput(d *schema.ResourceData, ID string, number int) *gofastly.UpdateWAFVersionInput {
+func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.UpdateWAFVersionInput {
 	return &gofastly.UpdateWAFVersionInput{
-		WAFVersionID:                     ID,
+		WAFVersionID:                     id,
 		WAFVersionNumber:                 number,
 		WAFID:                            d.Get("waf_id").(string),
 		AllowedHTTPVersions:              d.Get("allowed_http_versions").(string),
