@@ -35,7 +35,7 @@ var wafSchema = &schema.Schema{
 	},
 }
 
-func processWAF(d *schema.ResourceData, conn *gofastly.Client, v int) error {
+func processWAF(d *schema.ResourceData, conn *gofastly.Client, v int) error  {
 
 	serviceID := d.Id()
 	serviceVersion := strconv.Itoa(v)
