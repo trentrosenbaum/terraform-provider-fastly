@@ -13,21 +13,29 @@ import (
 func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 
 	cases := []struct {
-		remote []*gofastly.WAFVersion
-		local  int
+		remote  []*gofastly.WAFVersion
+		local   int
+		Errored bool
 	}{
+		{
+			remote:  []*gofastly.WAFVersion{},
+			local:   0,
+			Errored: true,
+		},
 		{
 			remote: []*gofastly.WAFVersion{
 				{Number: 1},
 			},
-			local: 1,
+			local:   1,
+			Errored: false,
 		},
 		{
 			remote: []*gofastly.WAFVersion{
 				{Number: 1},
 				{Number: 2},
 			},
-			local: 2,
+			local:   2,
+			Errored: false,
 		},
 		{
 			remote: []*gofastly.WAFVersion{
@@ -35,12 +43,19 @@ func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 				{Number: 2},
 				{Number: 1},
 			},
-			local: 3,
+			local:   3,
+			Errored: false,
 		},
 	}
 
 	for _, c := range cases {
-		out := determineLatestVersion(c.remote)
+		out, err := determineLatestVersion(c.remote)
+		if (err == nil) == c.Errored {
+			t.Fatalf("Error expected to be %v but wan't", c.Errored)
+		}
+		if out == nil {
+			continue
+		}
 		if c.local != out.Number {
 			t.Fatalf("Error matching:\nexpected: %#v\n     got: %#v", c.local, out)
 		}
