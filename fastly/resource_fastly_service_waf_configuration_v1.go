@@ -278,7 +278,7 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 	return determineLatestVersion(resp.Items), nil
 }
 
-func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.UpdateWAFVersionInput {
+func buildUpdateInput(d *schema.ResourceData, ID string, number int) *gofastly.UpdateWAFVersionInput {
 	return &gofastly.UpdateWAFVersionInput{
 		WAFVersionID:                     id,
 		WAFVersionNumber:                 number,
