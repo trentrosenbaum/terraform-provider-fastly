@@ -1,6 +1,7 @@
 package fastly
 
 import (
+	"errors"
 	"fmt"
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -201,6 +202,8 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 	}
 }
 
+// this method calls update because the creation of the waf (within the service resource) automatically creates
+// the first waf version, and this makes both a create and an updating exactly the same operation.
 func resourceServiceWAFConfigurationV1Create(d *schema.ResourceData, meta interface{}) error {
 	return resourceServiceWAFConfigurationV1Update(d, meta)
 }
@@ -273,6 +276,9 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 		log.Printf("[WARN] Error setting WAF rules for (%s): %s", d.Id(), err)
 	}
 
+	if err = refreshWAFVersion(d, latestVersion); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -318,10 +324,12 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 	if err != nil {
 		return nil, err
 	}
-	if len(resp.Items) < 1 {
-		return nil, fmt.Errorf("[ERR] Error looking up WAF id: %s", wafID)
+
+	latest, err := determineLatestVersion(resp.Items)
+	if err != nil {
+		return nil, fmt.Errorf("[ERR] Error looking up WAF id: %s, with error %s", wafID, err)
 	}
-	return determineLatestVersion(resp.Items), nil
+	return latest, nil
 }
 
 func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.UpdateWAFVersionInput {
@@ -437,14 +445,17 @@ func flattenWAFRules(rules []*gofastly.WAFActiveRule) []map[string]interface{} {
 	return rl
 }
 
-func determineLatestVersion(versions []*gofastly.WAFVersion) *gofastly.WAFVersion {
+func determineLatestVersion(versions []*gofastly.WAFVersion) (*gofastly.WAFVersion, error) {
 
-	if len(versions) > 1 {
-		sort.Slice(versions, func(i, j int) bool {
-			return versions[i].Number > versions[j].Number
-		})
+	if len(versions) == 0 {
+		return nil, errors.New("the list of WAFVersions cannot be empty")
 	}
-	return versions[0]
+
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i].Number > versions[j].Number
+	})
+
+	return versions[0], nil
 }
 
 func updateRules(d *schema.ResourceData, meta interface{}, wafID string, Number int) error {
