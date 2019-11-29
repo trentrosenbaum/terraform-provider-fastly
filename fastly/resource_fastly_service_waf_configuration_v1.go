@@ -256,8 +256,8 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return err
 	}
-
 	log.Printf("[DEBUG] latest WAF version is %d", latestVersion.Number)
+
 	if err = refreshWAFConfig(d, latestVersion); err != nil {
 		return err
 	}
@@ -277,9 +277,6 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 		log.Printf("[WARN] Error setting WAF rules for (%s): %s", d.Id(), err)
 	}
 
-	if err = refreshWAFConfig(d, latestVersion); err != nil {
-		return err
-	}
 	return nil
 }
 
