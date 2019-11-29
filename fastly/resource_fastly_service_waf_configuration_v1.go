@@ -182,18 +182,18 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 						"status": {
 							Type:         schema.TypeString,
 							Required:     true,
-							Description:  "The Web Application Firewall's rule status. Allowed values are (log, block and score)",
+							Description:  "The Web Application Firewall rule's status. Allowed values are (log, block and score)",
 							ValidateFunc: validateRuleStatusType(),
 						},
 						"modsec_rule_id": {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "The Web Application Firewall's rule modsec id",
+							Description: "The Web Application Firewall rule's modsec id",
 						},
 						"revision": {
 							Type:        schema.TypeInt,
 							Optional:    true,
-							Description: "The Web Application Firewall's rule revision",
+							Description: "The Web Application Firewall rule's revision",
 						},
 					},
 				},
@@ -257,7 +257,7 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	log.Printf("[DEBUG] latest waf version is %d", latestVersion.Number)
+	log.Printf("[DEBUG] latest WAF version is %d", latestVersion.Number)
 	if err = refreshWAFConfig(d, latestVersion); err != nil {
 		return err
 	}
