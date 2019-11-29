@@ -100,7 +100,7 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 		},
 	}
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
-	rulesTF := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRuled(rules)
+	rulesTF := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules)
 	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF)
 
 	resource.Test(t, resource.TestCase{
@@ -205,10 +205,60 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 		},
 	}
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
-	rulesTF1 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRuled(rules1)
+	rulesTF1 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules1)
 	wafVer1 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF1)
 
-	rulesTF2 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRuled(rules2)
+	rulesTF2 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules2)
+	wafVer2 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF2)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckServiceV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer1),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceV1Exists(serviceRef, &service),
+					testAccCheckFastlyServiceWAFVersionV1CheckRules(&service, rules1, 1),
+				),
+			},
+			{
+				Config: testAccFastlyServiceWAFVersionV1(name, wafVer2),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceV1Exists(serviceRef, &service),
+					testAccCheckFastlyServiceWAFVersionV1CheckRules(&service, rules2, 2),
+				),
+			},
+		},
+	})
+}
+
+func TestAccFastlyServiceWAFVersionV1DeleteRules(t *testing.T) {
+	var service gofastly.ServiceDetail
+	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+
+	rules1 := []gofastly.WAFActiveRule{
+		{
+			ModSecID: 2029718,
+			Status:   "log",
+		},
+		{
+			ModSecID: 2037405,
+			Status:   "log",
+		},
+	}
+	rules2 := []gofastly.WAFActiveRule{
+		{
+			ModSecID: 2029718,
+			Status:   "block",
+		},
+	}
+	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
+	rulesTF1 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules1)
+	wafVer1 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF1)
+
+	rulesTF2 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules2)
 	wafVer2 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF2)
 
 	resource.Test(t, resource.TestCase{
@@ -386,7 +436,7 @@ func testAccCheckFastlyServiceWAFVersionV1CheckRules(service *gofastly.ServiceDe
 	}
 }
 
-func testAccCheckFastlyServiceWAFVersionV1ComposeWAFRuled(rules []gofastly.WAFActiveRule) string {
+func testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules []gofastly.WAFActiveRule) string {
 	var result string
 	for _, r := range rules {
 		rule := fmt.Sprintf(`
