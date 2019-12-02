@@ -1,10 +1,14 @@
 package fastly
 
 import (
+	"errors"
 	"fmt"
 	gofastly "github.com/fastly/go-fastly/fastly"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
+	"sort"
+	"strconv"
 )
 
 func dataSourceFastlyWAFRules() *schema.Resource {
@@ -14,7 +18,13 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"publishers": {
 				Type:        schema.TypeList,
-				Required:    true,
+				Optional:    true,
+				Description: "",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+			"tags": {
+				Type:        schema.TypeList,
+				Optional:    true,
 				Description: "",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
@@ -29,7 +39,7 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 							Required:    true,
 							Description: "",
 						},
-						"revision": {
+						"latest_revision_number": {
 							Type:        schema.TypeInt,
 							Required:    true,
 							Description: "",
@@ -49,32 +59,48 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 func dataSourceFastlyWAFRulesRead(d *schema.ResourceData, meta interface{}) error {
 
 	conn := meta.(*FastlyClient).conn
+	input := &gofastly.ListAllWAFRulesInput{}
 
-	p := d.Get("publishers").([]interface{})
+	if v, ok := d.GetOk("publishers"); ok {
+		l := v.([]interface{})
+		for i := range l {
+			input.FilterPublishers = append(input.FilterPublishers, l[i].(string))
+		}
+	}
 
-	publishers := make([]string, len(p), len(p))
-	for i := range p {
-		publishers[i] = p[i].(string)
+	if v, ok := d.GetOk("tags"); ok {
+		l := v.([]interface{})
+		for i := range l {
+			input.FilterTagNames = append(input.FilterTagNames, l[i].(string))
+		}
 	}
 
 	log.Printf("[DEBUG] Reading WAF rules")
-	res, err := conn.ListAllWAFRules(&gofastly.ListAllWAFRulesInput{
-		FilterPublisher: publishers,
-	})
+	res, err := conn.ListAllWAFRules(input)
 	if err != nil {
-		return fmt.Errorf("Error listing WAF rules: %s", err)
+		return fmt.Errorf("error listing WAF rules: %s", err)
 	}
 
-	//	d.SetId(strconv.Itoa(hashcode.String(string(res.Items))))
-	d.SetId("test2")
+	d.SetId(strconv.Itoa(createFiltersHash(input)))
 
 	rules := flattenWAFRules(res.Items)
 
 	if err := d.Set("rules", rules); err != nil {
-		return fmt.Errorf("Error setting waf rules: %s", err)
+		return fmt.Errorf("error setting waf rules: %s", err)
 	}
 
 	return nil
+}
+
+func createFiltersHash(i *gofastly.ListAllWAFRulesInput) int {
+	var result string
+	for _, v := range i.FilterPublishers {
+		result = result + v
+	}
+	for _, v := range i.FilterTagNames {
+		result = result + v
+	}
+	return hashcode.String(result)
 }
 
 func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
@@ -85,11 +111,21 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 	}
 
 	for _, r := range ruleList {
-		rulesMapString := map[string]interface{}{
-			"mod_sec_id": r.ModSecID,
-			"revision":   r.Revision,
-			"type":       r.Type,
+
+		var latestRevisionNumber int
+		latestRevision, err := determineLatestRevision(r.Revisions)
+		if err != nil {
+			latestRevisionNumber = 1
+		} else {
+			latestRevisionNumber = latestRevision.Revision
 		}
+
+		rulesMapString := map[string]interface{}{
+			"mod_sec_id":             r.ModSecID,
+			"latest_revision_number": latestRevisionNumber,
+			"type":                   r.Type,
+		}
+
 		// prune any empty values that come from the default string value in structs
 		for k, v := range rulesMapString {
 			if v == "" {
@@ -100,4 +136,17 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 	}
 
 	return rl
+}
+
+func determineLatestRevision(versions []*gofastly.WAFRuleRevision) (*gofastly.WAFRuleRevision, error) {
+
+	if len(versions) == 0 {
+		return nil, errors.New("the list of WAFRuleRevisions cannot be empty")
+	}
+
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i].Revision > versions[j].Revision
+	})
+
+	return versions[0], nil
 }
