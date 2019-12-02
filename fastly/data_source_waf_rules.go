@@ -28,13 +28,25 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 				Description: "",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
+			"modsec_rule_ids": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "",
+				Elem:        &schema.Schema{Type: schema.TypeInt},
+			},
+			"exclude_modsec_rule_ids": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "",
+				Elem:        &schema.Schema{Type: schema.TypeInt},
+			},
 			"rules": {
 				Type:        schema.TypeList,
 				Computed:    true,
 				Description: "",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"mod_sec_id": {
+						"modsec_rule_id": {
 							Type:        schema.TypeInt,
 							Required:    true,
 							Description: "",
@@ -75,6 +87,20 @@ func dataSourceFastlyWAFRulesRead(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
+	if v, ok := d.GetOk("modsec_rule_ids"); ok {
+		l := v.([]interface{})
+		for i := range l {
+			input.FilterModSecIDs = append(input.FilterModSecIDs, l[i].(int))
+		}
+	}
+
+	if v, ok := d.GetOk("exclude_modsec_rule_ids"); ok {
+		l := v.([]interface{})
+		for i := range l {
+			input.ExcludeMocSecIDs = append(input.ExcludeMocSecIDs, l[i].(int))
+		}
+	}
+
 	log.Printf("[DEBUG] Reading WAF rules")
 	res, err := conn.ListAllWAFRules(input)
 	if err != nil {
@@ -100,6 +126,12 @@ func createFiltersHash(i *gofastly.ListAllWAFRulesInput) int {
 	for _, v := range i.FilterTagNames {
 		result = result + v
 	}
+	for _, v := range i.FilterModSecIDs {
+		result = result + strconv.Itoa(v)
+	}
+	for _, v := range i.ExcludeMocSecIDs {
+		result = result + strconv.Itoa(v)
+	}
 	return hashcode.String(result)
 }
 
@@ -113,7 +145,7 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 	for _, r := range ruleList {
 
 		var latestRevisionNumber int
-		latestRevision, err := determineLatestRevision(r.Revisions)
+		latestRevision, err := determineLatestRuleRevision(r.Revisions)
 		if err != nil {
 			latestRevisionNumber = 1
 		} else {
@@ -121,7 +153,7 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 		}
 
 		rulesMapString := map[string]interface{}{
-			"mod_sec_id":             r.ModSecID,
+			"modsec_rule_id":         r.ModSecID,
 			"latest_revision_number": latestRevisionNumber,
 			"type":                   r.Type,
 		}
@@ -138,7 +170,7 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 	return rl
 }
 
-func determineLatestRevision(versions []*gofastly.WAFRuleRevision) (*gofastly.WAFRuleRevision, error) {
+func determineLatestRuleRevision(versions []*gofastly.WAFRuleRevision) (*gofastly.WAFRuleRevision, error) {
 
 	if len(versions) == 0 {
 		return nil, errors.New("the list of WAFRuleRevisions cannot be empty")
