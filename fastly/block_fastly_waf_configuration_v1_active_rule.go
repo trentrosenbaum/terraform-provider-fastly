@@ -50,18 +50,18 @@ func updateRules(d *schema.ResourceData, meta interface{}, wafID string, Number 
 	add := nss.Difference(oss).List()
 
 	if len(remove) > 0 {
-		deleteOpts := buildDeleteWAFRulesInput(remove, wafID, Number)
+		deleteOpts := buildBatchDeleteWAFActiveRulesInput(remove, wafID, Number)
 		log.Printf("[DEBUG] WAF rules delete opts: %#v", deleteOpts)
-		err := conn.DeleteWAFActiveRules(&deleteOpts)
+		err := executeBatchWAFActiveRulesOperations(conn, &deleteOpts)
 		if err != nil {
 			return err
 		}
 	}
 
 	if len(add) > 0 {
-		createOpts := buildCreateWAFRulesInput(add, wafID, Number)
+		createOpts := buildBatchCreateWAFActiveRulesInput(add, wafID, Number)
 		log.Printf("[DEBUG] WAF rules create opts: %#v", createOpts)
-		_, err := conn.CreateWAFActiveRules(&createOpts)
+		err := executeBatchWAFActiveRulesOperations(conn, &createOpts)
 		if err != nil {
 			return err
 		}
@@ -90,28 +90,10 @@ func readWAFRules(meta interface{}, d *schema.ResourceData, v int) error {
 	return nil
 }
 
-func buildDeleteWAFRulesInput(add []interface{}, wafID string, wafVersionNumber int) gofastly.DeleteWAFActiveRulesInput {
+func buildBatchCreateWAFActiveRulesInput(items []interface{}, wafID string, wafVersionNumber int) gofastly.BatchModificationWAFActiveRulesInput {
 
 	var rules []*gofastly.WAFActiveRule
-	for _, rRaw := range add {
-		rf := rRaw.(map[string]interface{})
-
-		rules = append(rules, &gofastly.WAFActiveRule{
-			ModSecID: rf["modsec_rule_id"].(int),
-		})
-	}
-
-	return gofastly.DeleteWAFActiveRulesInput{
-		WAFID:            wafID,
-		WAFVersionNumber: wafVersionNumber,
-		Rules:            rules,
-	}
-}
-
-func buildCreateWAFRulesInput(add []interface{}, wafID string, wafVersionNumber int) gofastly.CreateWAFActiveRulesInput {
-
-	var rules []*gofastly.WAFActiveRule
-	for _, rRaw := range add {
+	for _, rRaw := range items {
 		rf := rRaw.(map[string]interface{})
 
 		rules = append(rules, &gofastly.WAFActiveRule{
@@ -121,11 +103,56 @@ func buildCreateWAFRulesInput(add []interface{}, wafID string, wafVersionNumber 
 		})
 	}
 
-	return gofastly.CreateWAFActiveRulesInput{
+	return gofastly.BatchModificationWAFActiveRulesInput{
 		WAFID:            wafID,
 		WAFVersionNumber: wafVersionNumber,
 		Rules:            rules,
+		OP:               gofastly.UpsertBatchOperation,
 	}
+}
+
+func buildBatchDeleteWAFActiveRulesInput(items []interface{}, wafID string, wafVersionNumber int) gofastly.BatchModificationWAFActiveRulesInput {
+
+	var rules []*gofastly.WAFActiveRule
+	for _, rRaw := range items {
+		rf := rRaw.(map[string]interface{})
+
+		rules = append(rules, &gofastly.WAFActiveRule{
+			ModSecID: rf["modsec_rule_id"].(int),
+		})
+	}
+
+	return gofastly.BatchModificationWAFActiveRulesInput{
+		WAFID:            wafID,
+		WAFVersionNumber: wafVersionNumber,
+		Rules:            rules,
+		OP:               gofastly.DeleteBatchOperation,
+	}
+}
+
+func executeBatchWAFActiveRulesOperations(conn *gofastly.Client, input *gofastly.BatchModificationWAFActiveRulesInput) error {
+
+	batchSize := gofastly.BatchModifyMaximumOperations
+	items := input.Rules
+
+	for i := 0; i < len(items); i += batchSize {
+		j := i + batchSize
+		if j > len(items) {
+			j = len(items)
+		}
+
+		batch := items[i:j]
+
+		if _, err := conn.BatchModificationAFActiveRules(&gofastly.BatchModificationWAFActiveRulesInput{
+			WAFID:            input.WAFID,
+			WAFVersionNumber: input.WAFVersionNumber,
+			Rules:            batch,
+			OP:               input.OP,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func flattenWAFRules(rules []*gofastly.WAFActiveRule) []map[string]interface{} {
