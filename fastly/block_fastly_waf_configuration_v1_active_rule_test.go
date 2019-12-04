@@ -6,9 +6,40 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"reflect"
 	"sort"
 	"testing"
 )
+
+func TestAccFastlyServiceWAFVersionV1FlattenWAFRules(t *testing.T) {
+	cases := []struct {
+		remote []*gofastly.WAFActiveRule
+		local  []map[string]interface{}
+	}{
+		{
+			remote: []*gofastly.WAFActiveRule{
+				{
+					ModSecID: 1110111,
+					Revision: 1,
+					Status:   "log",
+				},
+			},
+			local: []map[string]interface{}{
+				{
+					"modsec_rule_id": 1110111,
+					"revision":       1,
+					"status":         "log",
+				},
+			},
+		},
+	}
+	for _, c := range cases {
+		out := flattenWAFRules(c.remote)
+		if !reflect.DeepEqual(out, c.local) {
+			t.Fatalf("Error matching:\nexpected: %#v\n     got: %#v", c.local, out)
+		}
+	}
+}
 
 func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 	var service gofastly.ServiceDetail
