@@ -19,47 +19,41 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 			"publishers": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "",
+				Description: "A list of publishers to be used filters for the data set.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "",
+				Description: "A list of tags to be used as filters for the data set.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
-			},
-			"modsec_rule_ids": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				Description: "",
-				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"exclude_modsec_rule_ids": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "",
+				Description: "A list of rules to be excluded from the data set referenced by modsecurity rule id.",
 				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"rules": {
 				Type:        schema.TypeList,
 				Computed:    true,
-				Description: "",
+				Description: "The list of rules that results from any given combination of filters.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"modsec_rule_id": {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "",
+							Description: "The modsecurity rule id.",
 						},
 						"latest_revision_number": {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "",
+							Description: "The modsecurity rule's latest revision.",
 						},
 						"type": {
 							Type:        schema.TypeString,
 							Computed:    true,
-							Description: "",
+							Description: "The modsecurity rule's type.",
 						},
 					},
 				},
@@ -87,13 +81,6 @@ func dataSourceFastlyWAFRulesRead(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	if v, ok := d.GetOk("modsec_rule_ids"); ok {
-		l := v.([]interface{})
-		for i := range l {
-			input.FilterModSecIDs = append(input.FilterModSecIDs, l[i].(int))
-		}
-	}
-
 	if v, ok := d.GetOk("exclude_modsec_rule_ids"); ok {
 		l := v.([]interface{})
 		for i := range l {
@@ -107,10 +94,9 @@ func dataSourceFastlyWAFRulesRead(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("error listing WAF rules: %s", err)
 	}
 
-	d.SetId(strconv.Itoa(createFiltersHash(input)))
-
 	rules := flattenWAFRules(res.Items)
 
+	d.SetId(strconv.Itoa(createFiltersHash(input)))
 	if err := d.Set("rules", rules); err != nil {
 		return fmt.Errorf("error setting waf rules: %s", err)
 	}
@@ -125,9 +111,6 @@ func createFiltersHash(i *gofastly.ListAllWAFRulesInput) int {
 	}
 	for _, v := range i.FilterTagNames {
 		result = result + v
-	}
-	for _, v := range i.FilterModSecIDs {
-		result = result + strconv.Itoa(v)
 	}
 	for _, v := range i.ExcludeMocSecIDs {
 		result = result + strconv.Itoa(v)
