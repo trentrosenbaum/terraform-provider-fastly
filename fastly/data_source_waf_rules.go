@@ -120,12 +120,12 @@ func createFiltersHash(i *gofastly.ListAllWAFRulesInput) int {
 
 func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 
-	var rl []map[string]interface{}
+	rl := make([]map[string]interface{}, len(ruleList))
 	if len(ruleList) == 0 {
 		return rl
 	}
 
-	for _, r := range ruleList {
+	for i, r := range ruleList {
 
 		var latestRevisionNumber int
 		latestRevision, err := determineLatestRuleRevision(r.Revisions)
@@ -147,7 +147,7 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 				delete(rulesMapString, k)
 			}
 		}
-		rl = append(rl, rulesMapString)
+		rl[i] = rulesMapString
 	}
 
 	return rl
