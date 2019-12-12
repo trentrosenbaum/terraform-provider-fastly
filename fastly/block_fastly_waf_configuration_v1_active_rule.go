@@ -14,7 +14,7 @@ var activeRule = &schema.Schema{
 			"status": {
 				Type:         schema.TypeString,
 				Required:     true,
-				Description:  "The Web Application Firewall rule's status. Allowed values are (log, block and score)",
+				Description:  "The Web Application Firewall rule's status. Allowed values are (log, block and score).",
 				ValidateFunc: validateRuleStatusType(),
 			},
 			"modsec_rule_id": {
