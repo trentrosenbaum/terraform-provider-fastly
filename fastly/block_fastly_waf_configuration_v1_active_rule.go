@@ -25,7 +25,7 @@ var activeRule = &schema.Schema{
 			"revision": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Description: "The Web Application Firewall rule's revision",
+				Description: "The Web Application Firewall rule's revision.",
 			},
 		},
 	},
