@@ -20,7 +20,7 @@ var activeRule = &schema.Schema{
 			"modsec_rule_id": {
 				Type:        schema.TypeInt,
 				Required:    true,
-				Description: "The Web Application Firewall rule's modsec id",
+				Description: "The Web Application Firewall rule's modsec ID.",
 			},
 			"revision": {
 				Type:        schema.TypeInt,
