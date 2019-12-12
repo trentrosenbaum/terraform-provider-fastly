@@ -1,9 +1,10 @@
 package fastly
 
 import (
+	"log"
+
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
 )
 
 var activeRule = &schema.Schema{
@@ -143,7 +144,7 @@ func executeBatchWAFActiveRulesOperations(conn *gofastly.Client, input *gofastly
 
 		batch := items[i:j]
 
-		if _, err := conn.BatchModificationAFActiveRules(&gofastly.BatchModificationWAFActiveRulesInput{
+		if _, err := conn.BatchModificationWAFActiveRules(&gofastly.BatchModificationWAFActiveRulesInput{
 			WAFID:            input.WAFID,
 			WAFVersionNumber: input.WAFVersionNumber,
 			Rules:            batch,

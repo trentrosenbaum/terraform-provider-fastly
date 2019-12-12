@@ -2,13 +2,14 @@ package fastly
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
+	"testing"
+
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"reflect"
-	"sort"
-	"testing"
 )
 
 func TestAccFastlyServiceWAFVersionV1FlattenWAFRules(t *testing.T) {
