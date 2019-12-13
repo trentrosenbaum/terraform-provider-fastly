@@ -85,6 +85,7 @@ func readWAFRules(meta interface{}, d *schema.ResourceData, v int) error {
 	}
 
 	rules := flattenWAFActiveRules(resp.Items)
+
 	if err := d.Set("rule", rules); err != nil {
 		log.Printf("[WARN] Error setting WAF rules for (%s): %s", d.Id(), err)
 	}
