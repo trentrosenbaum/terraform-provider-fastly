@@ -3,12 +3,13 @@ package fastly
 import (
 	"errors"
 	"fmt"
-	gofastly "github.com/fastly/go-fastly/fastly"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"sort"
 	"strconv"
+
+	gofastly "github.com/fastly/go-fastly/fastly"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func dataSourceFastlyWAFRules() *schema.Resource {
@@ -31,7 +32,7 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 			"exclude_modsec_rule_ids": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "A list of rules to be excluded from the data set referenced by modsecurity rule id.",
+				Description: "A list of rules to be excluded from the data set referenced by modsecurity rule ID.",
 				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"rules": {
@@ -43,7 +44,7 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 						"modsec_rule_id": {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "The modsecurity rule id.",
+							Description: "The modsecurity rule ID.",
 						},
 						"latest_revision_number": {
 							Type:        schema.TypeInt,
@@ -127,11 +128,8 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 
 	for i, r := range ruleList {
 
-		var latestRevisionNumber int
-		latestRevision, err := determineLatestRuleRevision(r.Revisions)
-		if err != nil {
-			latestRevisionNumber = 1
-		} else {
+		latestRevisionNumber := 1
+		if latestRevision, err := determineLatestRuleRevision(r.Revisions); err == nil {
 			latestRevisionNumber = latestRevision.Revision
 		}
 
@@ -141,7 +139,7 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 			"type":                   r.Type,
 		}
 
-		// prune any empty values that come from the default string value in structs
+		// Prune any empty values that come from the default string value in structs.
 		for k, v := range rulesMapString {
 			if v == "" {
 				delete(rulesMapString, k)
@@ -153,15 +151,15 @@ func flattenWAFRules(ruleList []*gofastly.WAFRule) []map[string]interface{} {
 	return rl
 }
 
-func determineLatestRuleRevision(versions []*gofastly.WAFRuleRevision) (*gofastly.WAFRuleRevision, error) {
+func determineLatestRuleRevision(revisions []*gofastly.WAFRuleRevision) (*gofastly.WAFRuleRevision, error) {
 
-	if len(versions) == 0 {
+	if len(revisions) == 0 {
 		return nil, errors.New("the list of WAFRuleRevisions cannot be empty")
 	}
 
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].Revision > versions[j].Revision
+	sort.Slice(revisions, func(i, j int) bool {
+		return revisions[i].Revision > revisions[j].Revision
 	})
 
-	return versions[0], nil
+	return revisions[0], nil
 }
