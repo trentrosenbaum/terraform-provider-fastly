@@ -98,10 +98,10 @@ func TestAccFastlyWAFRulesFlattenWAFRules(t *testing.T) {
 func TestAccFastlyWAFRulesPublisherFilter(t *testing.T) {
 
 	wafrulesHCL := `
-	publishers = ["owasp"]
+    publishers = ["owasp"]
     `
 	wafrulesHCL2 := `
-	publishers = ["owasp","fastly"]
+    publishers = ["owasp","fastly"]
     `
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -127,7 +127,7 @@ func TestAccFastlyWAFRulesPublisherFilter(t *testing.T) {
 func TestAccFastlyWAFRulesExcludeFilter(t *testing.T) {
 
 	wafrulesHCL := `
-	publishers = ["owasp"]
+    publishers = ["owasp"]
     exclude_modsec_rule_ids = [1010020]
     `
 	resource.Test(t, resource.TestCase{
@@ -148,10 +148,10 @@ func TestAccFastlyWAFRulesExcludeFilter(t *testing.T) {
 func TestAccFastlyWAFRulesTagFilter(t *testing.T) {
 
 	wafrulesHCL := `
-	tags = ["CVE-2018-17384"]
+    tags = ["CVE-2018-17384"]
     `
 	wafrulesHCL2 := `
-	tags = ["CVE-2018-17384", "attack-rce"]
+    tags = ["CVE-2018-17384", "attack-rce"]
     `
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -239,7 +239,7 @@ func testAccFastlyWAFRulescheckAgainstState(s *terraform.State, rules []*gofastl
 func testAccFastlyWAFRules(filtersHCL string) string {
 
 	return fmt.Sprintf(`
-data "fastly_waf_rules" "r1" {
-  %s
-}`, filtersHCL)
+    data "fastly_waf_rules" "r1" {
+    %s
+    }`, filtersHCL)
 }
