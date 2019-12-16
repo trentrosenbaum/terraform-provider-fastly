@@ -99,7 +99,7 @@ func dataSourceFastlyWAFRulesRead(d *schema.ResourceData, meta interface{}) erro
 
 	d.SetId(strconv.Itoa(createFiltersHash(input)))
 	if err := d.Set("rules", rules); err != nil {
-		return fmt.Errorf("error setting waf rules: %s", err)
+		return fmt.Errorf("error setting WAF rules: %s", err)
 	}
 
 	return nil
