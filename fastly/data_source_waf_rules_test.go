@@ -185,7 +185,7 @@ func testAccFastlyWAFRulesCheckByPublisherFilter(publishers []string) resource.T
 			return fmt.Errorf("[ERR] Error looking up WAF rule records: error  %s", err)
 		}
 
-		return testAccFastlyWAFRulescheckAgainstState(s, rulesResp.Items)
+		return testAccFastlyWAFRulesCheckAgainstState(s, rulesResp.Items)
 	}
 }
 
@@ -201,7 +201,7 @@ func testAccFastlyWAFRulesCheckByExcludeFilter(publishers []string, exclusions [
 			return fmt.Errorf("[ERR] Error looking up WAF rule records: error  %s", err)
 		}
 
-		return testAccFastlyWAFRulescheckAgainstState(s, rulesResp.Items)
+		return testAccFastlyWAFRulesCheckAgainstState(s, rulesResp.Items)
 	}
 }
 
@@ -216,11 +216,11 @@ func testAccFastlyWAFRulesCheckByTagFilter(tags []string) resource.TestCheckFunc
 			return fmt.Errorf("[ERR] Error looking up WAF rule records: error  %s", err)
 		}
 
-		return testAccFastlyWAFRulescheckAgainstState(s, rulesResp.Items)
+		return testAccFastlyWAFRulesCheckAgainstState(s, rulesResp.Items)
 	}
 }
 
-func testAccFastlyWAFRulescheckAgainstState(s *terraform.State, rules []*gofastly.WAFRule) error {
+func testAccFastlyWAFRulesCheckAgainstState(s *terraform.State, rules []*gofastly.WAFRule) error {
 	r := s.RootModule().Resources["data.fastly_waf_rules.r1"]
 	a := r.Primary.Attributes
 
