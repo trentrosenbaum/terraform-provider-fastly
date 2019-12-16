@@ -20,7 +20,7 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 			"publishers": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "A list of publishers to be used filters for the data set.",
+				Description: "A list of publishers to be used as filters for the data set.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": {
@@ -32,7 +32,7 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 			"exclude_modsec_rule_ids": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "A list of rules to be excluded from the data set referenced by modsecurity rule ID.",
+				Description: "A list of modsecurity rules IDs to be excluded from the data set.",
 				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"rules": {
