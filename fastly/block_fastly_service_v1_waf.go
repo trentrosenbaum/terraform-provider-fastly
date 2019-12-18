@@ -53,7 +53,7 @@ func processWAF(d *schema.ResourceData, conn *gofastly.Client, v int) error {
 
 		var err error
 		var waf *gofastly.WAF
-		if ok := wafExists(conn, serviceID, serviceVersion, wf["waf_id"].(string)); ok {
+		if wafExists(conn, serviceID, serviceVersion, wf["waf_id"].(string)) {
 			opts := buildUpdateWAF(wf, serviceID, serviceVersion)
 			log.Printf("[DEBUG] Fastly WAF update opts: %#v", opts)
 			waf, err = conn.UpdateWAF(opts)
