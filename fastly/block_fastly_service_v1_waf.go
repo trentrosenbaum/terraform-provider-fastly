@@ -48,25 +48,25 @@ func processWAF(d *schema.ResourceData, conn *gofastly.Client, v int) error {
 	oldWAFVal, newWAFVal := d.GetChange("waf")
 
 	if len(newWAFVal.([]interface{})) > 0 {
-		var ok bool
-		var err error
-		var waf *gofastly.WAF
+
 		wf := newWAFVal.([]interface{})[0].(map[string]interface{})
 
-		if waf, ok = wafExists(conn, serviceID, serviceVersion, wf["waf_id"].(string)); !ok {
-			opts := buildCreateWAF(wf, serviceID, serviceVersion)
-			log.Printf("[DEBUG] Fastly WAF Addition opts: %#v", opts)
-			waf, err = conn.CreateWAF(opts)
-		} else {
+		var err error
+		var waf *gofastly.WAF
+		if ok := wafExists(conn, serviceID, serviceVersion, wf["waf_id"].(string)); ok {
 			opts := buildUpdateWAF(wf, serviceID, serviceVersion)
 			log.Printf("[DEBUG] Fastly WAF update opts: %#v", opts)
 			waf, err = conn.UpdateWAF(opts)
+		} else {
+			opts := buildCreateWAF(wf, serviceID, serviceVersion)
+			log.Printf("[DEBUG] Fastly WAF Addition opts: %#v", opts)
+			waf, err = conn.CreateWAF(opts)
 		}
 		if err != nil {
 			return err
 		}
 
-		if err := processDisabledField(conn, wf, waf); err != nil {
+		if err = processDisabledField(conn, wf, waf); err != nil {
 			return err
 		}
 	} else if len(oldWAFVal.([]interface{})) > 0 {
@@ -106,17 +106,17 @@ func readWAF(conn *gofastly.Client, d *schema.ResourceData, s *gofastly.ServiceD
 	return nil
 }
 
-func wafExists(conn *gofastly.Client, s, v, id string) (*gofastly.WAF, bool) {
+func wafExists(conn *gofastly.Client, s, v, id string) bool {
 
-	waf, err := conn.GetWAF(&gofastly.GetWAFInput{
+	_, err := conn.GetWAF(&gofastly.GetWAFInput{
 		Service: s,
 		Version: v,
 		ID:      id,
 	})
 	if err != nil {
-		return waf, false
+		return false
 	}
-	return waf, true
+	return true
 }
 
 func flattenWAFs(wafList []*gofastly.WAF) []map[string]interface{} {
