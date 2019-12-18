@@ -52,32 +52,30 @@ func processWAF(d *schema.ResourceData, conn *gofastly.Client, v int) error {
 		var err error
 		var waf *gofastly.WAF
 		wf := newWAFVal.([]interface{})[0].(map[string]interface{})
+
 		if waf, ok = wafExists(conn, serviceID, serviceVersion, wf["waf_id"].(string)); !ok {
 			opts := buildCreateWAF(wf, serviceID, serviceVersion)
 			log.Printf("[DEBUG] Fastly WAF Addition opts: %#v", opts)
-			if waf, err = conn.CreateWAF(opts); err != nil {
-				return err
-			}
+			waf, err = conn.CreateWAF(opts)
 		} else {
 			opts := buildUpdateWAF(wf, serviceID, serviceVersion)
 			log.Printf("[DEBUG] Fastly WAF update opts: %#v", opts)
-			if _, err := conn.UpdateWAF(opts); err != nil {
-				return err
-			}
+			waf, err = conn.UpdateWAF(opts)
 		}
+		if err != nil {
+			return err
+		}
+
 		if err := processDisabledField(conn, wf, waf); err != nil {
 			return err
 		}
 	} else if len(oldWAFVal.([]interface{})) > 0 {
 
 		wf := oldWAFVal.([]interface{})[0].(map[string]interface{})
-		opts := gofastly.DeleteWAFInput{
-			Version: serviceVersion,
-			ID:      wf["waf_id"].(string),
-		}
 
+		opts := buildDeleteWAF(wf, serviceVersion)
 		log.Printf("[DEBUG] Fastly WAF Removal opts: %#v", opts)
-		err := conn.DeleteWAF(&opts)
+		err := conn.DeleteWAF(opts)
 		if errRes, ok := err.(*gofastly.HTTPError); ok {
 			if errRes.StatusCode != 404 {
 				return err
@@ -147,18 +145,23 @@ func flattenWAFs(wafList []*gofastly.WAF) []map[string]interface{} {
 
 func processDisabledField(conn *gofastly.Client, wf map[string]interface{}, waf *gofastly.WAF) error {
 
-	if wf["disabled"].(bool) && !waf.Disabled {
+	if wf["disabled"].(bool) == waf.Disabled {
+		return nil
+	}
+
+	var err error
+	if wf["disabled"].(bool) {
 		opts := buildDisableWAF(wf)
 		log.Printf("[DEBUG] Fastly WAF disable opts: %#v", opts)
-		if _, err := conn.DisableWAF(opts); err != nil {
-			return err
-		}
-	} else if !wf["disabled"].(bool) && waf.Disabled {
+		_, err = conn.DisableWAF(opts)
+
+	} else {
 		opts := buildEnableWAF(wf)
 		log.Printf("[DEBUG] Fastly WAF enable opts: %#v", opts)
-		if _, err := conn.EnableWAF(opts); err != nil {
-			return err
-		}
+		_, err = conn.EnableWAF(opts)
+	}
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -171,6 +174,15 @@ func buildCreateWAF(WAFMap interface{}, serviceID string, ServiceVersion string)
 		ID:                df["waf_id"].(string),
 		PrefetchCondition: df["prefetch_condition"].(string),
 		Response:          df["response_object"].(string),
+	}
+	return &opts
+}
+
+func buildDeleteWAF(WAFMap interface{}, ServiceVersion string) *gofastly.DeleteWAFInput {
+	df := WAFMap.(map[string]interface{})
+	opts := gofastly.DeleteWAFInput{
+		ID:      df["waf_id"].(string),
+		Version: ServiceVersion,
 	}
 	return &opts
 }
