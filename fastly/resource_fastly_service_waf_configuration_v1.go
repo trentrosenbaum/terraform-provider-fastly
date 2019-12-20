@@ -3,12 +3,12 @@ package fastly
 import (
 	"errors"
 	"fmt"
+	"log"
+	"sort"
+
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"log"
-	"reflect"
-	"sort"
 )
 
 func resourceServiceWAFConfigurationV1() *schema.Resource {
@@ -17,6 +17,9 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 		Read:   resourceServiceWAFConfigurationV1Read,
 		Update: resourceServiceWAFConfigurationV1Update,
 		Delete: resourceServiceWAFConfigurationV1Delete,
+		Importer: &schema.ResourceImporter{
+			State: resourceServiceWAFConfigurationV1Import,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"waf_id": {
@@ -278,6 +281,25 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	return nil
 }
 
+func resourceServiceWAFConfigurationV1Import(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+
+	wafID := d.Id()
+	err := d.Set("waf_id", wafID)
+	if err != nil {
+		return nil, fmt.Errorf("error importing WAF configuration: WAF %s, %s", wafID, err)
+	}
+
+	pairings := composePairings(&gofastly.WAFVersion{})
+
+	for k, v := range pairings {
+		if err := d.Set(k, v); err != nil {
+			return nil, fmt.Errorf("error importing WAF configuration: WAF %s, %s", wafID, err)
+		}
+	}
+
+	return []*schema.ResourceData{d}, nil
+}
+
 func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVersion, error) {
 	conn := meta.(*FastlyClient).conn
 
@@ -336,22 +358,11 @@ func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) erro
 
 	pairings := composePairings(version)
 
-	d.SetId(version.ID)
+	d.SetId(d.Get("waf_id").(string))
 	for k, v := range pairings {
 		var ok bool
-		switch t := reflect.TypeOf(v).String(); t {
-		case "string":
-			if _, ok := d.GetOk(k); !ok || v.(string) == "" {
-				continue
-			}
-		case "int":
-			if _, ok := d.GetOk(k); !ok || v.(int) == 0 {
-				continue
-			}
-		case "bool":
-			if _, ok := d.GetOkExists(k); !ok {
-				continue
-			}
+		if _, ok = d.GetOkExists(k); !ok {
+			continue
 		}
 		if err := d.Set(k, v); err != nil {
 			return err
