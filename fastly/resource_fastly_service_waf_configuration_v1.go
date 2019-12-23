@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
@@ -288,15 +289,6 @@ func resourceServiceWAFConfigurationV1Import(d *schema.ResourceData, m interface
 	if err != nil {
 		return nil, fmt.Errorf("error importing WAF configuration: WAF %s, %s", wafID, err)
 	}
-
-	// this is required  otherwise terraform will not populate the remote data from the read function.
-	pairings := composePairings(&gofastly.WAFVersion{})
-	for k, v := range pairings {
-		if err := d.Set(k, v); err != nil {
-			return nil, fmt.Errorf("error setting WAF configuration value with key %s : value : %s", k, v)
-		}
-	}
-
 	return []*schema.ResourceData{d}, nil
 }
 
@@ -361,10 +353,22 @@ func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) erro
 	d.SetId(d.Get("waf_id").(string))
 	for k, v := range pairings {
 		var ok bool
-		if _, ok = d.GetOkExists(k); ok {
-			if err := d.Set(k, v); err != nil {
-				return err
+		switch t := reflect.TypeOf(v).String(); t {
+		case "string":
+			if _, ok := d.GetOk(k); !ok || v.(string) == "" {
+				continue
 			}
+		case "int":
+			if _, ok := d.GetOk(k); !ok || v.(int) == 0 {
+				continue
+			}
+		case "bool":
+			if _, ok := d.GetOkExists(k); !ok {
+				continue
+			}
+		}
+		if err := d.Set(k, v); err != nil {
+			return err
 		}
 		log.Printf("[DEBUG] GetOk for %v is %v \n", k, ok)
 	}

@@ -182,8 +182,8 @@ func TestAccFastlyServiceWAFVersionV1Import(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
-	wafVerInput1 := testAccFastlyServiceWAFVersionV1BuildConfig(20)
-	wafVer1 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput1, "")
+	wafVerInput := map[string]interface{}{"allowed_http_versions": "HTTP/1.0 HTTP/1.1"}
+	wafVer1 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
