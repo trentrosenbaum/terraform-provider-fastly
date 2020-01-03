@@ -11,8 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-var WAFRef = "fastly_service_v1.foo"
-
 func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 
 	cases := []struct {
