@@ -209,9 +209,11 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	}
 
 	input := buildUpdateInput(d, latestVersion.ID, latestVersion.Number)
-	latestVersion, err = conn.UpdateWAFVersion(input)
-	if err != nil {
-		return err
+	if !input.IsEmpty() {
+		latestVersion, err = conn.UpdateWAFVersion(input)
+		if err != nil {
+			return err
+		}
 	}
 
 	if d.HasChange("rule") {
