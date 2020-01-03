@@ -186,6 +186,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 // this method calls update because the creation of the waf (within the service resource) automatically creates
 // the first waf version, and this makes both a create and an updating exactly the same operation.
 func resourceServiceWAFConfigurationV1Create(d *schema.ResourceData, meta interface{}) error {
+	d.SetId(d.Get("waf_id").(string))
 	return resourceServiceWAFConfigurationV1Update(d, meta)
 }
 
@@ -351,8 +352,6 @@ func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.U
 func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) error {
 
 	pairings := composePairings(version)
-
-	d.SetId(d.Get("waf_id").(string))
 	for k, v := range pairings {
 		var ok bool
 		switch t := reflect.TypeOf(v).String(); t {
