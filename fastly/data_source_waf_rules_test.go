@@ -52,7 +52,7 @@ func TestAccFastlyWAFRulesDetermineRevision(t *testing.T) {
 	for _, c := range cases {
 		out, err := determineLatestRuleRevision(c.remote)
 		if (err == nil) == c.Errored {
-			t.Fatalf("Error expected to be %v but wan't", c.Errored)
+			t.Fatalf("Error expected to be %v but wasn't", c.Errored)
 		}
 		if out == nil {
 			continue
