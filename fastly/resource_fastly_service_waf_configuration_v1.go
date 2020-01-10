@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"reflect"
 	"sort"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
@@ -69,6 +68,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 			"crs_validate_utf8_encoding": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "CRS validate UTF8 encoding.",
 			},
 			"error_anomaly_score": {
@@ -183,6 +183,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 // this method calls update because the creation of the waf (within the service resource) automatically creates
 // the first waf version, and this makes both a create and an updating exactly the same operation.
 func resourceServiceWAFConfigurationV1Create(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] creating configuration for WAF: %s", d.Get("waf_id").(string))
 	return resourceServiceWAFConfigurationV1Update(d, meta)
 }
 
@@ -195,6 +196,7 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	}
 
 	wafID := d.Get("waf_id").(string)
+	log.Printf("[INFO] updating configuration for WAF: %s", wafID)
 	if latestVersion.Locked {
 		latestVersion, err = conn.CloneWAFVersion(&gofastly.CloneWAFVersionInput{
 			WAFID:            wafID,
@@ -234,11 +236,9 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return err
 	}
-	log.Printf("[DEBUG] latest WAF version is %d", latestVersion.Number)
 
-	if err = refreshWAFConfig(d, latestVersion); err != nil {
-		return err
-	}
+	log.Printf("[INFO] retrieving WAF version number: %d", latestVersion.Number)
+	refreshWAFConfig(d, latestVersion)
 
 	if err := readWAFRules(meta, d, latestVersion.Number); err != nil {
 		return err
@@ -251,6 +251,7 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	conn := meta.(*FastlyClient).conn
 
 	wafID := d.Get("waf_id").(string)
+	log.Printf("[INFO] destroying configuration by creating empty version of WAF: %s", wafID)
 	emptyVersion, err := conn.CreateEmptyWAFVersion(&gofastly.CreateEmptyWAFVersionInput{
 		WAFID: wafID,
 	})
@@ -265,6 +266,7 @@ func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interf
 	if err != nil {
 		return err
 	}
+	d.SetId("")
 	return nil
 }
 
@@ -287,100 +289,190 @@ func getLatestVersion(d *schema.ResourceData, meta interface{}) (*gofastly.WAFVe
 }
 
 func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.UpdateWAFVersionInput {
-	return &gofastly.UpdateWAFVersionInput{
-		WAFVersionID:                     id,
-		WAFVersionNumber:                 number,
-		WAFID:                            d.Get("waf_id").(string),
-		AllowedHTTPVersions:              d.Get("allowed_http_versions").(string),
-		AllowedMethods:                   d.Get("allowed_methods").(string),
-		AllowedRequestContentType:        d.Get("allowed_request_content_type").(string),
-		AllowedRequestContentTypeCharset: d.Get("allowed_request_content_type_charset").(string),
-		ArgLength:                        d.Get("arg_length").(int),
-		ArgNameLength:                    d.Get("arg_name_length").(int),
-		CombinedFileSizes:                d.Get("combined_file_sizes").(int),
-		CriticalAnomalyScore:             d.Get("critical_anomaly_score").(int),
-		CRSValidateUTF8Encoding:          d.Get("crs_validate_utf8_encoding").(bool),
-		ErrorAnomalyScore:                d.Get("error_anomaly_score").(int),
-		HighRiskCountryCodes:             d.Get("high_risk_country_codes").(string),
-		HTTPViolationScoreThreshold:      d.Get("http_violation_score_threshold").(int),
-		InboundAnomalyScoreThreshold:     d.Get("inbound_anomaly_score_threshold").(int),
-		LFIScoreThreshold:                d.Get("lfi_score_threshold").(int),
-		MaxFileSize:                      d.Get("max_file_size").(int),
-		MaxNumArgs:                       d.Get("max_num_args").(int),
-		NoticeAnomalyScore:               d.Get("notice_anomaly_score").(int),
-		ParanoiaLevel:                    d.Get("paranoia_level").(int),
-		PHPInjectionScoreThreshold:       d.Get("php_injection_score_threshold").(int),
-		RCEScoreThreshold:                d.Get("rce_score_threshold").(int),
-		RestrictedExtensions:             d.Get("restricted_extensions").(string),
-		RestrictedHeaders:                d.Get("restricted_headers").(string),
-		RFIScoreThreshold:                d.Get("rfi_score_threshold").(int),
-		SessionFixationScoreThreshold:    d.Get("session_fixation_score_threshold").(int),
-		SQLInjectionScoreThreshold:       d.Get("sql_injection_score_threshold").(int),
-		TotalArgLength:                   d.Get("total_arg_length").(int),
-		WarningAnomalyScore:              d.Get("warning_anomaly_score").(int),
-		XSSScoreThreshold:                d.Get("xss_score_threshold").(int),
+	input := &gofastly.UpdateWAFVersionInput{
+		WAFVersionID:     id,
+		WAFVersionNumber: number,
+		WAFID:            d.Get("waf_id").(string),
 	}
+	if v, ok := d.GetOk("allowed_http_versions"); ok {
+		input.AllowedHTTPVersions = v.(string)
+	}
+	if v, ok := d.GetOk("allowed_methods"); ok {
+		input.AllowedMethods = v.(string)
+	}
+	if v, ok := d.GetOk("allowed_methods"); ok {
+		input.AllowedMethods = v.(string)
+	}
+	if v, ok := d.GetOk("allowed_request_content_type"); ok {
+		input.AllowedRequestContentType = v.(string)
+	}
+	if v, ok := d.GetOk("allowed_request_content_type_charset"); ok {
+		input.AllowedRequestContentTypeCharset = v.(string)
+	}
+	if v, ok := d.GetOk("arg_length"); ok {
+		input.ArgLength = v.(int)
+	}
+	if v, ok := d.GetOk("arg_name_length"); ok {
+		input.ArgNameLength = v.(int)
+	}
+	if v, ok := d.GetOk("combined_file_sizes"); ok {
+		input.CombinedFileSizes = v.(int)
+	}
+	if v, ok := d.GetOk("critical_anomaly_score"); ok {
+		input.CriticalAnomalyScore = v.(int)
+	}
+	if v, ok := d.GetOkExists("crs_validate_utf8_encoding"); ok {
+		input.CRSValidateUTF8Encoding = v.(bool)
+	}
+	if v, ok := d.GetOk("error_anomaly_score"); ok {
+		input.ErrorAnomalyScore = v.(int)
+	}
+	if v, ok := d.GetOk("high_risk_country_codes"); ok {
+		input.HighRiskCountryCodes = v.(string)
+	}
+	if v, ok := d.GetOk("http_violation_score_threshold"); ok {
+		input.HTTPViolationScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("inbound_anomaly_score_threshold"); ok {
+		input.InboundAnomalyScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("lfi_score_threshold"); ok {
+		input.LFIScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("max_file_size"); ok {
+		input.MaxFileSize = v.(int)
+	}
+	if v, ok := d.GetOk("max_num_args"); ok {
+		input.MaxNumArgs = v.(int)
+	}
+	if v, ok := d.GetOk("notice_anomaly_score"); ok {
+		input.NoticeAnomalyScore = v.(int)
+	}
+	if v, ok := d.GetOk("paranoia_level"); ok {
+		input.ParanoiaLevel = v.(int)
+	}
+	if v, ok := d.GetOk("php_injection_score_threshold"); ok {
+		input.PHPInjectionScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("rce_score_threshold"); ok {
+		input.RCEScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("restricted_extensions"); ok {
+		input.RestrictedExtensions = v.(string)
+	}
+	if v, ok := d.GetOk("restricted_headers"); ok {
+		input.RestrictedHeaders = v.(string)
+	}
+	if v, ok := d.GetOk("rfi_score_threshold"); ok {
+		input.RFIScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("session_fixation_score_threshold"); ok {
+		input.SessionFixationScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("sql_injection_score_threshold"); ok {
+		input.SQLInjectionScoreThreshold = v.(int)
+	}
+	if v, ok := d.GetOk("total_arg_length"); ok {
+		input.TotalArgLength = v.(int)
+	}
+	if v, ok := d.GetOk("warning_anomaly_score"); ok {
+		input.WarningAnomalyScore = v.(int)
+	}
+	if v, ok := d.GetOk("xss_score_threshold"); ok {
+		input.XSSScoreThreshold = v.(int)
+	}
+	return input
 }
 
-func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) error {
-
-	pairings := composePairings(version)
+func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) {
 
 	d.SetId(version.ID)
-	for k, v := range pairings {
-		var ok bool
-		switch t := reflect.TypeOf(v).String(); t {
-		case "string":
-			if _, ok := d.GetOk(k); !ok || v.(string) == "" {
-				continue
-			}
-		case "int":
-			if _, ok := d.GetOk(k); !ok || v.(int) == 0 {
-				continue
-			}
-		case "bool":
-			if _, ok := d.GetOkExists(k); !ok {
-				continue
-			}
-		}
-		if err := d.Set(k, v); err != nil {
-			return err
-		}
-		log.Printf("[DEBUG] GetOk for %v is %v \n", k, ok)
+	if v, ok := d.GetOk("allowed_http_versions"); ok {
+		d.Set("allowed_http_versions", v)
 	}
-	return nil
-}
-
-func composePairings(version *gofastly.WAFVersion) map[string]interface{} {
-	return map[string]interface{}{
-		"allowed_http_versions":                version.AllowedHTTPVersions,
-		"allowed_methods":                      version.AllowedMethods,
-		"allowed_request_content_type":         version.AllowedRequestContentType,
-		"allowed_request_content_type_charset": version.AllowedRequestContentTypeCharset,
-		"arg_length":                           version.ArgLength,
-		"arg_name_length":                      version.ArgNameLength,
-		"combined_file_sizes":                  version.CombinedFileSizes,
-		"critical_anomaly_score":               version.CriticalAnomalyScore,
-		"crs_validate_utf8_encoding":           version.CRSValidateUTF8Encoding,
-		"error_anomaly_score":                  version.ErrorAnomalyScore,
-		"high_risk_country_codes":              version.HighRiskCountryCodes,
-		"http_violation_score_threshold":       version.HTTPViolationScoreThreshold,
-		"inbound_anomaly_score_threshold":      version.InboundAnomalyScoreThreshold,
-		"lfi_score_threshold":                  version.LFIScoreThreshold,
-		"max_file_size":                        version.MaxFileSize,
-		"max_num_args":                         version.MaxNumArgs,
-		"notice_anomaly_score":                 version.NoticeAnomalyScore,
-		"paranoia_level":                       version.ParanoiaLevel,
-		"php_injection_score_threshold":        version.PHPInjectionScoreThreshold,
-		"rce_score_threshold":                  version.RCEScoreThreshold,
-		"restricted_extensions":                version.RestrictedExtensions,
-		"restricted_headers":                   version.RestrictedHeaders,
-		"rfi_score_threshold":                  version.RFIScoreThreshold,
-		"session_fixation_score_threshold":     version.SessionFixationScoreThreshold,
-		"sql_injection_score_threshold":        version.SQLInjectionScoreThreshold,
-		"total_arg_length":                     version.TotalArgLength,
-		"warning_anomaly_score":                version.WarningAnomalyScore,
-		"xss_score_threshold":                  version.XSSScoreThreshold,
+	if v, ok := d.GetOk("allowed_methods"); ok {
+		d.Set("allowed_methods", v)
+	}
+	if v, ok := d.GetOk("allowed_methods"); ok {
+		d.Set("allowed_methods", v)
+	}
+	if v, ok := d.GetOk("allowed_request_content_type"); ok {
+		d.Set("allowed_request_content_type", v)
+	}
+	if v, ok := d.GetOk("allowed_request_content_type_charset"); ok {
+		d.Set("allowed_request_content_type_charset", v)
+	}
+	if v, ok := d.GetOk("arg_length"); ok {
+		d.Set("arg_length", v)
+	}
+	if v, ok := d.GetOk("arg_name_length"); ok {
+		d.Set("arg_name_length", v)
+	}
+	if v, ok := d.GetOk("combined_file_sizes"); ok {
+		d.Set("combined_file_sizes", v)
+	}
+	if v, ok := d.GetOk("critical_anomaly_score"); ok {
+		d.Set("critical_anomaly_score", v)
+	}
+	if v, ok := d.GetOk("crs_validate_utf8_encoding"); ok {
+		d.Set("crs_validate_utf8_encoding", v)
+	}
+	if v, ok := d.GetOk("error_anomaly_score"); ok {
+		d.Set("error_anomaly_score", v)
+	}
+	if v, ok := d.GetOk("high_risk_country_codes"); ok {
+		d.Set("high_risk_country_codes", v)
+	}
+	if v, ok := d.GetOk("http_violation_score_threshold"); ok {
+		d.Set("http_violation_score_threshold", v)
+	}
+	if v, ok := d.GetOk("inbound_anomaly_score_threshold"); ok {
+		d.Set("inbound_anomaly_score_threshold", v)
+	}
+	if v, ok := d.GetOk("lfi_score_threshold"); ok {
+		d.Set("lfi_score_threshold", v)
+	}
+	if v, ok := d.GetOk("max_file_size"); ok {
+		d.Set("max_file_size", v)
+	}
+	if v, ok := d.GetOk("max_num_args"); ok {
+		d.Set("max_num_args", v)
+	}
+	if v, ok := d.GetOk("notice_anomaly_score"); ok {
+		d.Set("notice_anomaly_score", v)
+	}
+	if v, ok := d.GetOk("paranoia_level"); ok {
+		d.Set("paranoia_level", v)
+	}
+	if v, ok := d.GetOk("php_injection_score_threshold"); ok {
+		d.Set("php_injection_score_threshold", v)
+	}
+	if v, ok := d.GetOk("rce_score_threshold"); ok {
+		d.Set("rce_score_threshold", v)
+	}
+	if v, ok := d.GetOk("restricted_extensions"); ok {
+		d.Set("restricted_extensions", v)
+	}
+	if v, ok := d.GetOk("restricted_headers"); ok {
+		d.Set("restricted_headers", v)
+	}
+	if v, ok := d.GetOk("rfi_score_threshold"); ok {
+		d.Set("rfi_score_threshold", v)
+	}
+	if v, ok := d.GetOk("session_fixation_score_threshold"); ok {
+		d.Set("session_fixation_score_threshold", v)
+	}
+	if v, ok := d.GetOk("sql_injection_score_threshold"); ok {
+		d.Set("sql_injection_score_threshold", v)
+	}
+	if v, ok := d.GetOk("total_arg_length"); ok {
+		d.Set("total_arg_length", v)
+	}
+	if v, ok := d.GetOk("warning_anomaly_score"); ok {
+		d.Set("warning_anomaly_score", v)
+	}
+	if v, ok := d.GetOk("xss_score_threshold"); ok {
+		d.Set("xss_score_threshold", v)
 	}
 }
 
