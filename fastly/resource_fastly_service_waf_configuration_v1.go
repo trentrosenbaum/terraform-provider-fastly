@@ -233,7 +233,12 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interface{}) error {
 
 	latestVersion, err := getLatestVersion(d, meta)
-	if err != nil {
+	if errRes, ok := err.(*gofastly.HTTPError); ok {
+		if errRes.StatusCode == 404 {
+			log.Printf("[DEBUG] WAF (%s) was not found - removing from state", d.Get("waf_id").(string))
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

@@ -43,6 +43,8 @@ func TestAccFastlyServiceWAFVersionV1FlattenWAFActiveRules(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -79,6 +81,8 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -137,6 +141,8 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1DeleteRules(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 

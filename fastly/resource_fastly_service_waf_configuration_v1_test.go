@@ -64,6 +64,8 @@ func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
@@ -86,6 +88,8 @@ func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
@@ -114,6 +118,8 @@ func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -147,6 +153,8 @@ func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1Delete(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)

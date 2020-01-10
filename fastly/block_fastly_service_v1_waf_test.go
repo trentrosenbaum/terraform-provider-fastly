@@ -62,6 +62,8 @@ func TestResourceFastlyFlattenWAF(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1WAFAdd(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	waf := composeWAF(condition, response, false)
@@ -83,6 +85,8 @@ func TestAccFastlyServiceV1WAFAdd(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1WAFAddAndRemove(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	waf := composeWAF(condition, response, false)
@@ -117,6 +121,8 @@ func TestAccFastlyServiceV1WAFAddAndRemove(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1WAFUpdateResponse(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	updateResponse := "UpdatedResponse"
@@ -147,6 +153,8 @@ func TestAccFastlyServiceV1WAFUpdateResponse(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1WAFUpdateCondition(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	updatedCondition := "UpdatedPrefetch"
@@ -177,6 +185,8 @@ func TestAccFastlyServiceV1WAFUpdateCondition(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1WAFDisableEnable(t *testing.T) {
+	t.Parallel()
+
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafEnabled := composeWAF(condition, response, false)
