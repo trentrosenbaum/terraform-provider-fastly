@@ -3,14 +3,14 @@ layout: "fastly"
 page_title: "Fastly: service_waf_configuration_v1"
 sidebar_current: "docs-fastly-resource-service-waf-configuration-v1"
 description: |-
-  Provides a Web Application Firewall configuration and rules that can be applied to a service. 
+  Provides a Web Application Firewall configuration and rules that can be applied to a service.
 ---
 
 -> **Note:** This page is about v1.1.0 and later of the Fastly terraform provider.
 
 # fastly_service_waf_configuration_v1
 
-Defines a set of Web Application Firewall configuration options that can be used to populate a service WAF.  This resource will populate a WAF with configuration and WAF rules and will track their state.
+Defines Web Application Firewall configuration options that can be used to populate a service waf. This resource will populate a WAF with configuration options and WAF rules and will track their state.
 
 
 ~> **Warning:** Terraform will take precedence over any changes you make in the UI or API. Such changes are likely to be reversed if you run Terraform again.    
@@ -47,7 +47,16 @@ resource "fastly_service_v1" "demo" {
   condition {
     name      = "Waf_Prefetch"
     type      = "PREFETCH"
-    statement = "req.url~+\"index.html\""
+    statement = "req.backend.is_origin"
+  }
+
+  # this condition will always be false
+  # adding it to the response object created below
+  # prevents Fastly from returning a 403 on all of your traffic
+  condition {
+    name      = "WAF_always_false"
+    statement = "false"
+    type      = "REQUEST"
   }
 
   response_object {
@@ -55,6 +64,7 @@ resource "fastly_service_v1" "demo" {
     status   = "403"
     response = "Forbidden"
     content  = "content2"
+    request_condition = "WAF_always_false"
   }
 
   waf {
@@ -91,7 +101,16 @@ resource "fastly_service_v1" "demo" {
   condition {
     name      = "Waf_Prefetch"
     type      = "PREFETCH"
-    statement = "req.url~+\"index.html\""
+    statement = "req.backend.is_origin"
+  }
+
+  # this condition will always be false
+  # adding it to the response object created below
+  # prevents Fastly from returning a 403 on all of your traffic
+  condition {
+    name      = "WAF_always_false"
+    statement = "false"
+    type      = "REQUEST"
   }
 
   response_object {
@@ -99,6 +118,7 @@ resource "fastly_service_v1" "demo" {
     status   = "403"
     response = "Forbidden"
     content  = "content2"
+    request_condition = "WAF_always_false"
   }
 
   waf {
@@ -150,7 +170,16 @@ resource "fastly_service_v1" "demo" {
   condition {
     name      = "Waf_Prefetch"
     type      = "PREFETCH"
-    statement = "req.url~+\"index.html\""
+    statement = "req.backend.is_origin"
+  }
+
+  # this condition will always be false
+  # adding it to the response object created below
+  # prevents Fastly from returning a 403 on all of your traffic
+  condition {
+    name      = "WAF_always_false"
+    statement = "false"
+    type      = "REQUEST"
   }
 
   response_object {
@@ -158,6 +187,7 @@ resource "fastly_service_v1" "demo" {
     status   = "403"
     response = "Forbidden"
     content  = "content2"
+    request_condition = "WAF_always_false"
   }
 
   waf {
@@ -223,7 +253,16 @@ resource "fastly_service_v1" "demo" {
   condition {
     name      = "Waf_Prefetch"
     type      = "PREFETCH"
-    statement = "req.url~+\"index.html\""
+    statement = "req.backend.is_origin"
+  }
+
+  # this condition will always be false
+  # adding it to the response object created below
+  # prevents Fastly from returning a 403 on all of your traffic
+  condition {
+    name      = "WAF_always_false"
+    statement = "false"
+    type      = "REQUEST"
   }
 
   response_object {
@@ -231,6 +270,7 @@ resource "fastly_service_v1" "demo" {
     status   = "403"
     response = "Forbidden"
     content  = "content2"
+    request_condition = "WAF_always_false"
   }
 
   waf {
@@ -318,6 +358,4 @@ The following is an example of the Terraform state command to remove the resourc
 
 ```
 $ terraform state rm fastly_service_waf_configuration_v1.waf
-``` 
-
- 
+```
