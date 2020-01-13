@@ -305,9 +305,6 @@ func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.U
 	if v, ok := d.GetOk("allowed_methods"); ok {
 		input.AllowedMethods = v.(string)
 	}
-	if v, ok := d.GetOk("allowed_methods"); ok {
-		input.AllowedMethods = v.(string)
-	}
 	if v, ok := d.GetOk("allowed_request_content_type"); ok {
 		input.AllowedRequestContentType = v.(string)
 	}
@@ -391,93 +388,89 @@ func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.U
 
 func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) {
 
-	d.SetId(version.ID)
-	if v, ok := d.GetOk("allowed_http_versions"); ok {
-		d.Set("allowed_http_versions", v)
+	if _, ok := d.GetOk("allowed_http_versions"); ok {
+		d.Set("allowed_http_versions", version.AllowedHTTPVersions)
 	}
-	if v, ok := d.GetOk("allowed_methods"); ok {
-		d.Set("allowed_methods", v)
+	if _, ok := d.GetOk("allowed_methods"); ok {
+		d.Set("allowed_methods", version.AllowedMethods)
 	}
-	if v, ok := d.GetOk("allowed_methods"); ok {
-		d.Set("allowed_methods", v)
+	if _, ok := d.GetOk("allowed_request_content_type"); ok {
+		d.Set("allowed_request_content_type", version.AllowedRequestContentType)
 	}
-	if v, ok := d.GetOk("allowed_request_content_type"); ok {
-		d.Set("allowed_request_content_type", v)
+	if _, ok := d.GetOk("allowed_request_content_type_charset"); ok {
+		d.Set("allowed_request_content_type_charset", version.AllowedRequestContentTypeCharset)
 	}
-	if v, ok := d.GetOk("allowed_request_content_type_charset"); ok {
-		d.Set("allowed_request_content_type_charset", v)
+	if _, ok := d.GetOk("arg_length"); ok {
+		d.Set("arg_length", version.ArgLength)
 	}
-	if v, ok := d.GetOk("arg_length"); ok {
-		d.Set("arg_length", v)
+	if _, ok := d.GetOk("arg_name_length"); ok {
+		d.Set("arg_name_length", version.ArgNameLength)
 	}
-	if v, ok := d.GetOk("arg_name_length"); ok {
-		d.Set("arg_name_length", v)
+	if _, ok := d.GetOk("combined_file_sizes"); ok {
+		d.Set("combined_file_sizes", version.CombinedFileSizes)
 	}
-	if v, ok := d.GetOk("combined_file_sizes"); ok {
-		d.Set("combined_file_sizes", v)
+	if _, ok := d.GetOk("critical_anomaly_score"); ok {
+		d.Set("critical_anomaly_score", version.CriticalAnomalyScore)
 	}
-	if v, ok := d.GetOk("critical_anomaly_score"); ok {
-		d.Set("critical_anomaly_score", v)
+	if _, ok := d.GetOk("crs_validate_utf8_encoding"); ok {
+		d.Set("crs_validate_utf8_encoding", version.CRSValidateUTF8Encoding)
 	}
-	if v, ok := d.GetOk("crs_validate_utf8_encoding"); ok {
-		d.Set("crs_validate_utf8_encoding", v)
+	if _, ok := d.GetOk("error_anomaly_score"); ok {
+		d.Set("error_anomaly_score", version.ErrorAnomalyScore)
 	}
-	if v, ok := d.GetOk("error_anomaly_score"); ok {
-		d.Set("error_anomaly_score", v)
+	if _, ok := d.GetOk("high_risk_country_codes"); ok {
+		d.Set("high_risk_country_codes", version.HighRiskCountryCodes)
 	}
-	if v, ok := d.GetOk("high_risk_country_codes"); ok {
-		d.Set("high_risk_country_codes", v)
+	if _, ok := d.GetOk("http_violation_score_threshold"); ok {
+		d.Set("http_violation_score_threshold", version.HTTPViolationScoreThreshold)
 	}
-	if v, ok := d.GetOk("http_violation_score_threshold"); ok {
-		d.Set("http_violation_score_threshold", v)
+	if _, ok := d.GetOk("inbound_anomaly_score_threshold"); ok {
+		d.Set("inbound_anomaly_score_threshold", version.InboundAnomalyScoreThreshold)
 	}
-	if v, ok := d.GetOk("inbound_anomaly_score_threshold"); ok {
-		d.Set("inbound_anomaly_score_threshold", v)
+	if _, ok := d.GetOk("lfi_score_threshold"); ok {
+		d.Set("lfi_score_threshold", version.LFIScoreThreshold)
 	}
-	if v, ok := d.GetOk("lfi_score_threshold"); ok {
-		d.Set("lfi_score_threshold", v)
+	if _, ok := d.GetOk("max_file_size"); ok {
+		d.Set("max_file_size", version.MaxFileSize)
 	}
-	if v, ok := d.GetOk("max_file_size"); ok {
-		d.Set("max_file_size", v)
+	if _, ok := d.GetOk("max_num_args"); ok {
+		d.Set("max_num_args", version.MaxNumArgs)
 	}
-	if v, ok := d.GetOk("max_num_args"); ok {
-		d.Set("max_num_args", v)
+	if _, ok := d.GetOk("notice_anomaly_score"); ok {
+		d.Set("notice_anomaly_score", version.NoticeAnomalyScore)
 	}
-	if v, ok := d.GetOk("notice_anomaly_score"); ok {
-		d.Set("notice_anomaly_score", v)
+	if _, ok := d.GetOk("paranoia_level"); ok {
+		d.Set("paranoia_level", version.ParanoiaLevel)
 	}
-	if v, ok := d.GetOk("paranoia_level"); ok {
-		d.Set("paranoia_level", v)
+	if _, ok := d.GetOk("php_injection_score_threshold"); ok {
+		d.Set("php_injection_score_threshold", version.PHPInjectionScoreThreshold)
 	}
-	if v, ok := d.GetOk("php_injection_score_threshold"); ok {
-		d.Set("php_injection_score_threshold", v)
+	if _, ok := d.GetOk("rce_score_threshold"); ok {
+		d.Set("rce_score_threshold", version.RCEScoreThreshold)
 	}
-	if v, ok := d.GetOk("rce_score_threshold"); ok {
-		d.Set("rce_score_threshold", v)
+	if _, ok := d.GetOk("restricted_extensions"); ok {
+		d.Set("restricted_extensions", version.RestrictedExtensions)
 	}
-	if v, ok := d.GetOk("restricted_extensions"); ok {
-		d.Set("restricted_extensions", v)
+	if _, ok := d.GetOk("restricted_headers"); ok {
+		d.Set("restricted_headers", version.RestrictedHeaders)
 	}
-	if v, ok := d.GetOk("restricted_headers"); ok {
-		d.Set("restricted_headers", v)
+	if _, ok := d.GetOk("rfi_score_threshold"); ok {
+		d.Set("rfi_score_threshold", version.RFIScoreThreshold)
 	}
-	if v, ok := d.GetOk("rfi_score_threshold"); ok {
-		d.Set("rfi_score_threshold", v)
+	if _, ok := d.GetOk("session_fixation_score_threshold"); ok {
+		d.Set("session_fixation_score_threshold", version.SessionFixationScoreThreshold)
 	}
-	if v, ok := d.GetOk("session_fixation_score_threshold"); ok {
-		d.Set("session_fixation_score_threshold", v)
+	if _, ok := d.GetOk("sql_injection_score_threshold"); ok {
+		d.Set("sql_injection_score_threshold", version.SQLInjectionScoreThreshold)
 	}
-	if v, ok := d.GetOk("sql_injection_score_threshold"); ok {
-		d.Set("sql_injection_score_threshold", v)
+	if _, ok := d.GetOk("total_arg_length"); ok {
+		d.Set("total_arg_length", version.TotalArgLength)
 	}
-	if v, ok := d.GetOk("total_arg_length"); ok {
-		d.Set("total_arg_length", v)
+	if _, ok := d.GetOk("warning_anomaly_score"); ok {
+		d.Set("warning_anomaly_score", version.WarningAnomalyScore)
 	}
-	if v, ok := d.GetOk("warning_anomaly_score"); ok {
-		d.Set("warning_anomaly_score", v)
-	}
-	if v, ok := d.GetOk("xss_score_threshold"); ok {
-		d.Set("xss_score_threshold", v)
+	if _, ok := d.GetOk("xss_score_threshold"); ok {
+		d.Set("xss_score_threshold", version.XSSScoreThreshold)
 	}
 }
 
