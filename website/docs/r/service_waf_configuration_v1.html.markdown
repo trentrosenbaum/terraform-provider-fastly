@@ -341,7 +341,7 @@ The `rule` block supports:
 
 * `status` - (Required) The Web Application Firewall rule's status. Allowed values are (log, block and score).
 * `modsec_rule_id` - (Required) The Web Application Firewall rule's modsecurity ID.
-* `revision` - (Required) The Web Application Firewall rule's revision.
+* `revision` - (Optional) The Web Application Firewall rule's revision.
 
 
 ## Import
