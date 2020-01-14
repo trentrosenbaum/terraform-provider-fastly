@@ -69,6 +69,7 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 			"crs_validate_utf8_encoding": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "CRS validate UTF8 encoding.",
 			},
 			"error_anomaly_score": {
