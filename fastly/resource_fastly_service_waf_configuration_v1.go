@@ -329,7 +329,7 @@ func buildUpdateInput(d *schema.ResourceData, id string, number int) *gofastly.U
 	}
 }
 
-func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) error {
+func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) {
 
 	pairings := composePairings(version)
 
@@ -350,12 +350,9 @@ func refreshWAFConfig(d *schema.ResourceData, version *gofastly.WAFVersion) erro
 				continue
 			}
 		}
-		if err := d.Set(k, v); err != nil {
-			return err
-		}
+		d.Set(k, v)
 		log.Printf("[DEBUG] GetOk for %v is %v \n", k, ok)
 	}
-	return nil
 }
 
 func composePairings(version *gofastly.WAFVersion) map[string]interface{} {
