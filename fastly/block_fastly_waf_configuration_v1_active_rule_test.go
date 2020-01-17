@@ -43,8 +43,6 @@ func TestAccFastlyServiceWAFVersionV1FlattenWAFActiveRules(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -64,7 +62,7 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 	rulesTF := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules)
 	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,
@@ -81,8 +79,6 @@ func TestAccFastlyServiceWAFVersionV1AddWithRules(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -117,7 +113,7 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 	rulesTF2 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules2)
 	wafVer2 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF2)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,
@@ -141,8 +137,6 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1DeleteRules(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -172,7 +166,7 @@ func TestAccFastlyServiceWAFVersionV1DeleteRules(t *testing.T) {
 	rulesTF2 := testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules2)
 	wafVer2 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, rulesTF2)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,

@@ -64,14 +64,12 @@ func TestAccFastlyServiceWAFVersionV1DetermineVersion(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
 	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,
@@ -88,14 +86,12 @@ func TestAccFastlyServiceWAFVersionV1Add(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
 	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,
@@ -118,8 +114,6 @@ func TestAccFastlyServiceWAFVersionV1AddExistingService(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
@@ -129,7 +123,7 @@ func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
 	wafVerInput2 := testAccFastlyServiceWAFVersionV1BuildConfig(22)
 	wafVer2 := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput2, "")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,
@@ -153,14 +147,12 @@ func TestAccFastlyServiceWAFVersionV1Update(t *testing.T) {
 }
 
 func TestAccFastlyServiceWAFVersionV1Delete(t *testing.T) {
-	t.Parallel()
-
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
 	wafVer := testAccFastlyServiceWAFVersionV1ComposeConfiguration(wafVerInput, "")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckServiceV1Destroy,
