@@ -26,6 +26,7 @@ var activeRule = &schema.Schema{
 			"revision": {
 				Type:        schema.TypeInt,
 				Optional:    true,
+				Computed:    true,
 				Description: "The Web Application Firewall rule's revision.",
 			},
 		},
@@ -47,7 +48,12 @@ func updateRules(d *schema.ResourceData, meta interface{}, wafID string, Number 
 	oss := os.(*schema.Set)
 	nss := ns.(*schema.Set)
 
-	remove := oss.Difference(nss).List()
+	removeDiff := oss.Difference(nss)
+	intersec := oss.Intersection(nss).List()
+	for _, entry := range intersec {
+		removeDiff.Remove(entry)
+	}
+	remove := removeDiff.List()
 	add := nss.Difference(oss).List()
 
 	log.Print("[INFO] WAF rules update")

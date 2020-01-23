@@ -84,6 +84,11 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 
 	rules1 := []gofastly.WAFActiveRule{
 		{
+			ModSecID: 1010090,
+			Status:   "log",
+			Revision: 1,
+		},
+		{
 			ModSecID: 2029718,
 			Status:   "log",
 			Revision: 1,
@@ -95,6 +100,11 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 		},
 	}
 	rules2 := []gofastly.WAFActiveRule{
+		{
+			ModSecID: 1010080,
+			Status:   "block",
+			Revision: 1,
+		},
 		{
 			ModSecID: 2029718,
 			Status:   "block",
