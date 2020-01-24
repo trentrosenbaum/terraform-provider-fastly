@@ -353,7 +353,7 @@ func testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules []gofastly.WAFAc
 		rule := fmt.Sprintf(`
           rule {
             modsec_rule_id = %d
-			revision = %d
+            revision = %d
             status = "%s"
           }`, r.ModSecID, r.Revision, r.Status)
 		result = result + rule
