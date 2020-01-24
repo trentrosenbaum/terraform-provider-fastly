@@ -45,7 +45,7 @@ func TestAccFastlyServiceWAFVersionV1FlattenWAFActiveRules(t *testing.T) {
 	}
 }
 
-func hash(v interface{}) int {
+func testHashFunc(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
 	buf.WriteString(fmt.Sprintf("%d-", m["modsec_rule_id"].(int)))
@@ -79,18 +79,18 @@ func TestAccFastlyServiceWAFVersionV1FlattenWAFDeleteByModSecID(t *testing.T) {
 	}{
 		{
 			add:      []interface{}{},
-			remove:   schema.NewSet(hash, []interface{}{}),
-			expected: schema.NewSet(hash, []interface{}{}),
+			remove:   schema.NewSet(testHashFunc, []interface{}{}),
+			expected: schema.NewSet(testHashFunc, []interface{}{}),
 		},
 		{
 			add:      add,
-			remove:   schema.NewSet(hash, []interface{}{}),
-			expected: schema.NewSet(hash, []interface{}{}),
+			remove:   schema.NewSet(testHashFunc, []interface{}{}),
+			expected: schema.NewSet(testHashFunc, []interface{}{}),
 		},
 		{
 			add:      add,
-			remove:   schema.NewSet(hash, remove),
-			expected: schema.NewSet(hash, expected),
+			remove:   schema.NewSet(testHashFunc, remove),
+			expected: schema.NewSet(testHashFunc, expected),
 		},
 	}
 	for _, c := range cases {
