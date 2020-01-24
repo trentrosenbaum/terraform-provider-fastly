@@ -45,13 +45,6 @@ func TestAccFastlyServiceWAFVersionV1FlattenWAFActiveRules(t *testing.T) {
 	}
 }
 
-func testHashFunc(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%d-", m["modsec_rule_id"].(int)))
-	return hashcode.String(buf.String())
-}
-
 func TestAccFastlyServiceWAFVersionV1FlattenWAFDeleteByModSecID(t *testing.T) {
 
 	addInput := []map[string]interface{}{{"modsec_rule_id": 1}, {"modsec_rule_id": 12}, {"modsec_rule_id": 123}}
@@ -359,4 +352,11 @@ func testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules []gofastly.WAFAc
 		result = result + rule
 	}
 	return result
+}
+
+func testHashFunc(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%d-", m["modsec_rule_id"].(int)))
+	return hashcode.String(buf.String())
 }
