@@ -48,13 +48,8 @@ func updateRules(d *schema.ResourceData, meta interface{}, wafID string, Number 
 	oss := os.(*schema.Set)
 	nss := ns.(*schema.Set)
 
-	removeDiff := oss.Difference(nss)
-	intersec := oss.Intersection(nss).List()
-	for _, entry := range intersec {
-		removeDiff.Remove(entry)
-	}
-	remove := removeDiff.List()
 	add := nss.Difference(oss).List()
+	remove := deleteByModSecID(oss.Difference(nss), add).List()
 
 	log.Print("[INFO] WAF rules update")
 	if len(remove) > 0 {
@@ -178,4 +173,25 @@ func flattenWAFActiveRules(rules []*gofastly.WAFActiveRule) []map[string]interfa
 		rl[i] = ruleMapString
 	}
 	return rl
+}
+
+func deleteByModSecID(remove *schema.Set, add []interface{}) *schema.Set {
+
+	modSecIDs := make(map[int]interface{}, remove.Len())
+	result := schema.CopySet(remove)
+
+	for _, rv := range remove.List() {
+		r := rv.(map[string]interface{})
+		modSecIDs[r["modsec_rule_id"].(int)] = r
+	}
+
+	if len(modSecIDs) > 0 {
+		for _, av := range add {
+			a := av.(map[string]interface{})
+			if v, ok := modSecIDs[a["modsec_rule_id"].(int)]; ok {
+				result.Remove(v)
+			}
+		}
+	}
+	return result
 }
