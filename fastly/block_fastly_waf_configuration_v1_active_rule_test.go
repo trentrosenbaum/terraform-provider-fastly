@@ -145,34 +145,34 @@ func TestAccFastlyServiceWAFVersionV1UpdateRules(t *testing.T) {
 		{
 			ModSecID: 1010090,
 			Status:   "log",
-			//Revision: 1,
+			Revision: 1,
 		},
 		{
 			ModSecID: 2029718,
 			Status:   "log",
-			//Revision: 1,
+			Revision: 1,
 		},
 		{
 			ModSecID: 2037405,
 			Status:   "log",
-			//Revision: 1,
+			Revision: 1,
 		},
 	}
 	rules2 := []gofastly.WAFActiveRule{
 		{
 			ModSecID: 1010080,
 			Status:   "block",
-			//Revision: 1,
+			Revision: 1,
 		},
 		{
 			ModSecID: 2029718,
 			Status:   "block",
-			//Revision: 1,
+			Revision: 1,
 		},
 		{
 			ModSecID: 2037405,
 			Status:   "block",
-			//Revision: 1,
+			Revision: 1,
 		},
 	}
 	wafVerInput := testAccFastlyServiceWAFVersionV1BuildConfig(20)
@@ -353,8 +353,9 @@ func testAccCheckFastlyServiceWAFVersionV1ComposeWAFRules(rules []gofastly.WAFAc
 		rule := fmt.Sprintf(`
           rule {
             modsec_rule_id = %d
+			revision = %d
             status = "%s"
-          }`, r.ModSecID, r.Status)
+          }`, r.ModSecID, r.Revision, r.Status)
 		result = result + rule
 	}
 	return result
