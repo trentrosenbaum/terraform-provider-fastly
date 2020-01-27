@@ -175,7 +175,7 @@ func flattenWAFActiveRules(rules []*gofastly.WAFActiveRule) []map[string]interfa
 	return rl
 }
 
-// deleteByModSecID makes a copy of the argument "remove" and removes any common (with the same modsec_rule_id) elements with argument "add"
+// deleteByModSecID returns a copy of the argument "remove" with all common (with the same modsec_rule_id) elements with argument "add" removed.
 func deleteByModSecID(remove *schema.Set, add []interface{}) *schema.Set {
 
 	modSecIDs := make(map[int]interface{}, remove.Len())
