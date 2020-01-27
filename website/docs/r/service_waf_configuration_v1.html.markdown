@@ -395,7 +395,7 @@ variable "type_status" {
     strict    = "log"
   }
 }
-# this variable is used for individual rule configuration
+# This variable is used for individual rule configuration.
 variable "individual_rules" {
   type = map(string)
   default = {
