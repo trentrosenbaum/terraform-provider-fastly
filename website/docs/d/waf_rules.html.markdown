@@ -137,6 +137,8 @@ resource "fastly_service_waf_configuration_v1" "waf" {
 
 * `rules` - The Web Application Firewall's rules result set.
 
+~> **Warning:** Deprecated rules will not be present on this data source's result set.
+
 The `rules` block supports:
 
 * `modsec_rule_id` - The rule's modsecurity ID.
