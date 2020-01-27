@@ -466,6 +466,10 @@ resource "fastly_service_waf_configuration_v1" "waf" {
     }
   }
 }
+// This output contains the WAF's active rules set. This can be used for identifying which revision is active for each WAF rule.
+output "rules" {
+  value = fastly_service_waf_configuration_v1.waf.rule
+}
 ```
 
 ## Argument Reference
