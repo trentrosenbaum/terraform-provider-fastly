@@ -213,7 +213,7 @@ resource "fastly_service_waf_configuration_v1" "waf" {
 Usage with support for individual rule configuration (this is the suggested pattern):
 
 ```hcl
-// this variable is used for rule configuration in bulk
+# this variable is used for rule configuration in bulk
 variable "type_status" {
   type = map(string)
   default = {
@@ -222,7 +222,7 @@ variable "type_status" {
     strict    = "log"
   }
 }
-// this variable is used for individual rule configuration
+# this variable is used for individual rule configuration
 variable "individual_rules" {
   type = map(string)
   default = {
@@ -289,7 +289,7 @@ resource "fastly_service_waf_configuration_v1" "waf" {
     content {
       modsec_rule_id = rule.value.modsec_rule_id
       revision       = rule.value.latest_revision_number
-      // Nested lookups in order to apply a combination of in bulk and individual rule configuration.
+      # Nested lookups in order to apply a combination of in bulk and individual rule configuration.
       status         = lookup(var.individual_rules, rule.value.modsec_rule_id, lookup(var.type_status, rule.value.type, "log"))
     }
   }
@@ -299,7 +299,7 @@ resource "fastly_service_waf_configuration_v1" "waf" {
 Usage with support for specific rule revision configuration:
 
 ```hcl
-// this variable is used for rule configuration in bulk
+# this variable is used for rule configuration in bulk
 variable "type_status" {
   type = map(string)
   default = {
@@ -309,11 +309,11 @@ variable "type_status" {
   }
 }
 
-// This variable is used for individual rule revision configuration.
+# This variable is used for individual rule revision configuration.
 variable "specific_rule_revisions" {
   type = map(string)
   default = {
-    //  If the revision requested is not found, the server will return a 404 response code.
+    #  If the revision requested is not found, the server will return a 404 response code.
     1010020 = 1
   }
 }
@@ -386,7 +386,7 @@ resource "fastly_service_waf_configuration_v1" "waf" {
 Usage omitting rule revision field. The first time terraform is applied, the latest rule revisions is associated with the WAF. Any subsequent apply would not alter the rule revisions.
 
 ```hcl
-// this variable is used for rule configuration in bulk
+# this variable is used for rule configuration in bulk
 variable "type_status" {
   type = map(string)
   default = {
@@ -395,7 +395,7 @@ variable "type_status" {
     strict    = "log"
   }
 }
-// this variable is used for individual rule configuration
+# this variable is used for individual rule configuration
 variable "individual_rules" {
   type = map(string)
   default = {
@@ -461,12 +461,12 @@ resource "fastly_service_waf_configuration_v1" "waf" {
     for_each = data.fastly_waf_rules.owasp.rules
     content {
       modsec_rule_id = rule.value.modsec_rule_id
-      // Rule revision field ommitted.
+      # Rule revision field ommitted.
       status         = lookup(var.individual_rules, rule.value.modsec_rule_id, lookup(var.type_status, rule.value.type, "log"))
     }
   }
 }
-// This output contains the WAF's active rules set. This can be used for identifying which revision is active for each WAF rule.
+# This output contains the WAF's active rules set. This can be used for identifying which revision is active for each WAF rule.
 output "rules" {
   value = fastly_service_waf_configuration_v1.waf.rule
 }
