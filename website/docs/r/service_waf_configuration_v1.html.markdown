@@ -386,7 +386,7 @@ resource "fastly_service_waf_configuration_v1" "waf" {
 Usage omitting rule revision field. The first time Terraform is applied, the latest rule revisions are associated with the WAF. Any subsequent apply would not alter the rule revisions.
 
 ```hcl
-# this variable is used for rule configuration in bulk
+# This variable is used for rule configuration in bulk.
 variable "type_status" {
   type = map(string)
   default = {
