@@ -33,7 +33,7 @@ func TestResourceFastlyFlattenAcl(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		out := flattenACLs(c.remote)
+		out := aclFlatten(c.remote)
 		if !reflect.DeepEqual(out, c.local) {
 			t.Fatalf("Error matching:\nexpected: %#v\ngot: %#v", c.local, out)
 		}
