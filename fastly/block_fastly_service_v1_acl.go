@@ -82,3 +82,24 @@ func aclProcess(d *schema.ResourceData, conn *gofastly.Client, latestVersion int
 	}
 	return nil
 }
+
+
+func aclRead(conn *gofastly.Client, d *schema.ResourceData, s *gofastly.ServiceDetail) error {
+
+	log.Printf("[DEBUG] Refreshing ACLs for (%s)", d.Id())
+	aclList, err := conn.ListACLs(&gofastly.ListACLsInput{
+		Service: d.Id(),
+		Version: s.ActiveVersion.Number,
+	})
+	if err != nil {
+		return fmt.Errorf("[ERR] Error looking up ACLs for (%s), version (%v): %s", d.Id(), s.ActiveVersion.Number, err)
+	}
+
+	al := aclFlatten(aclList)
+
+	if err := d.Set("acl", al); err != nil {
+		log.Printf("[WARN] Error setting ACLs for (%s): %s", d.Id(), err)
+	}
+
+	return nil
+}
