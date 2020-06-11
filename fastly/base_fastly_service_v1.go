@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-
 // SERVICE ATTRIBUTE
 
 type ServiceAttributeDefinition interface {
@@ -27,5 +26,3 @@ func (h *DefaultServiceAttributeHandler) GetKey() string {
 func (h *DefaultServiceAttributeHandler) GetSchema() *schema.Schema {
 	return h.schema
 }
-
-

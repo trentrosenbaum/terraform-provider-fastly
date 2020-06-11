@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-
 type BackendServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
@@ -22,7 +21,6 @@ func NewServiceBackend() ServiceAttributeDefinition {
 		},
 	}
 }
-
 
 var backendSchema = &schema.Schema{
 	Type:     schema.TypeSet,
