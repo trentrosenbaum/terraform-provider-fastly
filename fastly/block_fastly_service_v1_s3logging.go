@@ -9,6 +9,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+
+type S3LoggingServiceAttributeHandler struct {
+	*DefaultServiceAttributeHandler
+}
+
+func NewServiceS3Logging() ServiceAttributeDefinition {
+	return &S3LoggingServiceAttributeHandler{
+		&DefaultServiceAttributeHandler{
+			schema: s3loggingSchema,
+			key:    "s3logging",
+		},
+	}
+}
+
 var s3loggingSchema = &schema.Schema{
 	Type:     schema.TypeSet,
 	Optional: true,
@@ -121,7 +135,7 @@ var s3loggingSchema = &schema.Schema{
 	},
 }
 
-func processS3Logging(d *schema.ResourceData, conn *gofastly.Client, latestVersion int) error {
+func (h *S3LoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	os, ns := d.GetChange("s3logging")
 	if os == nil {
 		os = new(schema.Set)
@@ -212,7 +226,7 @@ func processS3Logging(d *schema.ResourceData, conn *gofastly.Client, latestVersi
 	return nil
 }
 
-func readS3Logging(conn *gofastly.Client, d *schema.ResourceData, s *gofastly.ServiceDetail) error {
+func (h *S3LoggingServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
 	log.Printf("[DEBUG] Refreshing S3 Logging for (%s)", d.Id())
 	s3List, err := conn.ListS3s(&gofastly.ListS3sInput{
 		Service: d.Id(),
