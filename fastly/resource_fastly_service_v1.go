@@ -12,6 +12,10 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
+var acl 			= NewServiceACL()
+var backend 		= NewServiceBackend()
+var bigquerylogging = NewServiceBigQueryLogging()
+
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceServiceV1Create,
@@ -100,7 +104,7 @@ func resourceServiceV1() *schema.Resource {
 			"papertrail":         papertrailSchema,
 			"sumologic":          sumologicSchema,
 			"gcslogging":         gcsloggingSchema,
-			"bigquerylogging":    bigqueryloggingSchema,
+			bigquerylogging.GetKey():    bigquerylogging.GetSchema(),
 			"syslog":             syslogSchema,
 			"logentries":         logentriesSchema,
 			"splunk":             splunkSchema,
@@ -179,7 +183,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		"s3logging",
 		"papertrail",
 		"gcslogging",
-		"bigquerylogging",
+		bigquerylogging.GetKey(),
 		"syslog",
 		"sumologic",
 		"logentries",
@@ -317,8 +321,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("backend") {
-			if err := processBackend(d, conn, latestVersion); err != nil {
+		if d.HasChange(backend.GetKey()) {
+			if err := backend.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -357,8 +361,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("bigquerylogging") {
-			if err := processBigQueryLogging(d, conn, latestVersion); err != nil {
+		if d.HasChange(bigquerylogging.GetKey()) {
+			if err := bigquerylogging.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -439,8 +443,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("acl") {
-			if err := processACL(d, conn, latestVersion); err != nil {
+		if d.HasChange(acl.GetKey()) {
+			if err := acl.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -566,7 +570,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := readGCSLogging(conn, d, s); err != nil {
 			return err
 		}
-		if err := readBigQueryLogging(conn, d, s); err != nil {
+		if err := bigquerylogging.Read(d, s, conn); err != nil {
 			return err
 		}
 		if err := readSyslog(conn, d, s); err != nil {
