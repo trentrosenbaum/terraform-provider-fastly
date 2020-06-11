@@ -125,7 +125,7 @@ func resourceServiceV1() *schema.Resource {
 	}
 
 	for _, a := range serviceAttributes{
-		s.Schema[a.GetKey()] = a.GetSchema()
+		a.Register(s)
 	}
 
 	return s

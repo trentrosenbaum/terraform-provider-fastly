@@ -15,32 +15,12 @@ type ACLServiceAttributeHandler struct {
 func NewServiceACL() ServiceAttributeDefinition {
 	return &ACLServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
-			schema: aclSchema,
 			key:    "acl",
 		},
 	}
 }
 
-var aclSchema = &schema.Schema{
-	Type:     schema.TypeSet,
-	Optional: true,
-	Elem: &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			// Required fields
-			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Unique name to refer to this ACL",
-			},
-			// Optional fields
-			"acl_id": {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "Generated acl id",
-			},
-		},
-	},
-}
+
 
 func (h *ACLServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	oldACLVal, newACLVal := d.GetChange("acl")
@@ -115,6 +95,33 @@ func (h *ACLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.Se
 
 	return nil
 }
+
+
+func (h *ACLServiceAttributeHandler) Register(s *schema.Resource) error {
+	s.Schema[h.GetKey()] = &schema.Schema{
+		Type:     schema.TypeSet,
+		Optional: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				// Required fields
+				"name": {
+					Type:        schema.TypeString,
+					Required:    true,
+					Description: "Unique name to refer to this ACL",
+				},
+				// Optional fields
+				"acl_id": {
+					Type:        schema.TypeString,
+					Computed:    true,
+					Description: "Generated acl id",
+				},
+			},
+		},
+	}
+	return nil
+}
+
+
 
 func flattenACLs(aclList []*gofastly.ACL) []map[string]interface{} {
 	var al []map[string]interface{}
