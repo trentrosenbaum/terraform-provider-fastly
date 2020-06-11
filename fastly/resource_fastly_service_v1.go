@@ -30,6 +30,7 @@ var httpslogging 		= NewServiceHTTPSLogging()
 var logentries	 		= NewServiceLogEntries()
 var papertrail	 		= NewServicePaperTrail()
 var requestsetting	 	= NewServiceRequestSetting()
+var responseobject	 	= NewServiceResponseObject()
 
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
@@ -125,7 +126,7 @@ func resourceServiceV1() *schema.Resource {
 			"splunk":             splunkSchema,
 			blobstoragelogging.GetKey(): blobstoragelogging.GetSchema(),
 			httpslogging.GetKey():       httpslogging.GetSchema(),
-			"response_object":    responseobjectSchema,
+			responseobject.GetKey():    responseobject.GetSchema(),
 			requestsetting.GetKey():    requestsetting.GetSchema(),
 			"vcl":                vclSchema,
 			"snippet":            snippetSchema,
@@ -198,7 +199,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		"splunk",
 		blobstoragelogging.GetKey(),
 		httpslogging.GetKey(),
-		"response_object",
+		responseobject.GetKey(),
 		condition.GetKey(),
 		requestsetting.GetKey(),
 		cachesetting.GetKey(),
@@ -396,8 +397,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("response_object") {
-			if err := processResponseObject(d, conn, latestVersion); err != nil {
+		if d.HasChange(responseobject.GetKey()) {
+			if err := responseobject.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -571,7 +572,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := httpslogging.Read(d, s, conn); err != nil {
 			return err
 		}
-		if err := readResponseObject(conn, d, s); err != nil {
+		if err := responseobject.Read(d, s, conn); err != nil {
 			return err
 		}
 		if err := condition.Read(d, s, conn); err != nil {
