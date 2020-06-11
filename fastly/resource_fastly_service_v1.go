@@ -12,11 +12,11 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
-var acl 			= NewServiceACL()
-var backend 		= NewServiceBackend()
-var bigquerylogging = NewServiceBigQueryLogging()
-var blobstoragelogging = NewServiceBlobStorageLogging()
-
+var acl 				= NewServiceACL()
+var backend 			= NewServiceBackend()
+var bigquerylogging 	= NewServiceBigQueryLogging()
+var blobstoragelogging 	= NewServiceBlobStorageLogging()
+var cachesetting 		= NewServiceCacheSetting()
 
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
@@ -96,7 +96,7 @@ func resourceServiceV1() *schema.Resource {
 
 			"domain":             domainSchema,
 			backend.GetKey():     backend.GetSchema(),
-			"cache_setting":      cachesettingSchema,
+			cachesetting.GetKey():      cachesetting.GetSchema(),
 			"condition":          conditionSchema,
 			"healthcheck":        healthcheckSchema,
 			"director":           directorSchema,
@@ -192,7 +192,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		"response_object",
 		"condition",
 		"request_setting",
-		"cache_setting",
+		cachesetting.GetKey(),
 		"snippet",
 		"dynamicsnippet",
 		"vcl",
@@ -427,8 +427,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("cache_setting") {
-			if err := processCacheSetting(d, conn, latestVersion); err != nil {
+		if d.HasChange(cachesetting.GetKey()) {
+			if err := cachesetting.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -598,7 +598,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := readDynamicSnippet(conn, d, s); err != nil {
 			return err
 		}
-		if err := readCacheSetting(conn, d, s); err != nil {
+		if err := cachesetting.Read(d, s, conn); err != nil {
 			return err
 		}
 		if err := readDictionary(conn, d, s); err != nil {
