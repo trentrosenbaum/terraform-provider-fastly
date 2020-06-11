@@ -27,7 +27,7 @@ var gzip 				= NewServiceGZIP()
 var header 				= NewServiceHeader()
 var healthcheck 		= NewServiceHealthCheck()
 var httpslogging 		= NewServiceHTTPSLogging()
-
+var logentries	 		= NewServiceLogEntries()
 
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
@@ -119,7 +119,7 @@ func resourceServiceV1() *schema.Resource {
 			gcslogging.GetKey():         gcslogging.GetSchema(),
 			bigquerylogging.GetKey():    bigquerylogging.GetSchema(),
 			"syslog":             syslogSchema,
-			"logentries":         logentriesSchema,
+			logentries.GetKey():         logentries.GetSchema(),
 			"splunk":             splunkSchema,
 			blobstoragelogging.GetKey(): blobstoragelogging.GetSchema(),
 			httpslogging.GetKey():       httpslogging.GetSchema(),
@@ -194,7 +194,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		bigquerylogging.GetKey(),
 		"syslog",
 		"sumologic",
-		"logentries",
+		logentries.GetKey(),
 		"splunk",
 		blobstoragelogging.GetKey(),
 		httpslogging.GetKey(),
@@ -378,8 +378,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("logentries") {
-			if err := processLogEntries(d, conn, latestVersion); err != nil {
+		if d.HasChange(logentries.GetKey()) {
+			if err := logentries.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -576,7 +576,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := readSyslog(conn, d, s); err != nil {
 			return err
 		}
-		if err := readLogEntries(conn, d, s); err != nil {
+		if err := logentries.Read(d, s, conn); err != nil {
 			return err
 		}
 		if err := readSplunk(conn, d, s); err != nil {
