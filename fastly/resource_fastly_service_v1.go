@@ -18,6 +18,8 @@ var bigquerylogging 	= NewServiceBigQueryLogging()
 var blobstoragelogging 	= NewServiceBlobStorageLogging()
 var cachesetting 		= NewServiceCacheSetting()
 var condition 			= NewServiceCondition()
+var dictionary 			= NewServiceDictionary()
+
 
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
@@ -122,7 +124,7 @@ func resourceServiceV1() *schema.Resource {
 			"snippet":        snippetSchema,
 			"dynamicsnippet": dynamicsnippetSchema,
 			acl.GetKey():         acl.GetSchema(),
-			"dictionary":     dictionarySchema,
+			dictionary.GetKey():         dictionary.GetSchema(),
 		},
 	}
 }
@@ -199,8 +201,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		"snippet",
 		"dynamicsnippet",
 		"vcl",
-		"acl",
-		"dictionary",
+		acl.GetKey(),
+		dictionary.GetKey(),
 	} {
 		if d.HasChange(v) {
 			needsChange = true
@@ -447,8 +449,8 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 				return err
 			}
 		}
-		if d.HasChange("dictionary") {
-			if err := processDictionary(d, conn, latestVersion); err != nil {
+		if d.HasChange(dictionary.GetKey()) {
+			if err := dictionary.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -611,7 +613,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := cachesetting.Read(d, s, conn); err != nil {
 			return err
 		}
-		if err := readDictionary(conn, d, s); err != nil {
+		if err := dictionary.Read(d, s, conn); err != nil {
 			return err
 		}
 
