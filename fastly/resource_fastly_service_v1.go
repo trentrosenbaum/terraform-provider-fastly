@@ -12,6 +12,8 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
+var acl = NewServiceACL()
+
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceServiceV1Create,
@@ -111,7 +113,7 @@ func resourceServiceV1() *schema.Resource {
 			"vcl":                vclSchema,
 			"snippet":            snippetSchema,
 			"dynamicsnippet":     dynamicsnippetSchema,
-			"acl":                aclSchema,
+			"acl":                acl.GetSchema(),
 			"dictionary":         dictionarySchema,
 		},
 	}
@@ -186,7 +188,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 		"snippet",
 		"dynamicsnippet",
 		"vcl",
-		"acl",
+		acl.GetKey(),
 		"dictionary",
 	} {
 		if d.HasChange(v) {
@@ -408,7 +410,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 		if d.HasChange("acl") {
-			if err := processACL(d, conn, latestVersion); err != nil {
+			if err := acl.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -564,7 +566,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := readVCL(conn, d, s); err != nil {
 			return err
 		}
-		if err := readACL(conn, d, s); err != nil {
+		if err := acl.Read(d, s, conn); err != nil {
 			return err
 		}
 		if err := readSnippet(conn, d, s); err != nil {
