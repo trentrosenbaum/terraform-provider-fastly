@@ -9,6 +9,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+
+type BackendServiceAttributeHandler struct {
+	*DefaultServiceAttributeHandler
+}
+
+func NewServiceBackend() ServiceAttributeDefinition {
+	return &BackendServiceAttributeHandler{
+		&DefaultServiceAttributeHandler{
+			schema: backendSchema,
+			key:    "backend",
+		},
+	}
+}
+
+
 var backendSchema = &schema.Schema{
 	Type:     schema.TypeSet,
 	Optional: true,
@@ -171,7 +186,7 @@ var backendSchema = &schema.Schema{
 	},
 }
 
-func processBackend(d *schema.ResourceData, conn *gofastly.Client, latestVersion int) error {
+func (h *BackendServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	ob, nb := d.GetChange("backend")
 	if ob == nil {
 		ob = new(schema.Set)
@@ -247,7 +262,7 @@ func processBackend(d *schema.ResourceData, conn *gofastly.Client, latestVersion
 	return nil
 }
 
-func readBackend(conn *gofastly.Client, d *schema.ResourceData, s *gofastly.ServiceDetail) error {
+func (h *BackendServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
 	log.Printf("[DEBUG] Refreshing Backends for (%s)", d.Id())
 	backendList, err := conn.ListBackends(&gofastly.ListBackendsInput{
 		Service: d.Id(),

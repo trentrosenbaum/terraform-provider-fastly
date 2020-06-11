@@ -12,6 +12,9 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
+var acl 	= NewServiceACL()
+var backend = NewServiceBackend()
+
 func resourceServiceV1() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceServiceV1Create,
@@ -89,7 +92,7 @@ func resourceServiceV1() *schema.Resource {
 			},
 
 			"domain":             domainSchema,
-			"backend":            backendSchema,
+			backend.GetKey():     backend.GetSchema(),
 			"cache_setting":      cachesettingSchema,
 			"condition":          conditionSchema,
 			"healthcheck":        healthcheckSchema,
@@ -105,19 +108,16 @@ func resourceServiceV1() *schema.Resource {
 			"logentries":         logentriesSchema,
 			"splunk":             splunkSchema,
 			"blobstoragelogging": blobstorageloggingSchema,
-
-			"httpslogging":          httpsloggingSchema,
+			"httpslogging":       httpsloggingSchema,
+			"response_object":    responseobjectSchema,
+			"request_setting":    requestsettingSchema,
+			"vcl":                vclSchema,
+			"snippet":            snippetSchema,
+			"dynamicsnippet":     dynamicsnippetSchema,
+			acl.GetKey():         acl.GetSchema(),
+			"dictionary":         dictionarySchema,
 			"logging_elasticsearch": elasticsearchSchema,
 			"logging_ftp":           ftpSchema,
-			"response_object":       responseobjectSchema,
-			"request_setting":       requestsettingSchema,
-
-			"vcl": vclSchema,
-
-			"snippet":        snippetSchema,
-			"dynamicsnippet": dynamicsnippetSchema,
-			"acl":            aclSchema,
-			"dictionary":     dictionarySchema,
 		},
 	}
 }
@@ -167,7 +167,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 	var needsChange bool
 	for _, v := range []string{
 		"domain",
-		"backend",
+		backend.GetKey(),
 		"default_host",
 		"default_ttl",
 		"director",
@@ -315,7 +315,7 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 		if d.HasChange("backend") {
-			if err := processBackend(d, conn, latestVersion); err != nil {
+			if err := backend.Process(d, latestVersion, conn); err != nil {
 				return err
 			}
 		}
@@ -529,7 +529,7 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		if err := readDomain(conn, d, s); err != nil {
 			return err
 		}
-		if err := readBackend(conn, d, s); err != nil {
+		if err := backend.Read(d, s, conn); err != nil {
 			return err
 		}
 		if err := readDirector(conn, d, s); err != nil {
