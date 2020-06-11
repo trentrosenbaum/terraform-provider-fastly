@@ -16,142 +16,11 @@ type HTTPSLoggingServiceAttributeHandler struct {
 func NewServiceHTTPSLogging() ServiceAttributeDefinition {
 	return &HTTPSLoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
-			schema: httpsloggingSchema,
 			key:    "httpslogging",
 		},
 	}
 }
 
-var httpsloggingSchema = &schema.Schema{
-	Type:     schema.TypeSet,
-	Optional: true,
-	Elem: &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			// Required fields
-			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "The unique name of the HTTPS logging endpoint",
-			},
-			"url": {
-				Type:         schema.TypeString,
-				Required:     true,
-				Description:  "URL that log data will be sent to. Must use the https protocol.",
-				ValidateFunc: validateHTTPSURL(),
-			},
-
-			// Optional fields
-			"request_max_entries": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "The maximum number of logs sent in one request.",
-			},
-
-			"request_max_bytes": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Description: "The maximum number of bytes sent in one request.",
-			},
-
-			"content_type": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Content-Type header sent with the request.",
-			},
-
-			"header_name": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Custom header sent with the request.",
-			},
-
-			"header_value": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Value of the custom header sent with the request.",
-			},
-
-			"method": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "POST",
-				Description:  "HTTP method used for request.",
-				ValidateFunc: validation.StringInSlice([]string{"POST", "PUT"}, false),
-			},
-
-			// NOTE: The `json_format` field's documented type is string, but it should likely be an integer.
-			"json_format": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "0",
-				Description:  "Formats log entries as JSON. Can be either disabled (`0`), array of json (`1`), or newline delimited json (`2`).",
-				ValidateFunc: validation.StringInSlice([]string{"0", "1", "2"}, false),
-			},
-
-			"tls_ca_cert": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "A secure certificate to authenticate the server with. Must be in PEM format.",
-				Sensitive:   true,
-			},
-
-			"tls_client_cert": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The client certificate used to make authenticated requests. Must be in PEM format.",
-				Sensitive:   true,
-			},
-
-			"tls_client_key": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The client private key used to make authenticated requests. Must be in PEM format.",
-				Sensitive:   true,
-			},
-
-			"tls_hostname": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The hostname used to verify the server's certificate. It can either be the Common Name (CN) or a Subject Alternative Name (SAN).",
-			},
-
-			"format": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Apache-style string or VCL variables to use for log formatting.",
-			},
-
-			"format_version": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Default:      2,
-				Description:  "The version of the custom logging format used for the configured endpoint. Can be either 1 or 2. (default: 2)",
-				ValidateFunc: validateLoggingFormatVersion(),
-			},
-
-			"message_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "blank",
-				Description:  "How the message should be formatted",
-				ValidateFunc: validateLoggingMessageType(),
-			},
-
-			"placement": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Description:  "Where in the generated VCL the logging call should be placed",
-				ValidateFunc: validateLoggingPlacement(),
-			},
-
-			"response_condition": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The name of the condition to apply",
-			},
-		},
-	},
-}
 
 func (h *HTTPSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
@@ -215,6 +84,140 @@ func (h *HTTPSLoggingServiceAttributeHandler) Read(d *schema.ResourceData, s *go
 		log.Printf("[WARN] Error setting HTTPS logging endpoints for (%s): %s", d.Id(), err)
 	}
 
+	return nil
+}
+
+func (h *HTTPSLoggingServiceAttributeHandler) Register(s *schema.Resource) error {
+	s.Schema[h.GetKey()] = &schema.Schema{
+		Type:     schema.TypeSet,
+		Optional: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				// Required fields
+				"name": {
+					Type:        schema.TypeString,
+					Required:    true,
+					Description: "The unique name of the HTTPS logging endpoint",
+				},
+				"url": {
+					Type:         schema.TypeString,
+					Required:     true,
+					Description:  "URL that log data will be sent to. Must use the https protocol.",
+					ValidateFunc: validateHTTPSURL(),
+				},
+
+				// Optional fields
+				"request_max_entries": {
+					Type:        schema.TypeInt,
+					Optional:    true,
+					Description: "The maximum number of logs sent in one request.",
+				},
+
+				"request_max_bytes": {
+					Type:        schema.TypeInt,
+					Optional:    true,
+					Description: "The maximum number of bytes sent in one request.",
+				},
+
+				"content_type": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "Content-Type header sent with the request.",
+				},
+
+				"header_name": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "Custom header sent with the request.",
+				},
+
+				"header_value": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "Value of the custom header sent with the request.",
+				},
+
+				"method": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Default:      "POST",
+					Description:  "HTTP method used for request.",
+					ValidateFunc: validation.StringInSlice([]string{"POST", "PUT"}, false),
+				},
+
+				// NOTE: The `json_format` field's documented type is string, but it should likely be an integer.
+				"json_format": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Default:      "0",
+					Description:  "Formats log entries as JSON. Can be either disabled (`0`), array of json (`1`), or newline delimited json (`2`).",
+					ValidateFunc: validation.StringInSlice([]string{"0", "1", "2"}, false),
+				},
+
+				"tls_ca_cert": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "A secure certificate to authenticate the server with. Must be in PEM format.",
+					Sensitive:   true,
+				},
+
+				"tls_client_cert": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The client certificate used to make authenticated requests. Must be in PEM format.",
+					Sensitive:   true,
+				},
+
+				"tls_client_key": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The client private key used to make authenticated requests. Must be in PEM format.",
+					Sensitive:   true,
+				},
+
+				"tls_hostname": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The hostname used to verify the server's certificate. It can either be the Common Name (CN) or a Subject Alternative Name (SAN).",
+				},
+
+				"format": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "Apache-style string or VCL variables to use for log formatting.",
+				},
+
+				"format_version": {
+					Type:         schema.TypeInt,
+					Optional:     true,
+					Default:      2,
+					Description:  "The version of the custom logging format used for the configured endpoint. Can be either 1 or 2. (default: 2)",
+					ValidateFunc: validateLoggingFormatVersion(),
+				},
+
+				"message_type": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Default:      "blank",
+					Description:  "How the message should be formatted",
+					ValidateFunc: validateLoggingMessageType(),
+				},
+
+				"placement": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "Where in the generated VCL the logging call should be placed",
+					ValidateFunc: validateLoggingPlacement(),
+				},
+
+				"response_condition": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The name of the condition to apply",
+				},
+			},
+		},
+	}
 	return nil
 }
 
