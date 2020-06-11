@@ -12,34 +12,42 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
-var acl = NewServiceACL()
-var backend = NewServiceBackend()
-var bigquerylogging = NewServiceBigQueryLogging()
-var blobstoragelogging = NewServiceBlobStorageLogging()
-var cachesetting = NewServiceCacheSetting()
-var condition = NewServiceCondition()
-var dictionary = NewServiceDictionary()
-var director = NewServiceDirector()
-var domain = NewServiceDomain()
-var dynamicsnippet = NewServiceDynamicSnippet()
-var gcslogging = NewServiceGCSLogging()
-var gzip = NewServiceGZIP()
-var header = NewServiceHeader()
-var healthcheck = NewServiceHealthCheck()
-var httpslogging = NewServiceHTTPSLogging()
-var logentries = NewServiceLogEntries()
-var papertrail = NewServicePaperTrail()
-var requestsetting = NewServiceRequestSetting()
-var responseobject = NewServiceResponseObject()
-var s3logging = NewServiceS3Logging()
-var snippet = NewServiceSnippet()
-var splunk = NewServiceSplunk()
-var sumologic = NewServiceSumologic()
-var syslog = NewServiceSyslog()
-var vcl = NewServiceVCL()
+
+// Ordering is important - stored is processing order
+// Conditions need to be updated first, as they can be referenced by other
+// configuration objects (Backends, Request Headers, etc)
+var serviceAttributes = []ServiceAttributeDefinition{
+	NewServiceCondition(),
+	NewServiceDomain(),
+	NewServiceHealthCheck(),
+	NewServiceBackend(),
+	NewServiceDirector(),
+	NewServiceHeader(),
+	NewServiceGZIP(),
+	NewServiceS3Logging(),
+	NewServicePaperTrail(),
+	NewServiceSumologic(),
+	NewServiceGCSLogging(),
+	NewServiceBigQueryLogging(),
+	NewServiceSyslog(),
+	NewServiceLogEntries(),
+	NewServiceSplunk(),
+	NewServiceBlobStorageLogging(),
+	NewServiceHTTPSLogging(),
+	NewServiceResponseObject(),
+	NewServiceRequestSetting(),
+	NewServiceVCL(),
+	NewServiceSnippet(),
+	NewServiceDynamicSnippet(),
+	NewServiceCacheSetting(),
+	NewServiceACL(),
+	NewServiceDictionary(),
+	}
+
 
 func resourceServiceV1() *schema.Resource {
-	return &schema.Resource{
+
+	s := &schema.Resource{
 		Create: resourceServiceV1Create,
 		Read:   resourceServiceV1Read,
 		Update: resourceServiceV1Update,
@@ -113,34 +121,14 @@ func resourceServiceV1() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-
-			domain.GetKey():             domain.GetSchema(),
-			backend.GetKey():            backend.GetSchema(),
-			cachesetting.GetKey():       cachesetting.GetSchema(),
-			condition.GetKey():          condition.GetSchema(),
-			healthcheck.GetKey():        healthcheck.GetSchema(),
-			director.GetKey():           director.GetSchema(),
-			gzip.GetKey():               gzip.GetSchema(),
-			header.GetKey():             header.GetSchema(),
-			s3logging.GetKey():          s3logging.GetSchema(),
-			papertrail.GetKey():         papertrail.GetSchema(),
-			sumologic.GetKey():          sumologic.GetSchema(),
-			gcslogging.GetKey():         gcslogging.GetSchema(),
-			bigquerylogging.GetKey():    bigquerylogging.GetSchema(),
-			syslog.GetKey():             syslog.GetSchema(),
-			logentries.GetKey():         logentries.GetSchema(),
-			splunk.GetKey():             splunk.GetSchema(),
-			blobstoragelogging.GetKey(): blobstoragelogging.GetSchema(),
-			httpslogging.GetKey():       httpslogging.GetSchema(),
-			responseobject.GetKey():     responseobject.GetSchema(),
-			requestsetting.GetKey():     requestsetting.GetSchema(),
-			vcl.GetKey():                vcl.GetSchema(),
-			snippet.GetKey():            snippet.GetSchema(),
-			dynamicsnippet.GetKey():     dynamicsnippet.GetSchema(),
-			acl.GetKey():                acl.GetSchema(),
-			dictionary.GetKey():         dictionary.GetSchema(),
 		},
 	}
+
+	for _, a := range serviceAttributes{
+		s.Schema[a.GetKey()] = a.GetSchema()
+	}
+
+	return s
 }
 
 func resourceServiceV1Create(d *schema.ResourceData, meta interface{}) error {
@@ -186,39 +174,24 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 	// DefaultTTL, a new Version must be created first, and updates posted to that
 	// Version. Loop these attributes and determine if we need to create a new version first
 	var needsChange bool
+
 	for _, v := range []string{
-		domain.GetKey(),
-		backend.GetKey(),
 		"default_host",
 		"default_ttl",
-		director.GetKey(),
-		header.GetKey(),
-		gzip.GetKey(),
-		healthcheck.GetKey(),
-		s3logging.GetKey(),
-		papertrail.GetKey(),
-		gcslogging.GetKey(),
-		bigquerylogging.GetKey(),
-		syslog.GetKey(),
-		sumologic.GetKey(),
-		logentries.GetKey(),
-		splunk.GetKey(),
-		blobstoragelogging.GetKey(),
-		httpslogging.GetKey(),
-		responseobject.GetKey(),
-		condition.GetKey(),
-		requestsetting.GetKey(),
-		cachesetting.GetKey(),
-		snippet.GetKey(),
-		dynamicsnippet.GetKey(),
-		vcl.GetKey(),
-		acl.GetKey(),
-		dictionary.GetKey(),
 	} {
 		if d.HasChange(v) {
 			needsChange = true
+			break
 		}
 	}
+
+	for _, a := range serviceAttributes{
+		if d.HasChange(a.GetKey()) {
+			needsChange = true
+			break
+		}
+	}
+
 
 	// Update the active version's comment. No new version is required for this
 	if d.HasChange("version_comment") && !needsChange {
@@ -314,133 +287,11 @@ func resourceServiceV1Update(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 
-		// Conditions need to be updated first, as they can be referenced by other
-		// configuration objects (Backends, Request Headers, etc)
-
-		if d.HasChange(condition.GetKey()) {
-			if err := condition.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(domain.GetKey()) {
-			if err := domain.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		// Healthchecks need to be updated BEFORE backends
-		if d.HasChange(healthcheck.GetKey()) {
-			if err := healthcheck.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(backend.GetKey()) {
-			if err := backend.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(director.GetKey()) {
-			if err := director.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(header.GetKey()) {
-			if err := header.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(gzip.GetKey()) {
-			if err := gzip.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(s3logging.GetKey()) {
-			if err := s3logging.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(papertrail.GetKey()) {
-			if err := papertrail.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(sumologic.GetKey()) {
-			if err := sumologic.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(gcslogging.GetKey()) {
-			if err := gcslogging.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(bigquerylogging.GetKey()) {
-			if err := bigquerylogging.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(syslog.GetKey()) {
-			if err := syslog.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(logentries.GetKey()) {
-			if err := logentries.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(splunk.GetKey()) {
-			if err := splunk.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(blobstoragelogging.GetKey()) {
-			if err := blobstoragelogging.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(httpslogging.GetKey()) {
-			if err := httpslogging.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(responseobject.GetKey()) {
-			if err := responseobject.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(requestsetting.GetKey()) {
-			if err := requestsetting.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(vcl.GetKey()) {
-			if err := vcl.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(snippet.GetKey()) {
-			if err := snippet.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(dynamicsnippet.GetKey()) {
-			if err := dynamicsnippet.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(cachesetting.GetKey()) {
-			if err := cachesetting.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(acl.GetKey()) {
-			if err := acl.Process(d, latestVersion, conn); err != nil {
-				return err
-			}
-		}
-		if d.HasChange(dictionary.GetKey()) {
-			if err := dictionary.Process(d, latestVersion, conn); err != nil {
-				return err
+		for _, a := range serviceAttributes{
+			if d.HasChange(a.GetKey()) {
+				if err := a.Process(d, latestVersion, conn); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -530,80 +381,10 @@ func resourceServiceV1Read(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		// Refresh Domains
-		if err := domain.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := backend.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := director.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := header.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := gzip.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := healthcheck.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := s3logging.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := papertrail.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := sumologic.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := gcslogging.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := bigquerylogging.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := syslog.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := logentries.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := splunk.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := blobstoragelogging.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := httpslogging.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := responseobject.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := condition.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := requestsetting.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := vcl.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := acl.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := snippet.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := dynamicsnippet.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := cachesetting.Read(d, s, conn); err != nil {
-			return err
-		}
-		if err := dictionary.Read(d, s, conn); err != nil {
-			return err
+		for _, a := range serviceAttributes{
+			if err := a.Read(d, s, conn); err != nil {
+				return err
+			}
 		}
 
 	} else {
