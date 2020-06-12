@@ -15,11 +15,10 @@ type BigQueryLoggingServiceAttributeHandler struct {
 func NewServiceBigQueryLogging() ServiceAttributeDefinition {
 	return &BigQueryLoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
-			key:    "bigquerylogging",
+			key: "bigquerylogging",
 		},
 	}
 }
-
 
 func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	os, ns := d.GetChange("bigquerylogging")
@@ -175,8 +174,6 @@ func (h *BigQueryLoggingServiceAttributeHandler) Register(s *schema.Resource) er
 	}
 	return nil
 }
-
-
 
 func flattenBigQuery(bqList []*gofastly.BigQuery) []map[string]interface{} {
 	var BQList []map[string]interface{}
