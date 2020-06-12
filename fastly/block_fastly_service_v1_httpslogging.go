@@ -16,11 +16,10 @@ type HTTPSLoggingServiceAttributeHandler struct {
 func NewServiceHTTPSLogging() ServiceAttributeDefinition {
 	return &HTTPSLoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
-			key:    "httpslogging",
+			key: "httpslogging",
 		},
 	}
 }
-
 
 func (h *HTTPSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
