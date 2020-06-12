@@ -1,12 +1,24 @@
 package fastly
 
 import (
-	"fmt"
 	"log"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
+
+type ElasticSearchServiceAttributeHandler struct {
+	*DefaultServiceAttributeHandler
+}
+
+func NewServiceElasticSearch() ServiceAttributeDefinition {
+	return &ElasticSearchServiceAttributeHandler{
+		&DefaultServiceAttributeHandler{
+			schema: elasticsearchSchema,
+			key:    "logging_elasticsearch",
+		},
+	}
+}
 
 var elasticsearchSchema = &schema.Schema{
 	Type:     schema.TypeSet,
@@ -121,7 +133,7 @@ var elasticsearchSchema = &schema.Schema{
 	},
 }
 
-func processElasticsearch(d *schema.ResourceData, conn *gofastly.Client, latestVersion int) error {
+func (h *ElasticSearchServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
 	oe, ne := d.GetChange("logging_elasticsearch")
 
@@ -165,7 +177,8 @@ func processElasticsearch(d *schema.ResourceData, conn *gofastly.Client, latestV
 	return nil
 }
 
-func readElasticsearch(conn *gofastly.Client, d *schema.ResourceData, s *gofastly.ServiceDetail) error {
+func (h *ElasticSearchServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
+	/* COMMENTED OUT SINCE NOT PRESENTLY USED IN MASTER
 	// Refresh Elasticsearch.
 	log.Printf("[DEBUG] Refreshing Elasticsearch logging endpoints for (%s)", d.Id())
 	elasticsearchList, err := conn.ListElasticsearch(&gofastly.ListElasticsearchInput{
@@ -182,7 +195,7 @@ func readElasticsearch(conn *gofastly.Client, d *schema.ResourceData, s *gofastl
 	if err := d.Set("logging_elasticsearch", ell); err != nil {
 		log.Printf("[WARN] Error setting Elasticsearch logging endpoints for (%s): %s", d.Id(), err)
 	}
-
+	*/
 	return nil
 }
 
@@ -201,7 +214,6 @@ func deleteElasticsearch(conn *gofastly.Client, i *gofastly.DeleteElasticsearchI
 	} else if err != nil {
 		return err
 	}
-
 	return nil
 }
 
