@@ -15,11 +15,10 @@ type LogEntriesServiceAttributeHandler struct {
 func NewServiceLogEntries() ServiceAttributeDefinition {
 	return &LogEntriesServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
-			key:    "logentries",
+			key: "logentries",
 		},
 	}
 }
-
 
 func (h *LogEntriesServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	os, ns := d.GetChange("logentries")
