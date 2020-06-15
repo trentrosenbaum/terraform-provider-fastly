@@ -1,6 +1,7 @@
 package fastly
 
 import (
+	"fmt"
 	"log"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
@@ -178,7 +179,6 @@ func (h *ElasticSearchServiceAttributeHandler) Process(d *schema.ResourceData, l
 }
 
 func (h *ElasticSearchServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
-	/* COMMENTED OUT SINCE NOT PRESENTLY USED IN MASTER
 	// Refresh Elasticsearch.
 	log.Printf("[DEBUG] Refreshing Elasticsearch logging endpoints for (%s)", d.Id())
 	elasticsearchList, err := conn.ListElasticsearch(&gofastly.ListElasticsearchInput{
@@ -195,7 +195,6 @@ func (h *ElasticSearchServiceAttributeHandler) Read(d *schema.ResourceData, s *g
 	if err := d.Set("logging_elasticsearch", ell); err != nil {
 		log.Printf("[WARN] Error setting Elasticsearch logging endpoints for (%s): %s", d.Id(), err)
 	}
-	*/
 	return nil
 }
 
