@@ -25,7 +25,7 @@ var vclService = &BaseServiceDefinition{
 		NewServiceGCSLogging(),
 		NewServiceBigQueryLogging(),
 		NewServiceSyslog(),
-		NewServiceLogEntries(),
+		NewServiceLogentries(),
 		NewServiceSplunk(),
 		NewServiceBlobStorageLogging(),
 		NewServiceHTTPSLogging(),
