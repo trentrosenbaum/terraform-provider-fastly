@@ -244,15 +244,9 @@ resource "fastly_service_v1" "foo" {
 		user     = "user"
 		password = "password"
     format   = "%%h %%l %%u %%t \"%%r\" %%>s %%b"
-		tls_ca_cert        = <<EOF
-`+caCert()+`
-EOF
-		tls_client_cert    = <<EOF
-`+certificate()+`
-EOF
-		tls_client_key     = <<EOF
-`+privateKey()+`
-EOF
+		tls_ca_cert       = file("fastly_test_cacert")
+		tls_client_cert   = file("fastly_test_certificate")
+		tls_client_key    = file("fastly_test_privatekey")
 		tls_hostname       = "example.com"
 		response_condition = "response_condition_test"
 		placement          = "none"
@@ -293,15 +287,9 @@ resource "fastly_service_v1" "foo" {
 		pipeline = "my-new-pipeline"
 		user     = "newuser"
 		password = "newpassword"
-		tls_ca_cert        = <<EOF
-`+caCert()+`
-EOF
-		tls_client_cert    = <<EOF
-`+certificate()+`
-EOF
-		tls_client_key     = <<EOF
-`+privateKey()+`
-EOF
+		tls_ca_cert       = file("fastly_test_cacert")
+		tls_client_cert   = file("fastly_test_certificate")
+		tls_client_key    = file("fastly_test_privatekey")
 		tls_hostname       = "example.com"
 		response_condition = "response_condition_test"
 		placement          = "none"
@@ -316,15 +304,9 @@ EOF
     format            = "%%h %%l %%u %%t \"%%r\" %%>s %%b"
     request_max_bytes = 1000
 		pipeline          = "my-new-pipeline"
-		tls_ca_cert        = <<EOF
-`+caCert()+`
-EOF
-		tls_client_cert    = <<EOF
-`+certificate()+`
-EOF
-		tls_client_key     = <<EOF
-`+privateKey()+`
-EOF
+		tls_ca_cert       = file("fastly_test_cacert")
+		tls_client_cert   = file("fastly_test_certificate")
+		tls_client_key    = file("fastly_test_privatekey")
 		tls_hostname       = "example.com"
 		response_condition = "response_condition_test"
 		placement          = "none"
