@@ -96,57 +96,63 @@ func (h *SumologicServiceAttributeHandler) Read(d *schema.ResourceData, s *gofas
 	return nil
 }
 
-func (h *SumologicServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *SumologicServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+
+	var a = map[string]*schema.Schema{
+		// Required fields
+		"name": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "Unique name to refer to this logging setup",
+		},
+		"url": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The URL to POST to.",
+		},
+		// Optional fields
+		"message_type": {
+			Type:         schema.TypeString,
+			Optional:     true,
+			Default:      "classic",
+			Description:  "How the message should be formatted.",
+			ValidateFunc: validateLoggingMessageType(),
+		},
+	}
+
+	if serviceType == ServiceTypeVCL {
+		a["format"] = &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			Default:     "%h %l %u %t %r %>s",
+			Description: "Apache-style string or VCL variables to use for log formatting",
+		}
+		a["format_version"] = &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			Default:      1,
+			Description:  "The version of the custom logging format used for the configured endpoint. Can be either 1 or 2. (Default: 1)",
+			ValidateFunc: validateLoggingFormatVersion(),
+		}
+		a["response_condition"] = &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			Default:     "",
+			Description: "Name of a condition to apply this logging.",
+		}
+		a["placement"] = &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			Description:  "Where in the generated VCL the logging call should be placed.",
+			ValidateFunc: validateLoggingPlacement(),
+		}
+	}
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,
 		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				// Required fields
-				"name": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "Unique name to refer to this logging setup",
-				},
-				"url": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "The URL to POST to.",
-				},
-				// Optional fields
-				"format": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "%h %l %u %t %r %>s",
-					Description: "Apache-style string or VCL variables to use for log formatting",
-				},
-				"format_version": {
-					Type:         schema.TypeInt,
-					Optional:     true,
-					Default:      1,
-					Description:  "The version of the custom logging format used for the configured endpoint. Can be either 1 or 2. (Default: 1)",
-					ValidateFunc: validateLoggingFormatVersion(),
-				},
-				"response_condition": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "",
-					Description: "Name of a condition to apply this logging.",
-				},
-				"message_type": {
-					Type:         schema.TypeString,
-					Optional:     true,
-					Default:      "classic",
-					Description:  "How the message should be formatted.",
-					ValidateFunc: validateLoggingMessageType(),
-				},
-				"placement": {
-					Type:         schema.TypeString,
-					Optional:     true,
-					Description:  "Where in the generated VCL the logging call should be placed.",
-					ValidateFunc: validateLoggingPlacement(),
-				},
-			},
+			Schema: a,
 		},
 	}
 	return nil

@@ -109,7 +109,7 @@ func (h *VCLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.Se
 	return nil
 }
 
-func (h *VCLServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *VCLServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

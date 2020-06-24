@@ -116,7 +116,7 @@ func (h *GZIPServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.S
 	return nil
 }
 
-func (h *GZIPServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *GZIPServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

@@ -96,7 +96,7 @@ func (h *HeaderServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly
 	return nil
 }
 
-func (h *HeaderServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *HeaderServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

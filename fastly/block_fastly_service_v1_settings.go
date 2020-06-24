@@ -59,7 +59,7 @@ func (h *SettingsServiceAttributeHandler) MustProcess(d *schema.ResourceData, in
 	return d.HasChange("default_host") || d.HasChange("default_ttl") || (d.Get("default_ttl") == 0 && initialVersion)
 }
 
-func (h *SettingsServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *SettingsServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema["default_ttl"] = &schema.Schema{
 		Type:        schema.TypeInt,
 		Optional:    true,

@@ -12,12 +12,19 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
+const (
+	// ServiceTypeVCL is the type for VCL services.
+	ServiceTypeVCL = "vcl"
+	// ServiceTypeWasm is the type for Wasm services.
+	ServiceTypeWasm = "wasm"
+)
+
 // ServiceAttributeDefinition provides an interface for service attributes.
 // We compose a service resource out of attribute objects to allow us to construct both the VCL and Wasm service
 // resources from common components.
 type ServiceAttributeDefinition interface {
 	// Register add the attribute to the resource schema.
-	Register(d *schema.Resource) error
+	Register(s *schema.Resource, serviceType string) error
 
 	// Read refreshes the attribute state against the Fastly API.
 	Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error
@@ -53,6 +60,17 @@ func (h *DefaultServiceAttributeHandler) HasChange(d *schema.ResourceData) bool 
 // See interface definition for comments.
 func (h *DefaultServiceAttributeHandler) MustProcess(d *schema.ResourceData, initialVersion bool) bool {
 	return h.HasChange(d)
+}
+
+// OptionalMapKeyToString returns an empty string if the key is not found in the map
+// This is used for attributes which are now optional in a Wasm service
+func (h *DefaultServiceAttributeHandler) OptionalMapKeyToString(m map[string]interface{}, k string) string {
+	v, ok := m[k]
+	if ok {
+		return v.(string)
+	} else {
+		return ""
+	}
 }
 
 // ServiceDefinition defines the data model for service definitions
@@ -149,7 +167,7 @@ func resourceService(serviceDef ServiceDefinition) *schema.Resource {
 	// Register adds schema attributes to the overall schema for the resource. This allows each AttributeHandler to
 	// define it's own attributes while allowing the overall set to be composed.
 	for _, a := range serviceDef.GetAttributeHandler() {
-		a.Register(s) // Mutates s, adding handler-specific schema items to the list.
+		a.Register(s, serviceDef.GetType()) // Mutates s, adding handler-specific schema items to the list.
 	}
 
 	return s

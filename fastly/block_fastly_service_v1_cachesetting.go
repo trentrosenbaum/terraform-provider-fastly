@@ -93,7 +93,7 @@ func (h *CacheSettingServiceAttributeHandler) Read(d *schema.ResourceData, s *go
 	return nil
 }
 
-func (h *CacheSettingServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *CacheSettingServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

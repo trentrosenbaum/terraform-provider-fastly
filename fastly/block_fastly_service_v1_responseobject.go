@@ -98,7 +98,7 @@ func (h *ResponseObjectServiceAttributeHandler) Read(d *schema.ResourceData, s *
 	return nil
 }
 
-func (h *ResponseObjectServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *ResponseObjectServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

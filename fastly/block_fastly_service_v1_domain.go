@@ -100,7 +100,7 @@ func (h *DomainServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly
 	return nil
 }
 
-func (h *DomainServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *DomainServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Required: true,

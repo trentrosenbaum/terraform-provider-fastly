@@ -93,7 +93,7 @@ func (h *DictionaryServiceAttributeHandler) Read(d *schema.ResourceData, s *gofa
 	return nil
 }
 
-func (h *DictionaryServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *DictionaryServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

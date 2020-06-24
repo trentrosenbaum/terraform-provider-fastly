@@ -104,7 +104,7 @@ func (h *HealthCheckServiceAttributeHandler) Read(d *schema.ResourceData, s *gof
 	return nil
 }
 
-func (h *HealthCheckServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *HealthCheckServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

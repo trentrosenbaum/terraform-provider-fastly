@@ -7,17 +7,13 @@ import (
 // Ordering is important - stored is processing order
 // Conditions need to be updated first, as they can be referenced by other
 // configuration objects (Backends, Request Headers, etc)
-var vclService = &BaseServiceDefinition{
-	Type: ServiceTypeVCL,
+
+var wasmService = &BaseServiceDefinition{
+	Type: ServiceTypeWasm,
 	Attributes: []ServiceAttributeDefinition{
-		NewServiceSettings(),
-		NewServiceCondition(),
 		NewServiceDomain(),
 		NewServiceHealthCheck(),
 		NewServiceBackend(),
-		NewServiceDirector(),
-		NewServiceHeader(),
-		NewServiceGZIP(),
 		NewServiceS3Logging(),
 		NewServicePaperTrail(),
 		NewServiceSumologic(),
@@ -37,23 +33,10 @@ var vclService = &BaseServiceDefinition{
 		NewServiceLoggingScalyr(),
 		NewServiceLoggingNewRelic(),
 		NewServiceLoggingKafka(),
-		NewServiceLoggingHeroku(),
-		NewServiceLoggingHoneycomb(),
-		NewServiceLoggingLogshuttle(),
-		NewServiceLoggingOpenstack(),
-		NewServiceLoggingDigitalOcean(),
-		NewServiceLoggingCloudfiles(),
-		NewServiceResponseObject(),
-		NewServiceRequestSetting(),
-		NewServiceVCL(),
-		NewServiceSnippet(),
-		NewServiceDynamicSnippet(),
-		NewServiceCacheSetting(),
-		NewServiceACL(),
-		NewServiceDictionary(),
+		NewServicePackage(),
 	},
 }
 
-func resourceServiceV1() *schema.Resource {
-	return resourceService(vclService)
+func resourceServiceWASMV1() *schema.Resource {
+	return resourceService(wasmService)
 }

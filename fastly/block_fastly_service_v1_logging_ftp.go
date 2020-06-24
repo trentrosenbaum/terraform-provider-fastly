@@ -99,108 +99,110 @@ func (h *FTPServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.Se
 	return nil
 }
 
-func (h *FTPServiceAttributeHandler) Register(s *schema.Resource) error {
+func (h *FTPServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+
+	var a = map[string]*schema.Schema{
+		// Required fields
+		"name": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The unique name of the FTP logging endpoint.",
+		},
+
+		"address": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The FTP URL to stream logs to.",
+		},
+
+		"user": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The username for the server (can be anonymous).",
+		},
+
+		"password": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The password for the server (for anonymous use an email address).",
+			Sensitive:   true,
+		},
+
+		"path": {
+			Type:        schema.TypeString,
+			Required:    true,
+			Description: "The path to upload log files to. If the path ends in / then it is treated as a directory.",
+		},
+
+		// Optional fields
+		"port": {
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     21,
+			Description: "The port number.",
+		},
+
+		"period": {
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     3600,
+			Description: "How frequently the logs should be transferred, in seconds (Default 3600).",
+		},
+
+		"public_key": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: "The PGP public key that Fastly will use to encrypt your log files before writing them to disk.",
+			// Related issue for weird behavior - https://github.com/hashicorp/terraform-plugin-sdk/issues/160
+			StateFunc: trimSpaceStateFunc,
+		},
+
+		"gzip_level": {
+			Type:        schema.TypeInt,
+			Optional:    true,
+			Default:     0,
+			Description: "Gzip Compression level.",
+		},
+
+		"timestamp_format": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Default:     "%Y-%m-%dT%H:%M:%S.000",
+			Description: "specified timestamp formatting (default `%Y-%m-%dT%H:%M:%S.000`).",
+		},
+	}
+
+	if serviceType == ServiceTypeVCL {
+		a["format"] = &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: "Apache-style string or VCL variables to use for log formatting.",
+		}
+		a["format_version"] = &schema.Schema{
+			Type:         schema.TypeInt,
+			Optional:     true,
+			Default:      2,
+			Description:  "The version of the custom logging format used for the configured endpoint. Can be either 1 or 2. (default: 2).",
+			ValidateFunc: validateLoggingFormatVersion(),
+		}
+		a["placement"] = &schema.Schema{
+			Type:         schema.TypeString,
+			Optional:     true,
+			Description:  "Where in the generated VCL the logging call should be placed.",
+			ValidateFunc: validateLoggingPlacement(),
+		}
+		a["response_condition"] = &schema.Schema{
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: "The name of the condition to apply.",
+		}
+	}
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,
 		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				// Required fields
-				"name": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "The unique name of the FTP logging endpoint.",
-				},
-
-				"address": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "The FTP URL to stream logs to.",
-				},
-
-				"user": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "The username for the server (can be anonymous).",
-				},
-
-				"password": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "The password for the server (for anonymous use an email address).",
-					Sensitive:   true,
-				},
-
-				"path": {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "The path to upload log files to. If the path ends in / then it is treated as a directory.",
-				},
-
-				// Optional fields
-				"port": {
-					Type:        schema.TypeInt,
-					Optional:    true,
-					Default:     21,
-					Description: "The port number.",
-				},
-
-				"period": {
-					Type:        schema.TypeInt,
-					Optional:    true,
-					Default:     3600,
-					Description: "How frequently the logs should be transferred, in seconds (Default 3600).",
-				},
-
-				"public_key": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Description: "The PGP public key that Fastly will use to encrypt your log files before writing them to disk.",
-					// Related issue for weird behavior - https://github.com/hashicorp/terraform-plugin-sdk/issues/160
-					StateFunc: trimSpaceStateFunc,
-				},
-
-				"gzip_level": {
-					Type:        schema.TypeInt,
-					Optional:    true,
-					Default:     0,
-					Description: "Gzip Compression level.",
-				},
-
-				"timestamp_format": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Default:     "%Y-%m-%dT%H:%M:%S.000",
-					Description: "specified timestamp formatting (default `%Y-%m-%dT%H:%M:%S.000`).",
-				},
-
-				"format": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Description: "Apache-style string or VCL variables to use for log formatting.",
-				},
-
-				"format_version": {
-					Type:         schema.TypeInt,
-					Optional:     true,
-					Default:      2,
-					Description:  "The version of the custom logging format used for the configured endpoint. Can be either 1 or 2. (default: 2).",
-					ValidateFunc: validateLoggingFormatVersion(),
-				},
-
-				"placement": {
-					Type:         schema.TypeString,
-					Optional:     true,
-					Description:  "Where in the generated VCL the logging call should be placed.",
-					ValidateFunc: validateLoggingPlacement(),
-				},
-
-				"response_condition": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Description: "The name of the condition to apply.",
-				},
-			},
+			Schema: a,
 		},
 	}
 	return nil
