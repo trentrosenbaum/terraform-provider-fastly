@@ -22,8 +22,8 @@ func NewServicePackage() ServiceAttributeDefinition {
 
 func (h *PackageServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
-		Type:     schema.TypeSet,
-		Optional: true,
+		Type:     schema.TypeList,
+		Required: true,
 		MaxItems: 1,
 		MinItems: 1,
 		Elem: &schema.Resource{
@@ -32,6 +32,7 @@ func (h *PackageServiceAttributeHandler) Register(s *schema.Resource, serviceTyp
 					Type:     schema.TypeString,
 					Optional: true,
 				},
+				// sha512 hash of the file
 				"source_code_hash": {
 					Type:     schema.TypeString,
 					Optional: true,
@@ -49,27 +50,25 @@ func (h *PackageServiceAttributeHandler) Register(s *schema.Resource, serviceTyp
 
 func (h *PackageServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 
-	if d.HasChange(h.GetKey()) {
-		if v, ok := d.GetOk(h.GetKey()); ok {
-			// Schema guarantees one package block
-			Package := v.(*schema.Set).List()[0].(map[string]interface{})
-			packageFilename := Package["filename"].(string)
+	if v, ok := d.GetOk(h.GetKey()); ok {
+		// Schema guarantees one package block.
+		Package := v.([]interface{})[0].(map[string]interface{})
+		packageFilename := Package["filename"].(string)
 
-			err := updatePackage(conn, &gofastly.UpdatePackageInput{
-				Service:     d.Id(),
-				Version:     latestVersion,
-				PackagePath: packageFilename,
-			})
-			if err != nil {
-				return fmt.Errorf("Error modifying Package %s: %s", d.Id(), err)
-			}
+		err := updatePackage(conn, &gofastly.UpdatePackageInput{
+			Service:     d.Id(),
+			Version:     latestVersion,
+			PackagePath: packageFilename,
+		})
+		if err != nil {
+			return fmt.Errorf("Error modifying package %s: %s", d.Id(), err)
 		}
 	}
+
 	return nil
 }
 
 func (h *PackageServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
-
 	log.Printf("[DEBUG] Refreshing package for (%s)", d.Id())
 	Package, err := conn.GetPackage(&gofastly.GetPackageInput{
 		Service: d.Id(),
@@ -80,7 +79,7 @@ func (h *PackageServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastl
 		return fmt.Errorf("[ERR] Error looking up Package for (%s), version (%v): %v", d.Id(), s.ActiveVersion.Number, err)
 	}
 
-	wp := flattenPackage(Package)
+	wp := flattenPackage(Package, d)
 	if err := d.Set(h.GetKey(), wp); err != nil {
 		log.Printf("[WARN] Error setting Package for (%s): %s", d.Id(), err)
 	}
@@ -93,14 +92,15 @@ func updatePackage(conn *gofastly.Client, i *gofastly.UpdatePackageInput) error 
 	return err
 }
 
-func flattenPackage(Package *gofastly.Package) []map[string]interface{} {
-	var wp []map[string]interface{}
-
-	// Convert Package to a map for saving to state.
-	wp = append(wp, map[string]interface{}{
+func flattenPackage(Package *gofastly.Package, d *schema.ResourceData) []map[string]interface{} {
+	var pa []map[string]interface{}
+	p := map[string]interface{}{
 		"source_code_hash": Package.Metadata.HashSum,
 		"source_code_size": Package.Metadata.Size,
-	})
+		"filename":         d.Get("package.0.filename"),
+	}
 
-	return wp
+	// Convert Package to a map for saving to state.
+	pa = append(pa, p)
+	return pa
 }
