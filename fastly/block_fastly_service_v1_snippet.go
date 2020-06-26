@@ -96,6 +96,8 @@ func (h *SnippetServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastl
 }
 
 func (h *SnippetServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

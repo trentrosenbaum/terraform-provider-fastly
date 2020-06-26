@@ -117,6 +117,8 @@ func (h *BackendServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastl
 }
 
 func (h *BackendServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	var a = map[string]*schema.Schema{
 		// required fields
 		"name": {

@@ -45,7 +45,7 @@ func (h *HTTPSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, la
 
 		log.Printf("[DEBUG] Fastly HTTPS logging endpoint removal opts: %#v", opts)
 
-		if err := deleteHTTPS(conn, opts); err != nil {
+		if err := h.deleteHTTPS(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -53,11 +53,11 @@ func (h *HTTPSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, la
 	// POST new/updated HTTPS logging endponts
 	for _, nRaw := range addHTTPSLogging {
 		hf := nRaw.(map[string]interface{})
-		opts := buildCreateHTTPS(hf, serviceID, latestVersion)
+		opts := h.buildCreateHTTPS(hf, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly HTTPS logging addition opts: %#v", opts)
 
-		if err := createHTTPS(conn, opts); err != nil {
+		if err := h.createHTTPS(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -87,6 +87,7 @@ func (h *HTTPSLoggingServiceAttributeHandler) Read(d *schema.ResourceData, s *go
 }
 
 func (h *HTTPSLoggingServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields
@@ -228,7 +229,7 @@ func (h *HTTPSLoggingServiceAttributeHandler) Register(s *schema.Resource, servi
 	return nil
 }
 
-func createHTTPS(conn *gofastly.Client, i *gofastly.CreateHTTPSInput) error {
+func (h *HTTPSLoggingServiceAttributeHandler) createHTTPS(conn *gofastly.Client, i *gofastly.CreateHTTPSInput) error {
 	_, err := conn.CreateHTTPS(i)
 	if err != nil {
 		return err
@@ -236,7 +237,7 @@ func createHTTPS(conn *gofastly.Client, i *gofastly.CreateHTTPSInput) error {
 	return nil
 }
 
-func deleteHTTPS(conn *gofastly.Client, i *gofastly.DeleteHTTPSInput) error {
+func (h *HTTPSLoggingServiceAttributeHandler) deleteHTTPS(conn *gofastly.Client, i *gofastly.DeleteHTTPSInput) error {
 	err := conn.DeleteHTTPS(i)
 
 	if errRes, ok := err.(*gofastly.HTTPError); ok {
@@ -288,8 +289,17 @@ func flattenHTTPS(httpsList []*gofastly.HTTPS) []map[string]interface{} {
 	return hsl
 }
 
-func buildCreateHTTPS(httpsMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateHTTPSInput {
+func (h *HTTPSLoggingServiceAttributeHandler) buildCreateHTTPS(httpsMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateHTTPSInput {
 	df := httpsMap.(map[string]interface{})
+
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
+
 	opts := gofastly.CreateHTTPSInput{
 		Service:           serviceID,
 		Version:           serviceVersion,
@@ -306,11 +316,11 @@ func buildCreateHTTPS(httpsMap interface{}, serviceID string, serviceVersion int
 		TLSClientCert:     df["tls_client_cert"].(string),
 		TLSClientKey:      df["tls_client_key"].(string),
 		TLSHostname:       df["tls_hostname"].(string),
-		Format:            df["format"].(string),
-		FormatVersion:     uint(df["format_version"].(int)),
 		MessageType:       df["message_type"].(string),
-		Placement:         df["placement"].(string),
-		ResponseCondition: df["response_condition"].(string),
+		Format:            vla.format,
+		FormatVersion:     vla.formatVersion,
+		ResponseCondition: vla.responseCondition,
+		Placement:         vla.placement,
 	}
 
 	return &opts

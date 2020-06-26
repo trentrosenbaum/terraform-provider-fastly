@@ -100,6 +100,7 @@ func (h *PaperTrailServiceAttributeHandler) Read(d *schema.ResourceData, s *gofa
 }
 
 func (h *PaperTrailServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

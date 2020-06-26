@@ -97,6 +97,8 @@ func (h *DynamicSnippetServiceAttributeHandler) Read(d *schema.ResourceData, s *
 }
 
 func (h *DynamicSnippetServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

@@ -97,6 +97,7 @@ func (h *SumologicServiceAttributeHandler) Read(d *schema.ResourceData, s *gofas
 }
 
 func (h *SumologicServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

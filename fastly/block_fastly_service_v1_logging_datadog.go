@@ -40,7 +40,7 @@ func (h *DatadogServiceAttributeHandler) Process(d *schema.ResourceData, latestV
 	// DELETE old Datadog logging endpoints.
 	for _, oRaw := range removeDatadogLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteDatadog(of, serviceID, latestVersion)
+		opts := h.buildDeleteDatadog(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Datadog logging endpoint removal opts: %#v", opts)
 
@@ -52,7 +52,7 @@ func (h *DatadogServiceAttributeHandler) Process(d *schema.ResourceData, latestV
 	// POST new/updated Datadog logging endpoints.
 	for _, nRaw := range addDatadogLogging {
 		df := nRaw.(map[string]interface{})
-		opts := buildCreateDatadog(df, serviceID, latestVersion)
+		opts := h.buildCreateDatadog(df, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Datadog logging addition opts: %#v", opts)
 
@@ -108,6 +108,7 @@ func deleteDatadog(conn *gofastly.Client, i *gofastly.DeleteDatadogInput) error 
 }
 
 func (h *DatadogServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields
@@ -196,7 +197,7 @@ func flattenDatadog(datadogList []*gofastly.Datadog) []map[string]interface{} {
 	return dsl
 }
 
-func buildCreateDatadog(datadogMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateDatadogInput {
+func (h *DatadogServiceAttributeHandler) buildCreateDatadog(datadogMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateDatadogInput {
 	df := datadogMap.(map[string]interface{})
 
 	return &gofastly.CreateDatadogInput{
@@ -205,14 +206,14 @@ func buildCreateDatadog(datadogMap interface{}, serviceID string, serviceVersion
 		Name:              gofastly.NullString(df["name"].(string)),
 		Token:             gofastly.NullString(df["token"].(string)),
 		Region:            gofastly.NullString(df["region"].(string)),
-		Format:            gofastly.NullString(df["format"].(string)),
-		FormatVersion:     gofastly.Uint(uint(df["format_version"].(int))),
-		Placement:         gofastly.NullString(df["placement"].(string)),
-		ResponseCondition: gofastly.NullString(df["response_condition"].(string)),
+		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
+		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
+		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
+		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
 	}
 }
 
-func buildDeleteDatadog(datadogMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteDatadogInput {
+func (h *DatadogServiceAttributeHandler) buildDeleteDatadog(datadogMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteDatadogInput {
 	df := datadogMap.(map[string]interface{})
 
 	return &gofastly.DeleteDatadogInput{

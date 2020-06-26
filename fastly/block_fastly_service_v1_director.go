@@ -156,6 +156,8 @@ func (h *DirectorServiceAttributeHandler) Read(d *schema.ResourceData, s *gofast
 }
 
 func (h *DirectorServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

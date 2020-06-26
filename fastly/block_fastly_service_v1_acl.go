@@ -95,6 +95,8 @@ func (h *ACLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.Se
 }
 
 func (h *ACLServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

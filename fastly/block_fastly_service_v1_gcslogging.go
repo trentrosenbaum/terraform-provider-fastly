@@ -57,6 +57,14 @@ func (h *GCSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, late
 	// POST new/updated gcslogging
 	for _, pRaw := range addGcslogging {
 		sf := pRaw.(map[string]interface{})
+
+		var vla = NewVCLLoggingAttributes()
+		if h.GetServiceType() == ServiceTypeVCL {
+			vla.format = sf["format"].(string)
+			vla.placement = sf["placement"].(string)
+			vla.responseCondition = sf["response_condition"].(string)
+		}
+
 		opts := gofastly.CreateGCSInput{
 			Service:           d.Id(),
 			Version:           latestVersion,
@@ -64,14 +72,14 @@ func (h *GCSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, late
 			User:              sf["email"].(string),
 			Bucket:            sf["bucket_name"].(string),
 			SecretKey:         sf["secret_key"].(string),
-			Format:            sf["format"].(string),
 			Path:              sf["path"].(string),
 			Period:            uint(sf["period"].(int)),
 			GzipLevel:         uint8(sf["gzip_level"].(int)),
 			TimestampFormat:   sf["timestamp_format"].(string),
 			MessageType:       sf["message_type"].(string),
-			ResponseCondition: sf["response_condition"].(string),
-			Placement:         sf["placement"].(string),
+			Format:            vla.format,
+			ResponseCondition: vla.responseCondition,
+			Placement:         vla.placement,
 		}
 
 		log.Printf("[DEBUG] Create GCS Opts: %#v", opts)
@@ -103,6 +111,8 @@ func (h *GCSLoggingServiceAttributeHandler) Read(d *schema.ResourceData, s *gofa
 }
 
 func (h *GCSLoggingServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	var a = map[string]*schema.Schema{
 		// Required fields
 		"name": {

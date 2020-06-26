@@ -159,6 +159,7 @@ func buildDeleteLoggly(logglyMap interface{}, serviceID string, serviceVersion i
 }
 
 func (h *LogglyServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

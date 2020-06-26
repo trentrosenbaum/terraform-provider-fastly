@@ -65,10 +65,10 @@ func (h *LogentriesServiceAttributeHandler) Process(d *schema.ResourceData, late
 			Port:              uint(slf["port"].(int)),
 			UseTLS:            gofastly.CBool(slf["use_tls"].(bool)),
 			Token:             slf["token"].(string),
-			Format:            slf["format"].(string),
-			FormatVersion:     uint(slf["format_version"].(int)),
-			ResponseCondition: slf["response_condition"].(string),
-			Placement:         slf["placement"].(string),
+			Format:            h.OptionalMapKeyToString(slf, "format", ""),
+			FormatVersion:     h.OptionalMapKeyToUInt(slf, "format_version", 0),
+			Placement:         h.OptionalMapKeyToString(slf, "placement", "none"),
+			ResponseCondition: h.OptionalMapKeyToString(slf, "response_condition", ""),
 		}
 
 		log.Printf("[DEBUG] Create Logentries Opts: %#v", opts)
@@ -102,6 +102,7 @@ func (h *LogentriesServiceAttributeHandler) Read(d *schema.ResourceData, s *gofa
 }
 
 func (h *LogentriesServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

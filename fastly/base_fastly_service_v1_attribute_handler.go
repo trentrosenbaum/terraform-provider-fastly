@@ -30,8 +30,8 @@ type ServiceAttributeHandlerDefinition interface {
 
 // DefaultServiceAttributeHandler provides a base implementation for ServiceAttributeHandlerDefinition.
 type DefaultServiceAttributeHandler struct {
-	schema *schema.Schema
-	key    string
+	key         string
+	serviceType string
 }
 
 // See interface definition for comments.
@@ -50,7 +50,13 @@ func (h *DefaultServiceAttributeHandler) GetKey() string {
 	return h.key
 }
 
-// OptionalMapKeyToString returns an empty string if the key is not found in the map
+// GetServiceType is provided to allow differential processing where the owning service is Wasm or VCL.
+// Not in the interface since this shouldn't be used publicly
+func (h *DefaultServiceAttributeHandler) GetServiceType() string {
+	return h.serviceType
+}
+
+// OptionalMapKeyToString returns a default if the key is not found in the map
 // This is used for attributes which are now optional in a Wasm service
 // Not in the interface since this shouldn't be used publicly
 func (h *DefaultServiceAttributeHandler) OptionalMapKeyToString(m map[string]interface{}, k string, d string) string {
@@ -60,4 +66,33 @@ func (h *DefaultServiceAttributeHandler) OptionalMapKeyToString(m map[string]int
 	} else {
 		return d
 	}
+}
+
+// OptionalMapKeyToUInt returns a default if the key is not found in the map
+// This is used for attributes which are now optional in a Wasm service
+// Not in the interface since this shouldn't be used publicly
+func (h *DefaultServiceAttributeHandler) OptionalMapKeyToUInt(m map[string]interface{}, k string, d uint) uint {
+	v, ok := m[k]
+	if ok {
+		return uint(v.(int))
+	} else {
+		return d
+	}
+}
+
+type VCLLoggingAttributes struct {
+	format            string
+	formatVersion     uint
+	placement         string
+	responseCondition string
+}
+
+// NewSomething create new instance of Something
+func NewVCLLoggingAttributes() VCLLoggingAttributes {
+	vla := VCLLoggingAttributes{}
+	vla.format = ""
+	vla.formatVersion = 0
+	vla.placement = "none"
+	vla.responseCondition = ""
+	return vla
 }

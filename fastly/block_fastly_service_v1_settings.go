@@ -60,6 +60,7 @@ func (h *SettingsServiceAttributeHandler) MustProcess(d *schema.ResourceData, in
 }
 
 func (h *SettingsServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+
 	s.Schema["default_ttl"] = &schema.Schema{
 		Type:        schema.TypeInt,
 		Optional:    true,

@@ -93,6 +93,7 @@ func (h *S3LoggingServiceAttributeHandler) Read(d *schema.ResourceData, s *gofas
 }
 
 func (h *S3LoggingServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

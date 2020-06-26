@@ -94,6 +94,8 @@ func (h *CacheSettingServiceAttributeHandler) Read(d *schema.ResourceData, s *go
 }
 
 func (h *CacheSettingServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

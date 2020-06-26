@@ -96,7 +96,6 @@ func TestAccFastlyServiceV1_logentries_basic(t *testing.T) {
 						"fastly_service_v1.foo", "logentries.#", "1"),
 				),
 			},
-
 			{
 				Config: testAccServiceV1LogentriesConfig_update(name, domainName1),
 				Check: resource.ComposeTestCheckFunc(

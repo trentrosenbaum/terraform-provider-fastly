@@ -22,6 +22,7 @@ func NewServiceLoggingScalyr() ServiceAttributeHandlerDefinition {
 }
 
 func (h *ScalyrServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

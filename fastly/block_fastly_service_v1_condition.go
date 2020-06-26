@@ -104,6 +104,8 @@ func (h *ConditionServiceAttributeHandler) Read(d *schema.ResourceData, s *gofas
 }
 
 func (h *ConditionServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	s.Schema[h.GetKey()] = &schema.Schema{
 		Type:     schema.TypeSet,
 		Optional: true,

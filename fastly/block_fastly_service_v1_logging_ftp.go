@@ -40,11 +40,11 @@ func (h *FTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVersi
 	// DELETE old FTP logging endpoints.
 	for _, oRaw := range removeFTPLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteFTP(of, serviceID, latestVersion)
+		opts := h.buildDeleteFTP(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly FTP logging endpoint removal opts: %#v", opts)
 
-		if err := deleteFTP(conn, opts); err != nil {
+		if err := h.deleteFTP(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -67,11 +67,11 @@ func (h *FTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVersi
 			continue
 		}
 
-		opts := buildCreateFTP(ef, serviceID, latestVersion)
+		opts := h.buildCreateFTP(ef, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly FTP logging addition opts: %#v", opts)
 
-		if err := createFTP(conn, opts); err != nil {
+		if err := h.createFTP(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -100,6 +100,7 @@ func (h *FTPServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.Se
 }
 
 func (h *FTPServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields
@@ -208,12 +209,12 @@ func (h *FTPServiceAttributeHandler) Register(s *schema.Resource, serviceType st
 	return nil
 }
 
-func createFTP(conn *gofastly.Client, i *gofastly.CreateFTPInput) error {
+func (h *FTPServiceAttributeHandler) createFTP(conn *gofastly.Client, i *gofastly.CreateFTPInput) error {
 	_, err := conn.CreateFTP(i)
 	return err
 }
 
-func deleteFTP(conn *gofastly.Client, i *gofastly.DeleteFTPInput) error {
+func (h *FTPServiceAttributeHandler) deleteFTP(conn *gofastly.Client, i *gofastly.DeleteFTPInput) error {
 	err := conn.DeleteFTP(i)
 	errRes, ok := err.(*gofastly.HTTPError)
 	if !ok {
@@ -263,7 +264,7 @@ func flattenFTP(ftpList []*gofastly.FTP) []map[string]interface{} {
 	return fsl
 }
 
-func buildCreateFTP(ftpMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateFTPInput {
+func (h *FTPServiceAttributeHandler) buildCreateFTP(ftpMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateFTPInput {
 	df := ftpMap.(map[string]interface{})
 
 	return &gofastly.CreateFTPInput{
@@ -279,14 +280,14 @@ func buildCreateFTP(ftpMap interface{}, serviceID string, serviceVersion int) *g
 		PublicKey:         df["public_key"].(string),
 		GzipLevel:         uint8(df["gzip_level"].(int)),
 		TimestampFormat:   df["timestamp_format"].(string),
-		Format:            df["format"].(string),
-		FormatVersion:     uint(df["format_version"].(int)),
-		Placement:         df["placement"].(string),
-		ResponseCondition: df["response_condition"].(string),
+		Format:            h.OptionalMapKeyToString(df, "format", ""),
+		FormatVersion:     h.OptionalMapKeyToUInt(df, "format_version", 0),
+		Placement:         h.OptionalMapKeyToString(df, "placement", "none"),
+		ResponseCondition: h.OptionalMapKeyToString(df, "response_condition", ""),
 	}
 }
 
-func buildDeleteFTP(ftpMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteFTPInput {
+func (h *FTPServiceAttributeHandler) buildDeleteFTP(ftpMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteFTPInput {
 	df := ftpMap.(map[string]interface{})
 
 	return &gofastly.DeleteFTPInput{

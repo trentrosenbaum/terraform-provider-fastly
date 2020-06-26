@@ -106,6 +106,7 @@ func (h *SyslogServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly
 }
 
 func (h *SyslogServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

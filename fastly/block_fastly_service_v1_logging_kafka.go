@@ -22,6 +22,7 @@ func NewServiceLoggingKafka() ServiceAttributeHandlerDefinition {
 }
 
 func (h *KafkaServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields
@@ -153,11 +154,11 @@ func (h *KafkaServiceAttributeHandler) Process(d *schema.ResourceData, latestVer
 	// DELETE old Kafka logging endpoints
 	for _, oRaw := range removeKafkaLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteKafka(of, serviceID, latestVersion)
+		opts := h.buildDeleteKafka(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Kafka logging endpoint removal opts: %#v", opts)
 
-		if err := deleteKafka(conn, opts); err != nil {
+		if err := h.deleteKafka(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -180,11 +181,11 @@ func (h *KafkaServiceAttributeHandler) Process(d *schema.ResourceData, latestVer
 			continue
 		}
 
-		opts := buildCreateKafka(cfg, serviceID, latestVersion)
+		opts := h.buildCreateKafka(cfg, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Kafka logging addition opts: %#v", opts)
 
-		if err := createKafka(conn, opts); err != nil {
+		if err := h.createKafka(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -213,12 +214,12 @@ func (h *KafkaServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.
 	return nil
 }
 
-func createKafka(conn *gofastly.Client, i *gofastly.CreateKafkaInput) error {
+func (h *KafkaServiceAttributeHandler) createKafka(conn *gofastly.Client, i *gofastly.CreateKafkaInput) error {
 	_, err := conn.CreateKafka(i)
 	return err
 }
 
-func deleteKafka(conn *gofastly.Client, i *gofastly.DeleteKafkaInput) error {
+func (h *KafkaServiceAttributeHandler) deleteKafka(conn *gofastly.Client, i *gofastly.DeleteKafkaInput) error {
 	err := conn.DeleteKafka(i)
 
 	if errRes, ok := err.(*gofastly.HTTPError); ok {
@@ -266,7 +267,7 @@ func flattenKafka(kafkaList []*gofastly.Kafka) []map[string]interface{} {
 	return flattened
 }
 
-func buildCreateKafka(kafkaMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateKafkaInput {
+func (h *KafkaServiceAttributeHandler) buildCreateKafka(kafkaMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateKafkaInput {
 	df := kafkaMap.(map[string]interface{})
 
 	return &gofastly.CreateKafkaInput{
@@ -282,14 +283,14 @@ func buildCreateKafka(kafkaMap interface{}, serviceID string, serviceVersion int
 		TLSClientCert:     fastly.NullString(df["tls_client_cert"].(string)),
 		TLSClientKey:      fastly.NullString(df["tls_client_key"].(string)),
 		TLSHostname:       fastly.NullString(df["tls_hostname"].(string)),
-		Format:            fastly.NullString(df["format"].(string)),
-		FormatVersion:     fastly.Uint(uint(df["format_version"].(int))),
-		ResponseCondition: fastly.NullString(df["response_condition"].(string)),
-		Placement:         fastly.NullString(df["placement"].(string)),
+		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
+		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
+		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
+		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
 	}
 }
 
-func buildDeleteKafka(kafkaMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteKafkaInput {
+func (h *KafkaServiceAttributeHandler) buildDeleteKafka(kafkaMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteKafkaInput {
 	df := kafkaMap.(map[string]interface{})
 
 	return &gofastly.DeleteKafkaInput{

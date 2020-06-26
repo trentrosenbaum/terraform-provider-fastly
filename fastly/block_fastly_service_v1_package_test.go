@@ -11,18 +11,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-
 func TestResourceFastlyFlattenPackage(t *testing.T) {
 	cases := []struct {
-		remotePackage gofastly.Package
+		remotePackage  gofastly.Package
 		remoteFilename string
-		local  []map[string]interface{}
+		local          []map[string]interface{}
 	}{
 		{
 			remotePackage: gofastly.Package{
-					Metadata: gofastly.PackageMetadata{
-						Size:    1234567,
-						HashSum: "ouqwhgohqwoghoqhwrbowrboqwohbipwqbrwib",
+				Metadata: gofastly.PackageMetadata{
+					Size:    1234567,
+					HashSum: "ouqwhgohqwoghoqhwrbowrboqwohbipwqbrwib",
 				},
 			},
 			remoteFilename: "test_file.tar.gz",
@@ -43,8 +42,6 @@ func TestResourceFastlyFlattenPackage(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestAccFastlyServiceV1_package_basic(t *testing.T) {
 	var service gofastly.ServiceDetail

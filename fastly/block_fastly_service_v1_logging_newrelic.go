@@ -157,6 +157,7 @@ func buildDeleteNewRelic(newrelicMap interface{}, serviceID string, serviceVersi
 }
 
 func (h *NewRelicServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields

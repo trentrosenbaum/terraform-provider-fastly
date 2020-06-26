@@ -22,6 +22,7 @@ func NewServiceLoggingGooglePubSub() ServiceAttributeHandlerDefinition {
 }
 
 func (h *GooglePubSubServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields
@@ -112,11 +113,11 @@ func (h *GooglePubSubServiceAttributeHandler) Process(d *schema.ResourceData, la
 	// DELETE old Google Cloud Pub/Sub logging endpoints.
 	for _, oRaw := range removeGooglePubSubLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteGooglePubSub(of, serviceID, latestVersion)
+		opts := h.buildDeleteGooglePubSub(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Google Cloud Pub/Sub logging endpoint removal opts: %#v", opts)
 
-		if err := deleteGooglePubSub(conn, opts); err != nil {
+		if err := h.deleteGooglePubSub(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -124,11 +125,11 @@ func (h *GooglePubSubServiceAttributeHandler) Process(d *schema.ResourceData, la
 	// POST new/updated Google Cloud Pub/Sub logging endponts.
 	for _, nRaw := range addGooglePubSubLogging {
 		cfg := nRaw.(map[string]interface{})
-		opts := buildCreateGooglePubSub(cfg, serviceID, latestVersion)
+		opts := h.buildCreateGooglePubSub(cfg, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Google Cloud Pub/Sub logging addition opts: %#v", opts)
 
-		if err := createGooglePubSub(conn, opts); err != nil {
+		if err := h.createGooglePubSub(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -157,12 +158,12 @@ func (h *GooglePubSubServiceAttributeHandler) Read(d *schema.ResourceData, s *go
 	return nil
 }
 
-func createGooglePubSub(conn *gofastly.Client, i *gofastly.CreatePubsubInput) error {
+func (h *GooglePubSubServiceAttributeHandler) createGooglePubSub(conn *gofastly.Client, i *gofastly.CreatePubsubInput) error {
 	_, err := conn.CreatePubsub(i)
 	return err
 }
 
-func deleteGooglePubSub(conn *gofastly.Client, i *gofastly.DeletePubsubInput) error {
+func (h *GooglePubSubServiceAttributeHandler) deleteGooglePubSub(conn *gofastly.Client, i *gofastly.DeletePubsubInput) error {
 	err := conn.DeletePubsub(i)
 
 	errRes, ok := err.(*gofastly.HTTPError)
@@ -208,7 +209,7 @@ func flattenGooglePubSub(googlepubsubList []*gofastly.Pubsub) []map[string]inter
 	return flattened
 }
 
-func buildCreateGooglePubSub(googlepubsubMap interface{}, serviceID string, serviceVersion int) *gofastly.CreatePubsubInput {
+func (h *GooglePubSubServiceAttributeHandler) buildCreateGooglePubSub(googlepubsubMap interface{}, serviceID string, serviceVersion int) *gofastly.CreatePubsubInput {
 	df := googlepubsubMap.(map[string]interface{})
 
 	return &gofastly.CreatePubsubInput{
@@ -219,14 +220,14 @@ func buildCreateGooglePubSub(googlepubsubMap interface{}, serviceID string, serv
 		SecretKey:         fastly.NullString(df["secret_key"].(string)),
 		ProjectID:         fastly.NullString(df["project_id"].(string)),
 		Topic:             fastly.NullString(df["topic"].(string)),
-		Format:            fastly.NullString(df["format"].(string)),
-		FormatVersion:     fastly.Uint(uint(df["format_version"].(int))),
-		ResponseCondition: fastly.NullString(df["response_condition"].(string)),
-		Placement:         fastly.NullString(df["placement"].(string)),
+		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
+		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
+		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
+		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
 	}
 }
 
-func buildDeleteGooglePubSub(googlepubsubMap interface{}, serviceID string, serviceVersion int) *gofastly.DeletePubsubInput {
+func (h *GooglePubSubServiceAttributeHandler) buildDeleteGooglePubSub(googlepubsubMap interface{}, serviceID string, serviceVersion int) *gofastly.DeletePubsubInput {
 	df := googlepubsubMap.(map[string]interface{})
 
 	return &gofastly.DeletePubsubInput{

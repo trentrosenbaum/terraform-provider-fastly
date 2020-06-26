@@ -72,6 +72,13 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 			continue
 		}
 
+		var vla = NewVCLLoggingAttributes()
+		if h.GetServiceType() == ServiceTypeVCL {
+			vla.format = sf["format"].(string)
+			vla.placement = sf["placement"].(string)
+			vla.responseCondition = sf["response_condition"].(string)
+		}
+
 		opts := gofastly.CreateBigQueryInput{
 			Service:           d.Id(),
 			Version:           latestVersion,
@@ -81,13 +88,13 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 			Table:             sf["table"].(string),
 			User:              sf["email"].(string),
 			SecretKey:         sf["secret_key"].(string),
-			ResponseCondition: h.OptionalMapKeyToString(sf, "response_condition", ""),
 			Template:          sf["template"].(string),
-			Placement:         h.OptionalMapKeyToString(sf, "placement", "none"),
+			ResponseCondition: vla.responseCondition,
+			Placement:         vla.placement,
 		}
 
-		format := h.OptionalMapKeyToString(sf, "format", "")
-		if format != "" {
+		format := vla.format
+		if vla.format != "" {
 			opts.Format = format
 		}
 
@@ -120,6 +127,8 @@ func (h *BigQueryLoggingServiceAttributeHandler) Read(d *schema.ResourceData, s 
 }
 
 func (h *BigQueryLoggingServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
+
 	var a = map[string]*schema.Schema{
 		// Required fields
 		"name": {

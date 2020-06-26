@@ -40,11 +40,11 @@ func (h *ElasticSearchServiceAttributeHandler) Process(d *schema.ResourceData, l
 	// DELETE old Elasticsearch logging endpoints.
 	for _, oRaw := range removeElasticsearchLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteElasticsearch(of, serviceID, latestVersion)
+		opts := h.buildDeleteElasticsearch(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Elasticsearch logging endpoint removal opts: %#v", opts)
 
-		if err := deleteElasticsearch(conn, opts); err != nil {
+		if err := h.deleteElasticsearch(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -52,11 +52,11 @@ func (h *ElasticSearchServiceAttributeHandler) Process(d *schema.ResourceData, l
 	// POST new/updated Elasticsearch logging endpoints.
 	for _, nRaw := range addElasticsearchLogging {
 		ef := nRaw.(map[string]interface{})
-		opts := buildCreateElasticsearch(ef, serviceID, latestVersion)
+		opts := h.buildCreateElasticsearch(ef, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Elasticsearch logging addition opts: %#v", opts)
 
-		if err := createElasticsearch(conn, opts); err != nil {
+		if err := h.createElasticsearch(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -85,6 +85,7 @@ func (h *ElasticSearchServiceAttributeHandler) Read(d *schema.ResourceData, s *g
 }
 
 func (h *ElasticSearchServiceAttributeHandler) Register(s *schema.Resource, serviceType string) error {
+	h.serviceType = serviceType
 
 	var a = map[string]*schema.Schema{
 		// Required fields
@@ -211,12 +212,12 @@ func (h *ElasticSearchServiceAttributeHandler) Register(s *schema.Resource, serv
 	return nil
 }
 
-func createElasticsearch(conn *gofastly.Client, i *gofastly.CreateElasticsearchInput) error {
+func (h *ElasticSearchServiceAttributeHandler) createElasticsearch(conn *gofastly.Client, i *gofastly.CreateElasticsearchInput) error {
 	_, err := conn.CreateElasticsearch(i)
 	return err
 }
 
-func deleteElasticsearch(conn *gofastly.Client, i *gofastly.DeleteElasticsearchInput) error {
+func (h *ElasticSearchServiceAttributeHandler) deleteElasticsearch(conn *gofastly.Client, i *gofastly.DeleteElasticsearchInput) error {
 	err := conn.DeleteElasticsearch(i)
 
 	if errRes, ok := err.(*gofastly.HTTPError); ok {
@@ -265,7 +266,7 @@ func flattenElasticsearch(elasticsearchList []*gofastly.Elasticsearch) []map[str
 	return esl
 }
 
-func buildCreateElasticsearch(elasticsearchMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateElasticsearchInput {
+func (h *ElasticSearchServiceAttributeHandler) buildCreateElasticsearch(elasticsearchMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateElasticsearchInput {
 	df := elasticsearchMap.(map[string]interface{})
 
 	return &gofastly.CreateElasticsearchInput{
@@ -283,14 +284,14 @@ func buildCreateElasticsearch(elasticsearchMap interface{}, serviceID string, se
 		TLSClientCert:     gofastly.NullString(df["tls_client_cert"].(string)),
 		TLSClientKey:      gofastly.NullString(df["tls_client_key"].(string)),
 		TLSHostname:       gofastly.NullString(df["tls_hostname"].(string)),
-		Format:            gofastly.NullString(df["format"].(string)),
-		FormatVersion:     gofastly.Uint(uint(df["format_version"].(int))),
-		Placement:         gofastly.NullString(df["placement"].(string)),
-		ResponseCondition: gofastly.NullString(df["response_condition"].(string)),
+		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
+		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
+		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
+		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
 	}
 }
 
-func buildDeleteElasticsearch(elasticsearchMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteElasticsearchInput {
+func (h *ElasticSearchServiceAttributeHandler) buildDeleteElasticsearch(elasticsearchMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteElasticsearchInput {
 	df := elasticsearchMap.(map[string]interface{})
 
 	return &gofastly.DeleteElasticsearchInput{
