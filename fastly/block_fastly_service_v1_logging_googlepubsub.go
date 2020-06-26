@@ -13,7 +13,7 @@ type GooglePubSubServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceLoggingGooglePubSub() ServiceAttributeDefinition {
+func NewServiceLoggingGooglePubSub() ServiceAttributeHandlerDefinition {
 	return &GooglePubSubServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "logging_googlepubsub",

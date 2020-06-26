@@ -12,7 +12,7 @@ type PaperTrailServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServicePaperTrail() ServiceAttributeDefinition {
+func NewServicePaperTrail() ServiceAttributeHandlerDefinition {
 	return &PaperTrailServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "papertrail",

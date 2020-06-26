@@ -10,7 +10,7 @@ import (
 
 var wasmService = &BaseServiceDefinition{
 	Type: ServiceTypeWasm,
-	Attributes: []ServiceAttributeDefinition{
+	Attributes: []ServiceAttributeHandlerDefinition{
 		NewServiceDomain(),
 		NewServiceHealthCheck(),
 		NewServiceBackend(),

@@ -9,7 +9,7 @@ import (
 // configuration objects (Backends, Request Headers, etc)
 var vclService = &BaseServiceDefinition{
 	Type: ServiceTypeVCL,
-	Attributes: []ServiceAttributeDefinition{
+	Attributes: []ServiceAttributeHandlerDefinition{
 		NewServiceSettings(),
 		NewServiceCondition(),
 		NewServiceDomain(),

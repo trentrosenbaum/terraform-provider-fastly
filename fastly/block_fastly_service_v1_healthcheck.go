@@ -12,7 +12,7 @@ type HealthCheckServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceHealthCheck() ServiceAttributeDefinition {
+func NewServiceHealthCheck() ServiceAttributeHandlerDefinition {
 	return &HealthCheckServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "healthcheck",

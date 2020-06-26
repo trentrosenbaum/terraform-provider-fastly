@@ -13,7 +13,7 @@ type BackendServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceBackend() ServiceAttributeDefinition {
+func NewServiceBackend() ServiceAttributeHandlerDefinition {
 	return &BackendServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "backend",
@@ -84,7 +84,7 @@ func (h *BackendServiceAttributeHandler) Process(d *schema.ResourceData, latestV
 			FirstByteTimeout:    uint(df["first_byte_timeout"].(int)),
 			MaxConn:             uint(df["max_conn"].(int)),
 			Weight:              uint(df["weight"].(int)),
-			RequestCondition:    h.OptionalMapKeyToString(df, "request_condition"),
+			RequestCondition:    h.OptionalMapKeyToString(df, "request_condition", ""),
 			HealthCheck:         df["healthcheck"].(string),
 		}
 

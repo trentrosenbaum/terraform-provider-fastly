@@ -12,9 +12,9 @@ build: fmtcheck
 	go install -ldflags="-X $(FULL_PKG_NAME)/$(VERSION_PLACEHOLDER)=$(VERSION)"
 
 test: fmtcheck
-	go test -i $(TEST) || exit 1
+	go test -v -i $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
+		xargs -t -n4 go test $(TESTARGS) -v -timeout=300s -parallel=4
 
 testacc: fmtcheck
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m -ldflags="-X=$(FULL_PKG_NAME)/$(VERSION_PLACEHOLDER)=acc"
@@ -44,7 +44,7 @@ test-compile:
 		echo "  make test-compile TEST=./$(PKG_NAME)"; \
 		exit 1; \
 	fi
-	go test -c $(TEST) $(TESTARGS)
+	go test -v -c $(TEST) $(TESTARGS)
 
 website:
 ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))

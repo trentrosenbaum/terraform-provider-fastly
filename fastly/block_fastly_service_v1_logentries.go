@@ -12,7 +12,7 @@ type LogentriesServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceLogentries() ServiceAttributeDefinition {
+func NewServiceLogentries() ServiceAttributeHandlerDefinition {
 	return &LogentriesServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "logentries",

@@ -12,7 +12,7 @@ type DirectorServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceDirector() ServiceAttributeDefinition {
+func NewServiceDirector() ServiceAttributeHandlerDefinition {
 	return &DirectorServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "director",

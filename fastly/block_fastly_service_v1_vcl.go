@@ -13,7 +13,7 @@ type VCLServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceVCL() ServiceAttributeDefinition {
+func NewServiceVCL() ServiceAttributeHandlerDefinition {
 	return &VCLServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "vcl",

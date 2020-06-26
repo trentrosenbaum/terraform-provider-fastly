@@ -44,6 +44,34 @@ func TestResourceFastlyFlattenBigQuery(t *testing.T) {
 				},
 			},
 		},
+		{
+			remote: []*gofastly.BigQuery{
+				{
+					Name:      "bigquery-example",
+					User:      "email@example.com",
+					ProjectID: "example-gcp-project",
+					Dataset:   "example_bq_dataset",
+					Table:     "example_bq_table",
+					Format:    "%h %l %u %t %r %>s",
+					Placement: "waf_debug",
+					ResponseCondition: "test",
+					SecretKey: secretKey,
+				},
+			},
+			local: []map[string]interface{}{
+				{
+					"name":       			"bigquery-example",
+					"email":      			"email@example.com",
+					"project_id": 			"example-gcp-project",
+					"dataset":    			"example_bq_dataset",
+					"table":      			"example_bq_table",
+					"secret_key": 			secretKey,
+					"format":	  			"%h %l %u %t %r %>s",
+					"placement":		  	"waf_debug",
+					"response_condition": 	"test",
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -53,6 +81,8 @@ func TestResourceFastlyFlattenBigQuery(t *testing.T) {
 		}
 	}
 }
+
+
 
 func TestAccFastlyServiceV1_bigquerylogging(t *testing.T) {
 	var service gofastly.ServiceDetail
@@ -72,6 +102,13 @@ func TestAccFastlyServiceV1_bigquerylogging(t *testing.T) {
 				Config: testAccServiceV1Config_bigquery(name, bqName, secretKey),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
+					testAccCheckFastlyServiceV1Attributes_bq(&service, name, bqName),
+				),
+			},
+			{
+				Config: testAccServiceV1Config_bigquery_wasm(name, bqName, secretKey),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceV1Exists("fastly_service_wasm_v1.foo", &service),
 					testAccCheckFastlyServiceV1Attributes_bq(&service, name, bqName),
 				),
 			},
@@ -162,8 +199,39 @@ resource "fastly_service_v1" "foo" {
     project_id = "example-gcp-project"
     dataset    = "example_bq_dataset"
     table      = "example_bq_table"
+	format     = "%%h %%l %%u %%t %%r %%>s"
+	placement  = "waf_debug"
+  }
+  force_destroy = true
+}`, name, domainName, backendName, gcsName, secretKey)
+}
+
+func testAccServiceV1Config_bigquery_wasm(name, gcsName, secretKey string) string {
+	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
+	domainName := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
+
+	return fmt.Sprintf(`
+resource "fastly_service_wasm_v1" "foo" {
+  name = "%s"
+
+  domain {
+    name    = "%s"
+    comment = "tf-testing-domain"
+	}
+
+  backend {
+    address = "%s"
+    name    = "tf -test backend"
   }
 
+  bigquerylogging {
+    name       = "%s"
+    email      = "email@example.com"
+    secret_key = %q
+    project_id = "example-gcp-project"
+    dataset    = "example_bq_dataset"
+    table      = "example_bq_table"
+  }
   force_destroy = true
 }`, name, domainName, backendName, gcsName, secretKey)
 }

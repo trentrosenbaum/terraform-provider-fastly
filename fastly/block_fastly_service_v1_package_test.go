@@ -2,6 +2,7 @@ package fastly
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
@@ -9,6 +10,41 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
+
+
+func TestResourceFastlyFlattenPackage(t *testing.T) {
+	cases := []struct {
+		remotePackage gofastly.Package
+		remoteFilename string
+		local  []map[string]interface{}
+	}{
+		{
+			remotePackage: gofastly.Package{
+					Metadata: gofastly.PackageMetadata{
+						Size:    1234567,
+						HashSum: "ouqwhgohqwoghoqhwrbowrboqwohbipwqbrwib",
+				},
+			},
+			remoteFilename: "test_file.tar.gz",
+			local: []map[string]interface{}{
+				{
+					"source_code_hash": "ouqwhgohqwoghoqhwrbowrboqwohbipwqbrwib",
+					"source_code_size": 1234567,
+					"filename":         "test_file.tar.gz",
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		out := flattenPackage(&c.remotePackage, c.remoteFilename)
+		if !reflect.DeepEqual(out, c.local) {
+			t.Fatalf("Error matching:\nexpected: %#v\ngot: %#v", c.local, out)
+		}
+	}
+}
+
+
 
 func TestAccFastlyServiceV1_package_basic(t *testing.T) {
 	var service gofastly.ServiceDetail
@@ -45,7 +81,6 @@ func TestAccFastlyServiceV1_package_basic(t *testing.T) {
 		},
 	})
 }
-
 
 func testAccCheckFastlyServiceV1PackageAttributes(service *gofastly.ServiceDetail, wasmPackage *gofastly.Package) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

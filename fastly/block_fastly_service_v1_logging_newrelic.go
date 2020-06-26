@@ -12,7 +12,7 @@ type NewRelicServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceLoggingNewRelic() ServiceAttributeDefinition {
+func NewServiceLoggingNewRelic() ServiceAttributeHandlerDefinition {
 	return &NewRelicServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "logging_newrelic",

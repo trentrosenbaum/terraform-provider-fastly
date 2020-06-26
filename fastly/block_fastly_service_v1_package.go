@@ -12,7 +12,7 @@ type PackageServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServicePackage() ServiceAttributeDefinition {
+func NewServicePackage() ServiceAttributeHandlerDefinition {
 	return &PackageServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "package",
@@ -79,7 +79,8 @@ func (h *PackageServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastl
 		return fmt.Errorf("[ERR] Error looking up Package for (%s), version (%v): %v", d.Id(), s.ActiveVersion.Number, err)
 	}
 
-	wp := flattenPackage(Package, d)
+	filename := d.Get("package.0.filename").(string)
+	wp := flattenPackage(Package, filename)
 	if err := d.Set(h.GetKey(), wp); err != nil {
 		log.Printf("[WARN] Error setting Package for (%s): %s", d.Id(), err)
 	}
@@ -92,12 +93,12 @@ func updatePackage(conn *gofastly.Client, i *gofastly.UpdatePackageInput) error 
 	return err
 }
 
-func flattenPackage(Package *gofastly.Package, d *schema.ResourceData) []map[string]interface{} {
+func flattenPackage(Package *gofastly.Package, filename string) []map[string]interface{} {
 	var pa []map[string]interface{}
 	p := map[string]interface{}{
 		"source_code_hash": Package.Metadata.HashSum,
 		"source_code_size": Package.Metadata.Size,
-		"filename":         d.Get("package.0.filename"),
+		"filename":         filename,
 	}
 
 	// Convert Package to a map for saving to state.

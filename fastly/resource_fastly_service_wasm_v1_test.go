@@ -15,8 +15,8 @@ func TestAccFastlyServiceWASMV1_basic(t *testing.T) {
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	comment := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	versionComment := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domainName1 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	domainName2 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
+	domainName1 := fmt.Sprintf("fastly-test1.tf-%s.com", acctest.RandString(10))
+	domainName2 := fmt.Sprintf("fastly-test2.tf-%s.com", acctest.RandString(10))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -34,16 +34,17 @@ func TestAccFastlyServiceWASMV1_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"fastly_service_wasm_v1.foo", "version_comment", ""),
 					resource.TestCheckResourceAttr(
-						"fastly_service_wasm_v1.foo", "active_version", "1"),
+						"fastly_service_wasm_v1.foo", "active_version", "0"),
 					resource.TestCheckResourceAttr(
 						"fastly_service_wasm_v1.foo", "domain.#", "1"),
 					resource.TestCheckResourceAttr(
 						"fastly_service_wasm_v1.foo", "backend.#", "1"),
+					resource.TestCheckResourceAttr(
+						"fastly_service_wasm_v1.foo", "package.#", "1"),
 				),
 			},
-
 			{
-				Config: testAccServiceWASMV1Config_basicUpdate(name, comment, versionComment, domainName2),
+				Config: testAccServiceWASMV1Config_Update(name, comment, versionComment, domainName2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceWASMV1Exists("fastly_service_wasm_v1.foo", &service),
 					resource.TestCheckResourceAttr(
@@ -53,11 +54,13 @@ func TestAccFastlyServiceWASMV1_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"fastly_service_wasm_v1.foo", "version_comment", versionComment),
 					resource.TestCheckResourceAttr(
-						"fastly_service_wasm_v1.foo", "active_version", "2"),
+						"fastly_service_wasm_v1.foo", "active_version", "1"),
 					resource.TestCheckResourceAttr(
 						"fastly_service_wasm_v1.foo", "domain.#", "1"),
 					resource.TestCheckResourceAttr(
 						"fastly_service_wasm_v1.foo", "backend.#", "1"),
+					resource.TestCheckResourceAttr(
+						"fastly_service_wasm_v1.foo", "package.#", "1"),
 				),
 			},
 		},
@@ -124,12 +127,16 @@ resource "fastly_service_wasm_v1" "foo" {
     address = "aws.amazon.com"
     name    = "amazon docs"
   }
+  package {
+    filename = "test_fixtures/package/valid.tar.gz"
+	source_code_hash = filesha512("test_fixtures/package/valid.tar.gz")
+  }
   force_destroy = true
   activate = false
 }`, name, domain)
 }
 
-func testAccServiceWASMV1Config_basicUpdate(name, comment, versionComment, domain string) string {
+func testAccServiceWASMV1Config_Update(name, comment, versionComment, domain string) string {
 	return fmt.Sprintf(`
 resource "fastly_service_wasm_v1" "foo" {
   name    = "%s"
@@ -140,8 +147,12 @@ resource "fastly_service_wasm_v1" "foo" {
     comment = "tf-testing-domain"
   }
   backend {
-    address = "aws.amazon.com"
-    name    = "amazon docs"
+    address = "test.google.com"
+    name    = "google"
+  }
+  package {
+    filename = "test_fixtures/package/valid.tar.gz"
+	source_code_hash = filesha512("test_fixtures/package/valid.tar.gz")
   }
   force_destroy = true
 }`, name, comment, versionComment, domain)

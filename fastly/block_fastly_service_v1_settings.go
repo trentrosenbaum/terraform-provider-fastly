@@ -10,7 +10,7 @@ import (
 type SettingsServiceAttributeHandler struct {
 }
 
-func NewServiceSettings() ServiceAttributeDefinition {
+func NewServiceSettings() ServiceAttributeHandlerDefinition {
 	return &SettingsServiceAttributeHandler{}
 }
 

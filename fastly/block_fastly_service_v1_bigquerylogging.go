@@ -12,7 +12,7 @@ type BigQueryLoggingServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceBigQueryLogging() ServiceAttributeDefinition {
+func NewServiceBigQueryLogging() ServiceAttributeHandlerDefinition {
 	return &BigQueryLoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "bigquerylogging",
@@ -81,13 +81,14 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 			Table:             sf["table"].(string),
 			User:              sf["email"].(string),
 			SecretKey:         sf["secret_key"].(string),
-			ResponseCondition: sf["response_condition"].(string),
+			ResponseCondition: h.OptionalMapKeyToString(sf, "response_condition", ""),
 			Template:          sf["template"].(string),
-			Placement:         sf["placement"].(string),
+			Placement:         h.OptionalMapKeyToString(sf, "placement", "none"),
 		}
 
-		if sf["format"].(string) != "" {
-			opts.Format = sf["format"].(string)
+		format := h.OptionalMapKeyToString(sf, "format", "")
+		if format != "" {
+			opts.Format = format
 		}
 
 		log.Printf("[DEBUG] Create bigquerylogging opts: %#v", opts)

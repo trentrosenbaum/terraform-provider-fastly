@@ -12,7 +12,7 @@ type DomainServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceDomain() ServiceAttributeDefinition {
+func NewServiceDomain() ServiceAttributeHandlerDefinition {
 	return &DomainServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "domain",

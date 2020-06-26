@@ -12,7 +12,7 @@ type BlobStorageLoggingServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceBlobStorageLogging() ServiceAttributeDefinition {
+func NewServiceBlobStorageLogging() ServiceAttributeHandlerDefinition {
 	return &BlobStorageLoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key: "blobstoragelogging",
