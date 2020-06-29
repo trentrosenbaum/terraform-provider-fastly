@@ -58,23 +58,31 @@ func (h *SyslogServiceAttributeHandler) Process(d *schema.ResourceData, latestVe
 	for _, pRaw := range addSyslog {
 		slf := pRaw.(map[string]interface{})
 
+		var vla = NewVCLLoggingAttributes()
+		if h.GetServiceType() == ServiceTypeVCL {
+			vla.format = slf["format"].(string)
+			vla.formatVersion = uint(slf["format_version"].(int))
+			vla.placement = slf["placement"].(string)
+			vla.responseCondition = slf["response_condition"].(string)
+		}
+
 		opts := gofastly.CreateSyslogInput{
 			Service:           d.Id(),
 			Version:           latestVersion,
 			Name:              slf["name"].(string),
 			Address:           slf["address"].(string),
 			Port:              uint(slf["port"].(int)),
-			Format:            slf["format"].(string),
-			FormatVersion:     uint(slf["format_version"].(int)),
+			Format:            vla.format,
+			FormatVersion:     vla.formatVersion,
 			Token:             slf["token"].(string),
 			UseTLS:            gofastly.CBool(slf["use_tls"].(bool)),
 			TLSHostname:       slf["tls_hostname"].(string),
 			TLSCACert:         slf["tls_ca_cert"].(string),
 			TLSClientCert:     slf["tls_client_cert"].(string),
 			TLSClientKey:      slf["tls_client_key"].(string),
-			ResponseCondition: slf["response_condition"].(string),
+			ResponseCondition: vla.responseCondition,
 			MessageType:       slf["message_type"].(string),
-			Placement:         slf["placement"].(string),
+			Placement:         vla.placement,
 		}
 
 		log.Printf("[DEBUG] Create Syslog Opts: %#v", opts)

@@ -57,16 +57,25 @@ func (h *SumologicServiceAttributeHandler) Process(d *schema.ResourceData, lates
 	// POST new/updated Sumologic
 	for _, pRaw := range addSumologic {
 		sf := pRaw.(map[string]interface{})
+
+		var vla = NewVCLLoggingAttributes()
+		if h.GetServiceType() == ServiceTypeVCL {
+			vla.format = sf["format"].(string)
+			vla.formatVersion = uint(sf["format_version"].(int))
+			vla.placement = sf["placement"].(string)
+			vla.responseCondition = sf["response_condition"].(string)
+		}
+
 		opts := gofastly.CreateSumologicInput{
 			Service:           d.Id(),
 			Version:           latestVersion,
 			Name:              sf["name"].(string),
 			URL:               sf["url"].(string),
-			Format:            sf["format"].(string),
-			FormatVersion:     sf["format_version"].(int),
-			ResponseCondition: sf["response_condition"].(string),
+			Format:            vla.format,
+			FormatVersion:     int(vla.formatVersion),
+			ResponseCondition: vla.responseCondition,
 			MessageType:       sf["message_type"].(string),
-			Placement:         sf["placement"].(string),
+			Placement:         vla.placement,
 		}
 
 		log.Printf("[DEBUG] Create Sumologic Opts: %#v", opts)

@@ -39,8 +39,8 @@ func (h *S3LoggingServiceAttributeHandler) Process(d *schema.ResourceData, lates
 
 	// DELETE old S3 Log configurations.
 	for _, sRaw := range removeS3Logging {
-		opts := buildDeleteS3(sRaw, serviceID, latestVersion)
-		err := deleteS3(conn, opts)
+		opts := h.buildDeleteS3(sRaw, serviceID, latestVersion)
+		err := h.deleteS3(conn, opts)
 		if err != nil {
 			return err
 		}
@@ -65,6 +65,8 @@ func (h *S3LoggingServiceAttributeHandler) Process(d *schema.ResourceData, lates
 		}
 
 		err := createS3(conn, opts)
+		opts, _ := h.buildCreateS3(sRaw, d.Id(), latestVersion)
+		err := h.createS3(conn, opts)
 		if err != nil {
 			return err
 		}
@@ -222,12 +224,12 @@ func (h *S3LoggingServiceAttributeHandler) Register(s *schema.Resource, serviceT
 	return nil
 }
 
-func createS3(conn *gofastly.Client, i *gofastly.CreateS3Input) error {
+func (h *S3LoggingServiceAttributeHandler) createS3(conn *gofastly.Client, i *gofastly.CreateS3Input) error {
 	_, err := conn.CreateS3(i)
 	return err
 }
 
-func deleteS3(conn *gofastly.Client, i *gofastly.DeleteS3Input) error {
+func (h *S3LoggingServiceAttributeHandler) deleteS3(conn *gofastly.Client, i *gofastly.DeleteS3Input) error {
 	log.Printf("[DEBUG] Fastly S3 Logging removal opts: %#v", i)
 
 	err := conn.DeleteS3(i)
@@ -284,7 +286,7 @@ func flattenS3s(s3List []*gofastly.S3) []map[string]interface{} {
 	return sl
 }
 
-func buildCreateS3(s3Map interface{}, serviceID string, serviceVersion int) (*gofastly.CreateS3Input, error) {
+func (h *S3LoggingServiceAttributeHandler) buildCreateS3(s3Map interface{}, serviceID string, serviceVersion int) (*gofastly.CreateS3Input, error) {
 	df := s3Map.(map[string]interface{})
 	// The Fastly API will not error if these are omitted, so we throw an error
 	// if any of these are empty.
@@ -292,6 +294,14 @@ func buildCreateS3(s3Map interface{}, serviceID string, serviceVersion int) (*go
 		if df[sk].(string) == "" {
 			return nil, fmt.Errorf("[ERR] No %s found for S3 Log stream setup for Service (%s)", sk, serviceID)
 		}
+	}
+
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
 	}
 
 	opts := gofastly.CreateS3Input{
@@ -305,13 +315,13 @@ func buildCreateS3(s3Map interface{}, serviceID string, serviceVersion int) (*go
 		GzipLevel:                    uint(df["gzip_level"].(int)),
 		Domain:                       df["domain"].(string),
 		Path:                         df["path"].(string),
-		Format:                       df["format"].(string),
-		FormatVersion:                uint(df["format_version"].(int)),
+		Format:                       vla.format,
+		FormatVersion:                vla.formatVersion,
 		TimestampFormat:              df["timestamp_format"].(string),
-		ResponseCondition:            df["response_condition"].(string),
+		ResponseCondition:            vla.responseCondition,
 		MessageType:                  df["message_type"].(string),
 		PublicKey:                    df["public_key"].(string),
-		Placement:                    df["placement"].(string),
+		Placement:                    vla.placement,
 		ServerSideEncryptionKMSKeyID: df["server_side_encryption_kms_key_id"].(string),
 	}
 
@@ -334,7 +344,7 @@ func buildCreateS3(s3Map interface{}, serviceID string, serviceVersion int) (*go
 	return &opts, nil
 }
 
-func buildDeleteS3(s3Map interface{}, serviceID string, serviceVersion int) *gofastly.DeleteS3Input {
+func (h *S3LoggingServiceAttributeHandler) buildDeleteS3(s3Map interface{}, serviceID string, serviceVersion int) *gofastly.DeleteS3Input {
 	df := s3Map.(map[string]interface{})
 
 	return &gofastly.DeleteS3Input{

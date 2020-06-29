@@ -73,15 +73,23 @@ func (h *SplunkServiceAttributeHandler) Process(d *schema.ResourceData, latestVe
 			continue
 		}
 
+		var vla = NewVCLLoggingAttributes()
+		if h.GetServiceType() == ServiceTypeVCL {
+			vla.format = sf["format"].(string)
+			vla.formatVersion = uint(sf["format_version"].(int))
+			vla.placement = sf["placement"].(string)
+			vla.responseCondition = sf["response_condition"].(string)
+		}
+
 		opts := gofastly.CreateSplunkInput{
 			Service:           d.Id(),
 			Version:           latestVersion,
 			Name:              sf["name"].(string),
 			URL:               sf["url"].(string),
-			Format:            sf["format"].(string),
-			FormatVersion:     uint(sf["format_version"].(int)),
-			ResponseCondition: sf["response_condition"].(string),
-			Placement:         sf["placement"].(string),
+			Format:            vla.format,
+			FormatVersion:     vla.formatVersion,
+			ResponseCondition: vla.responseCondition,
+			Placement:         vla.placement,
 			Token:             sf["token"].(string),
 			TLSHostname:       sf["tls_hostname"].(string),
 			TLSCACert:         sf["tls_ca_cert"].(string),
