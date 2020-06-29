@@ -56,8 +56,8 @@ func TestAccFastlyServiceV1_sumologic(t *testing.T) {
 	domainName := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
 
 	sWasm := gofastly.Sumologic{
-		Name:          "sumologger",
-		URL:           "https://collectors.sumologic.com/receiver/1",
+		Name: "sumologger",
+		URL:  "https://collectors.sumologic.com/receiver/1",
 	}
 
 	s := gofastly.Sumologic{
@@ -141,7 +141,7 @@ func testAccCheckFastlyServiceV1AttributesSumologic(service *gofastly.ServiceDet
 			return fmt.Errorf("Sumologic name mismatch, expected: %s, got: %#v", sumologic.Name, sumologicList[0].Name)
 		}
 
-		if serviceType==ServiceTypeVCL && sumologicList[0].Format != sumologic.Format {
+		if serviceType == ServiceTypeVCL && sumologicList[0].Format != sumologic.Format {
 			return fmt.Errorf("Sumologic format mismatch, expected: %s, got: %#v", sumologic.Format, sumologicList[0].Format)
 		}
 

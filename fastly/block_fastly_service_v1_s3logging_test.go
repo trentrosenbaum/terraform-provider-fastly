@@ -86,17 +86,17 @@ func TestAccFastlyServiceV1_s3logging_basic(t *testing.T) {
 	domainName1 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
 
 	log1Wasm := gofastly.S3{
-		Version:           1,
-		Name:              "somebucketlog",
-		BucketName:        "fastlytestlogging",
-		Domain:            "s3-us-west-2.amazonaws.com",
-		AccessKey:         testAwsPrimaryAccessKey,
-		SecretKey:         testAwsPrimarySecretKey,
-		Period:            uint(3600),
-		PublicKey:         pgpPublicKey(t),
-		GzipLevel:         uint(0),
-		MessageType:       "classic",
-		TimestampFormat:   "%Y-%m-%dT%H:%M:%S.000",
+		Version:         1,
+		Name:            "somebucketlog",
+		BucketName:      "fastlytestlogging",
+		Domain:          "s3-us-west-2.amazonaws.com",
+		AccessKey:       testAwsPrimaryAccessKey,
+		SecretKey:       testAwsPrimarySecretKey,
+		Period:          uint(3600),
+		PublicKey:       pgpPublicKey(t),
+		GzipLevel:       uint(0),
+		MessageType:     "classic",
+		TimestampFormat: "%Y-%m-%dT%H:%M:%S.000",
 	}
 
 	log1 := gofastly.S3{

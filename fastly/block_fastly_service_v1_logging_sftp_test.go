@@ -83,13 +83,13 @@ func TestAccFastlyServiceV1_logging_sftp_basic(t *testing.T) {
 		Version: 1,
 
 		// Configured
-		Name:              "sftp-endpoint",
-		Address:           "sftp.example.com",
-		User:              "username",
-		Password:          "password",
-		PublicKey:         pgpPublicKey(t),
-		Path:              "/",
-		SSHKnownHosts:     "sftp.example.com",
+		Name:          "sftp-endpoint",
+		Address:       "sftp.example.com",
+		User:          "username",
+		Password:      "password",
+		PublicKey:     pgpPublicKey(t),
+		Path:          "/",
+		SSHKnownHosts: "sftp.example.com",
 
 		// Defaults
 		Port:            22,

@@ -60,12 +60,11 @@ func TestAccFastlyServiceV1_scalyrlogging_basic(t *testing.T) {
 	domain := fmt.Sprintf("fastly-test.%s.com", name)
 
 	log1Wasm := gofastly.Scalyr{
-		Version:           1,
-		Name:              "scalyrlogger",
-		Token:             "tkn",
-		Region:        "US",
+		Version: 1,
+		Name:    "scalyrlogger",
+		Token:   "tkn",
+		Region:  "US",
 	}
-
 
 	log1 := gofastly.Scalyr{
 		Version:           1,

@@ -68,22 +68,22 @@ func TestResourceFastlyFlattenKafka(t *testing.T) {
 
 func TestAccFastlyServiceV1_kafkalogging_basic(t *testing.T) {
 	var service gofastly.ServiceDetail
-	name     := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	nameWasm := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain   := fmt.Sprintf("fastly-test.%s.com", name)
+	domain := fmt.Sprintf("fastly-test.%s.com", name)
 
 	log1Wasm := gofastly.Kafka{
-		Version:           1,
-		Name:              "kafkalogger",
-		Topic:             "topic",
-		Brokers:           "127.0.0.1,127.0.0.2",
-		CompressionCodec:  "snappy",
-		RequiredACKs:      "-1",
-		UseTLS:            true,
-		TLSCACert:         caCert(t),
-		TLSClientCert:     certificate(t),
-		TLSClientKey:      privateKey(t),
-		TLSHostname:       "example.com",
+		Version:          1,
+		Name:             "kafkalogger",
+		Topic:            "topic",
+		Brokers:          "127.0.0.1,127.0.0.2",
+		CompressionCodec: "snappy",
+		RequiredACKs:     "-1",
+		UseTLS:           true,
+		TLSCACert:        caCert(t),
+		TLSClientCert:    certificate(t),
+		TLSClientKey:     privateKey(t),
+		TLSHostname:      "example.com",
 	}
 
 	log1 := gofastly.Kafka{

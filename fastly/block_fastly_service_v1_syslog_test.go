@@ -79,12 +79,12 @@ func TestAccFastlyServiceV1_syslog_basic(t *testing.T) {
 	domainName1 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
 
 	log1Wasm := gofastly.Syslog{
-		Version:           1,
-		Name:              "somesyslogname",
-		Address:           "127.0.0.1",
-		IPV4:              "127.0.0.1",
-		Port:              uint(514),
-		MessageType:       "classic",
+		Version:     1,
+		Name:        "somesyslogname",
+		Address:     "127.0.0.1",
+		IPV4:        "127.0.0.1",
+		Port:        uint(514),
+		MessageType: "classic",
 	}
 
 	log1 := gofastly.Syslog{

@@ -51,9 +51,9 @@ func TestAccFastlyServiceV1_logging_loggly_basic(t *testing.T) {
 	domain := fmt.Sprintf("fastly-test.%s.com", name)
 
 	log1Wasm := gofastly.Loggly{
-		Version:       1,
-		Name:          "loggly-endpoint",
-		Token:         "s3cr3t",
+		Version: 1,
+		Name:    "loggly-endpoint",
+		Token:   "s3cr3t",
 	}
 
 	log1 := gofastly.Loggly{

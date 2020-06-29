@@ -135,12 +135,11 @@ func TestAccFastlyServiceV1_logging_datadog_basic(t *testing.T) {
 	domain := fmt.Sprintf("fastly-test.%s.com", name)
 
 	log1Wasm := gofastly.Datadog{
-		Version:       1,
-		Name:          "datadog-endpoint",
-		Token:         "token",
-		Region:        "US",
+		Version: 1,
+		Name:    "datadog-endpoint",
+		Token:   "token",
+		Region:  "US",
 	}
-
 
 	log1 := gofastly.Datadog{
 		Version:       1,
@@ -252,7 +251,6 @@ func testAccCheckFastlyServiceV1DatadogAttributes(service *gofastly.ServiceDetai
 						dl.Placement = d.Placement
 					}
 
-
 					if diff := cmp.Diff(d, dl); diff != "" {
 						return fmt.Errorf("Bad match Datadog logging match: %s", diff)
 					}
@@ -268,7 +266,6 @@ func testAccCheckFastlyServiceV1DatadogAttributes(service *gofastly.ServiceDetai
 		return nil
 	}
 }
-
 
 func testAccServiceV1DatadogWasmConfig(name string, domain string) string {
 	return fmt.Sprintf(`

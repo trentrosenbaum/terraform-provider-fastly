@@ -65,12 +65,12 @@ func TestAccFastlyServiceV1_googlepubsublogging_basic(t *testing.T) {
 	domain := fmt.Sprintf("fastly-test.%s.com", name)
 
 	log1Wasm := gofastly.Pubsub{
-		Version:           1,
-		Name:              "googlepubsublogger",
-		User:              "user",
-		SecretKey:         privateKey(t),
-		ProjectID:         "project-id",
-		Topic:             "topic",
+		Version:   1,
+		Name:      "googlepubsublogger",
+		User:      "user",
+		SecretKey: privateKey(t),
+		ProjectID: "project-id",
+		Topic:     "topic",
 	}
 
 	log1 := gofastly.Pubsub{

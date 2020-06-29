@@ -66,9 +66,9 @@ func TestAccFastlyServiceV1_splunk_basic(t *testing.T) {
 	serviceNameWasm := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
 	splunkLogOneWasm := gofastly.Splunk{
-		Name:              "test-splunk-1",
-		URL:               "https://mysplunkendpoint.example.com/services/collector/event",
-		Token:             "test-token",
+		Name:  "test-splunk-1",
+		URL:   "https://mysplunkendpoint.example.com/services/collector/event",
+		Token: "test-token",
 	}
 
 	splunkLogOne := gofastly.Splunk{

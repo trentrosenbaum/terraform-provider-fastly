@@ -56,10 +56,10 @@ func TestAccFastlyServiceV1_papertrail_basic(t *testing.T) {
 	domainName1 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
 
 	log1Wasm := gofastly.Papertrail{
-		Version:           1,
-		Name:              "papertrailtesting",
-		Address:           "test1.papertrailapp.com",
-		Port:              uint(3600),
+		Version: 1,
+		Name:    "papertrailtesting",
+		Address: "test1.papertrailapp.com",
+		Port:    uint(3600),
 	}
 
 	log1 := gofastly.Papertrail{

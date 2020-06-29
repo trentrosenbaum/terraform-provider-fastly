@@ -90,7 +90,7 @@ func TestAccFastlyServiceV1_logging_elasticsearch_basic(t *testing.T) {
 		TLSClientCert:     certificate(t),
 		TLSClientKey:      privateKey(t),
 		TLSHostname:       "example.com",
-		}
+	}
 
 	log1 := fst.Elasticsearch{
 		Version:           1,
