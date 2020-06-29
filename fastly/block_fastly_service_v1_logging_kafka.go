@@ -270,6 +270,14 @@ func flattenKafka(kafkaList []*gofastly.Kafka) []map[string]interface{} {
 func (h *KafkaServiceAttributeHandler) buildCreateKafka(kafkaMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateKafkaInput {
 	df := kafkaMap.(map[string]interface{})
 
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
+
 	return &gofastly.CreateKafkaInput{
 		Service:           serviceID,
 		Version:           serviceVersion,
@@ -283,10 +291,10 @@ func (h *KafkaServiceAttributeHandler) buildCreateKafka(kafkaMap interface{}, se
 		TLSClientCert:     fastly.NullString(df["tls_client_cert"].(string)),
 		TLSClientKey:      fastly.NullString(df["tls_client_key"].(string)),
 		TLSHostname:       fastly.NullString(df["tls_hostname"].(string)),
-		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
-		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
-		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
-		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
+		Format:            gofastly.NullString(vla.format),
+		FormatVersion:     gofastly.Uint(vla.formatVersion),
+		Placement:         gofastly.NullString(vla.placement),
+		ResponseCondition: gofastly.NullString(vla.responseCondition),
 	}
 }
 

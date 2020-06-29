@@ -267,6 +267,14 @@ func flattenFTP(ftpList []*gofastly.FTP) []map[string]interface{} {
 func (h *FTPServiceAttributeHandler) buildCreateFTP(ftpMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateFTPInput {
 	df := ftpMap.(map[string]interface{})
 
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
+
 	return &gofastly.CreateFTPInput{
 		Service:           serviceID,
 		Version:           serviceVersion,
@@ -280,10 +288,10 @@ func (h *FTPServiceAttributeHandler) buildCreateFTP(ftpMap interface{}, serviceI
 		PublicKey:         df["public_key"].(string),
 		GzipLevel:         uint8(df["gzip_level"].(int)),
 		TimestampFormat:   df["timestamp_format"].(string),
-		Format:            h.OptionalMapKeyToString(df, "format", ""),
-		FormatVersion:     h.OptionalMapKeyToUInt(df, "format_version", 0),
-		Placement:         h.OptionalMapKeyToString(df, "placement", "none"),
-		ResponseCondition: h.OptionalMapKeyToString(df, "response_condition", ""),
+		Format:            vla.format,
+		FormatVersion:     vla.formatVersion,
+		Placement:         vla.placement,
+		ResponseCondition: vla.responseCondition,
 	}
 }
 

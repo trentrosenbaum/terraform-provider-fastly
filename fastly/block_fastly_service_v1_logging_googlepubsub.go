@@ -212,6 +212,14 @@ func flattenGooglePubSub(googlepubsubList []*gofastly.Pubsub) []map[string]inter
 func (h *GooglePubSubServiceAttributeHandler) buildCreateGooglePubSub(googlepubsubMap interface{}, serviceID string, serviceVersion int) *gofastly.CreatePubsubInput {
 	df := googlepubsubMap.(map[string]interface{})
 
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
+
 	return &gofastly.CreatePubsubInput{
 		Service:           serviceID,
 		Version:           serviceVersion,
@@ -220,10 +228,10 @@ func (h *GooglePubSubServiceAttributeHandler) buildCreateGooglePubSub(googlepubs
 		SecretKey:         fastly.NullString(df["secret_key"].(string)),
 		ProjectID:         fastly.NullString(df["project_id"].(string)),
 		Topic:             fastly.NullString(df["topic"].(string)),
-		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
-		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
-		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
-		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
+		Format:            gofastly.NullString(vla.format),
+		FormatVersion:     gofastly.Uint(vla.formatVersion),
+		Placement:         gofastly.NullString(vla.placement),
+		ResponseCondition: gofastly.NullString(vla.responseCondition),
 	}
 }
 

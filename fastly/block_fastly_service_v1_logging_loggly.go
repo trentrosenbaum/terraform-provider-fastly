@@ -40,11 +40,11 @@ func (h *LogglyServiceAttributeHandler) Process(d *schema.ResourceData, latestVe
 	// DELETE old Loggly logging endpoints.
 	for _, oRaw := range removeLogglyLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteLoggly(of, serviceID, latestVersion)
+		opts := h.buildDeleteLoggly(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Loggly logging endpoint removal opts: %#v", opts)
 
-		if err := deleteLoggly(conn, opts); err != nil {
+		if err := h.deleteLoggly(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -52,11 +52,11 @@ func (h *LogglyServiceAttributeHandler) Process(d *schema.ResourceData, latestVe
 	// POST new/updated Loggly logging endpoints.
 	for _, nRaw := range addLogglyLogging {
 		lf := nRaw.(map[string]interface{})
-		opts := buildCreateLoggly(lf, serviceID, latestVersion)
+		opts := h.buildCreateLoggly(lf, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly Loggly logging addition opts: %#v", opts)
 
-		if err := createLoggly(conn, opts); err != nil {
+		if err := h.createLoggly(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -85,12 +85,12 @@ func (h *LogglyServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly
 	return nil
 }
 
-func createLoggly(conn *gofastly.Client, i *gofastly.CreateLogglyInput) error {
+func (h *LogglyServiceAttributeHandler) createLoggly(conn *gofastly.Client, i *gofastly.CreateLogglyInput) error {
 	_, err := conn.CreateLoggly(i)
 	return err
 }
 
-func deleteLoggly(conn *gofastly.Client, i *gofastly.DeleteLogglyInput) error {
+func (h *LogglyServiceAttributeHandler) deleteLoggly(conn *gofastly.Client, i *gofastly.DeleteLogglyInput) error {
 	err := conn.DeleteLoggly(i)
 
 	errRes, ok := err.(*gofastly.HTTPError)
@@ -133,22 +133,30 @@ func flattenLoggly(logglyList []*gofastly.Loggly) []map[string]interface{} {
 	return lsl
 }
 
-func buildCreateLoggly(logglyMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateLogglyInput {
+func (h *LogglyServiceAttributeHandler) buildCreateLoggly(logglyMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateLogglyInput {
 	df := logglyMap.(map[string]interface{})
+
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
 
 	return &gofastly.CreateLogglyInput{
 		Service:           serviceID,
 		Version:           serviceVersion,
 		Name:              gofastly.NullString(df["name"].(string)),
 		Token:             gofastly.NullString(df["token"].(string)),
-		Format:            gofastly.NullString(df["format"].(string)),
-		FormatVersion:     gofastly.Uint(uint(df["format_version"].(int))),
-		Placement:         gofastly.NullString(df["placement"].(string)),
-		ResponseCondition: gofastly.NullString(df["response_condition"].(string)),
+		Format:            gofastly.NullString(vla.format),
+		FormatVersion:     gofastly.Uint(vla.formatVersion),
+		Placement:         gofastly.NullString(vla.placement),
+		ResponseCondition: gofastly.NullString(vla.responseCondition),
 	}
 }
 
-func buildDeleteLoggly(logglyMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteLogglyInput {
+func (h *LogglyServiceAttributeHandler) buildDeleteLoggly(logglyMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteLogglyInput {
 	df := logglyMap.(map[string]interface{})
 
 	return &gofastly.DeleteLogglyInput{

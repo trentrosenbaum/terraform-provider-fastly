@@ -174,11 +174,11 @@ func (h *SFTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVers
 	// DELETE old SFTP logging endpoints.
 	for _, oRaw := range removeSFTPLogging {
 		of := oRaw.(map[string]interface{})
-		opts := buildDeleteSFTP(of, serviceID, latestVersion)
+		opts := h.buildDeleteSFTP(of, serviceID, latestVersion)
 
 		log.Printf("[DEBUG] Fastly SFTP logging endpoint removal opts: %#v", opts)
 
-		if err := deleteSFTP(conn, opts); err != nil {
+		if err := h.deleteSFTP(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -201,7 +201,7 @@ func (h *SFTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVers
 			continue
 		}
 
-		opts := buildCreateSFTP(sf, serviceID, latestVersion)
+		opts := h.buildCreateSFTP(sf, serviceID, latestVersion)
 
 		if opts.Password == nil && opts.SecretKey == nil {
 			return fmt.Errorf("[ERR] Either password or secret_key must be set")
@@ -209,7 +209,7 @@ func (h *SFTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVers
 
 		log.Printf("[DEBUG] Fastly SFTP logging addition opts: %#v", opts)
 
-		if err := createSFTP(conn, opts); err != nil {
+		if err := h.createSFTP(conn, opts); err != nil {
 			return err
 		}
 	}
@@ -238,12 +238,12 @@ func (h *SFTPServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.S
 	return nil
 }
 
-func createSFTP(conn *gofastly.Client, i *gofastly.CreateSFTPInput) error {
+func (h *SFTPServiceAttributeHandler) createSFTP(conn *gofastly.Client, i *gofastly.CreateSFTPInput) error {
 	_, err := conn.CreateSFTP(i)
 	return err
 }
 
-func deleteSFTP(conn *gofastly.Client, i *gofastly.DeleteSFTPInput) error {
+func (h *SFTPServiceAttributeHandler) deleteSFTP(conn *gofastly.Client, i *gofastly.DeleteSFTPInput) error {
 	err := conn.DeleteSFTP(i)
 
 	errRes, ok := err.(*gofastly.HTTPError)
@@ -297,8 +297,16 @@ func flattenSFTP(sftpList []*gofastly.SFTP) []map[string]interface{} {
 	return ssl
 }
 
-func buildCreateSFTP(sftpMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateSFTPInput {
+func (h *SFTPServiceAttributeHandler) buildCreateSFTP(sftpMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateSFTPInput {
 	df := sftpMap.(map[string]interface{})
+
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
 
 	return &gofastly.CreateSFTPInput{
 		Service:           serviceID,
@@ -315,14 +323,14 @@ func buildCreateSFTP(sftpMap interface{}, serviceID string, serviceVersion int) 
 		GzipLevel:         gofastly.Uint(uint(df["gzip_level"].(int))),
 		TimestampFormat:   gofastly.NullString(df["timestamp_format"].(string)),
 		MessageType:       gofastly.NullString(df["message_type"].(string)),
-		Format:            gofastly.NullString(df["format"].(string)),
-		FormatVersion:     gofastly.Uint(uint(df["format_version"].(int))),
-		ResponseCondition: gofastly.NullString(df["response_condition"].(string)),
-		Placement:         gofastly.NullString(df["placement"].(string)),
+		Format:            gofastly.NullString(vla.format),
+		FormatVersion:     gofastly.Uint(vla.formatVersion),
+		Placement:         gofastly.NullString(vla.placement),
+		ResponseCondition: gofastly.NullString(vla.responseCondition),
 	}
 }
 
-func buildDeleteSFTP(sftpMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteSFTPInput {
+func (h *SFTPServiceAttributeHandler) buildDeleteSFTP(sftpMap interface{}, serviceID string, serviceVersion int) *gofastly.DeleteSFTPInput {
 	df := sftpMap.(map[string]interface{})
 
 	return &gofastly.DeleteSFTPInput{

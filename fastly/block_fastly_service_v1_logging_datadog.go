@@ -200,16 +200,24 @@ func flattenDatadog(datadogList []*gofastly.Datadog) []map[string]interface{} {
 func (h *DatadogServiceAttributeHandler) buildCreateDatadog(datadogMap interface{}, serviceID string, serviceVersion int) *gofastly.CreateDatadogInput {
 	df := datadogMap.(map[string]interface{})
 
+	var vla = NewVCLLoggingAttributes()
+	if h.GetServiceType() == ServiceTypeVCL {
+		vla.format = df["format"].(string)
+		vla.formatVersion = uint(df["format_version"].(int))
+		vla.placement = df["placement"].(string)
+		vla.responseCondition = df["response_condition"].(string)
+	}
+
 	return &gofastly.CreateDatadogInput{
 		Service:           serviceID,
 		Version:           serviceVersion,
 		Name:              gofastly.NullString(df["name"].(string)),
 		Token:             gofastly.NullString(df["token"].(string)),
 		Region:            gofastly.NullString(df["region"].(string)),
-		Format:            gofastly.NullString(h.OptionalMapKeyToString(df, "format", "")),
-		FormatVersion:     gofastly.Uint(h.OptionalMapKeyToUInt(df, "format_version", 0)),
-		Placement:         gofastly.NullString(h.OptionalMapKeyToString(df, "placement", "none")),
-		ResponseCondition: gofastly.NullString(h.OptionalMapKeyToString(df, "response_condition", "")),
+		Format:            gofastly.NullString(vla.format),
+		FormatVersion:     gofastly.Uint(vla.formatVersion),
+		Placement:         gofastly.NullString(vla.placement),
+		ResponseCondition: gofastly.NullString(vla.responseCondition),
 	}
 }
 
