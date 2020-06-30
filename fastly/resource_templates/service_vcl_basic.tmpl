@@ -1,0 +1,17 @@
+resource "fastly_service_v1" "foo" {
+    name = "{{.name}}"
+    {{if .comment}}comment = "{{.comment}}"{{end}}
+    {{if .version_comment}}version_comment = "{{.version_comment}}"{{end}}
+
+    domain {
+        name    = "{{.domain_name}}"
+        comment = "tf-testing-domain"
+    }
+
+    backend {
+        address = "{{if .backend_address}}{{.backend_address}}"{{else}}aws.amazon.com{{end}}"
+        name    = "{{if .backend_name}}{{.backend_name}}"{{else}}amazon docs{{end}}"
+    }
+
+    force_destroy = true
+}

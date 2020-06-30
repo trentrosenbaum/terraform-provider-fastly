@@ -1,0 +1,18 @@
+resource "fastly_service_v1" "foo" {
+    name = "{{.name}}"
+    {{if .default_ttl}}default_ttl = "{{.default_ttl}}"{{end}}
+
+    domain {
+        name    = "{{.domain_name}}"
+        comment = "tf-testing-domain"
+    }
+
+    {{range .backends}}
+    backend {
+        address = "{{.address}}"
+        name    = "{{.name}}"
+    }
+    {{end}}
+
+    force_destroy = true
+}

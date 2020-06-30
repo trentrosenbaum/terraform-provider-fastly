@@ -1,12 +1,23 @@
 package fastly
 
 import (
+	"bytes"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"io/ioutil"
+	"text/template"
 )
 
 import (
 	"strings"
 	"testing"
+)
+
+const (
+	// ManagedByTerraform - default comment/descriptiom
+	ManagedByTerraform = "Managed by Terraform"
+
 )
 
 // pgpPublicKey returns a PEM encoded PGP public key suitable for testing.
@@ -97,4 +108,29 @@ func TestEscapePercentSign(t *testing.T) {
 
 func appendNewLine(s string) string {
 	return s + "\n"
+}
+
+func makeTestDomainName() string {
+	return fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
+}
+
+func makeTestServiceName() string {
+	return fmt.Sprintf("tf_test_%s", acctest.RandString(10))
+}
+
+func makeTestBlockName(block string) string {
+	return fmt.Sprintf("tf_test_%s_%s", block, acctest.RandString(10))
+}
+
+func makeTestServiceComment() string {
+	return fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+}
+
+func testGetResourceTemplate(filename string, data map[string] interface{}) string {
+	var filepath = fmt.Sprintf("resource_templates/%v.tmpl", filename)
+	t := template.Must(template.ParseFiles(filepath))
+
+	var buf bytes.Buffer
+	t.Execute(&buf, data)
+	return buf.String()
 }
