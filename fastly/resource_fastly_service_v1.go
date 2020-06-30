@@ -46,6 +46,7 @@ var vclService = &BaseServiceDefinition{
 		NewServiceCacheSetting(),
 		NewServiceACL(),
 		NewServiceDictionary(),
+		NewServiceWAF(),
 	},
 }
 
