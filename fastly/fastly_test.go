@@ -18,7 +18,6 @@ import (
 const (
 	// ManagedByTerraform - default comment/descriptiom
 	ManagedByTerraform = "Managed by Terraform"
-
 )
 
 // pgpPublicKey returns a PEM encoded PGP public key suitable for testing.
@@ -132,7 +131,7 @@ func testGetResourceTemplate(filename string, data interface{}) string {
 	t := template.Must(template.ParseFiles(filepath))
 	var buf bytes.Buffer
 	err := t.Execute(&buf, data)
-	if err!=nil {
+	if err != nil {
 		log.Fatalf("Cannot execute template: %v", err)
 	}
 	return buf.String()

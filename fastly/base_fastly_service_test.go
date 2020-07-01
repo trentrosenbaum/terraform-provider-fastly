@@ -10,15 +10,14 @@ import (
 )
 
 const (
-	TestVCLServiceRef = "fastly_service_v1.foo"
+	TestVCLServiceRef  = "fastly_service_v1.foo"
 	TestWasmServiceRef = "fastly_service_wasm.foo"
 )
 
 func TestAccFastlyServiceV1(t *testing.T) {
 	var service gofastly.ServiceDetail
-	name           := makeTestServiceName()
-	nameWasm       := makeTestServiceName()
-
+	name := makeTestServiceName()
+	nameWasm := makeTestServiceName()
 
 	testDestroy := func(*terraform.State) error {
 
@@ -34,39 +33,38 @@ func TestAccFastlyServiceV1(t *testing.T) {
 
 		return conn.DeleteService(&gofastly.DeleteServiceInput{
 			ID: service.ID,
-		})  // Either err or nil
+		}) // Either err or nil
 	}
 
-	cases := map[string] map[string] interface{}{
+	cases := map[string]map[string]interface{}{
 		"vcl_basic": {
-			"name": 				name,
-			"domain_name": 			makeTestDomainName(),
+			"name":        name,
+			"domain_name": makeTestDomainName(),
 		},
 		"vcl_basic_update": {
-			"name": 				name,
-			"domain_name": 			makeTestDomainName(),
-			"comment": 				makeTestServiceComment(),
-			"version_comment": 		makeTestServiceComment(),
+			"name":            name,
+			"domain_name":     makeTestDomainName(),
+			"comment":         makeTestServiceComment(),
+			"version_comment": makeTestServiceComment(),
 		},
-		"vcl_versionless":{
-			"service_name": 		makeTestServiceName(),
-			"dictionary_name": 		makeTestBlockName("dictionary"),
-			"acl_name":				makeTestBlockName("acl"),
+		"vcl_versionless": {
+			"service_name":         makeTestServiceName(),
+			"dictionary_name":      makeTestBlockName("dictionary"),
+			"acl_name":             makeTestBlockName("acl"),
 			"dynamic_snippet_name": makeTestBlockName("dynamic_snippet"),
-			"domain_name":			makeTestDomainName(),
+			"domain_name":          makeTestDomainName(),
 		},
 		"wasm_basic": {
-			"name": 				nameWasm,
-			"domain_name": 			makeTestDomainName(),
+			"name":        nameWasm,
+			"domain_name": makeTestDomainName(),
 		},
 		"wasm_basic_update": {
-			"name": 				nameWasm,
-			"domain_name": 			makeTestDomainName(),
-			"comment": 				makeTestServiceComment(),
-			"version_comment": 		makeTestServiceComment(),
+			"name":            nameWasm,
+			"domain_name":     makeTestDomainName(),
+			"comment":         makeTestServiceComment(),
+			"version_comment": makeTestServiceComment(),
 		},
 	}
-
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -77,12 +75,12 @@ func TestAccFastlyServiceV1(t *testing.T) {
 				Config: testResourceConfigVCLServiceV1(cases["vcl_basic"]),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"name", cases["vcl_basic_update"]["name"].(string)),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"comment", ManagedByTerraform),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"version_comment", ""),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"active_version", "1"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"domain.#", "1"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"backend.#", "1"),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "name", cases["vcl_basic_update"]["name"].(string)),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "comment", ManagedByTerraform),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "version_comment", ""),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "backend.#", "1"),
 				),
 			},
 			{
@@ -118,12 +116,12 @@ func TestAccFastlyServiceV1(t *testing.T) {
 				Config: testResourceConfigWasmServiceV1(cases["wasm_basic"]),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(TestWasmServiceRef, &service),
-					resource.TestCheckResourceAttr(TestWasmServiceRef,"name", cases["wasm_basic_update"]["name"].(string)),
-					resource.TestCheckResourceAttr(TestWasmServiceRef,"comment", ManagedByTerraform),
-					resource.TestCheckResourceAttr(TestWasmServiceRef,"version_comment", ""),
-					resource.TestCheckResourceAttr(TestWasmServiceRef,"active_version", "1"),
-					resource.TestCheckResourceAttr(TestWasmServiceRef,"domain.#", "1"),
-					resource.TestCheckResourceAttr(TestWasmServiceRef,"backend.#", "1"),
+					resource.TestCheckResourceAttr(TestWasmServiceRef, "name", cases["wasm_basic_update"]["name"].(string)),
+					resource.TestCheckResourceAttr(TestWasmServiceRef, "comment", ManagedByTerraform),
+					resource.TestCheckResourceAttr(TestWasmServiceRef, "version_comment", ""),
+					resource.TestCheckResourceAttr(TestWasmServiceRef, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestWasmServiceRef, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestWasmServiceRef, "backend.#", "1"),
 				),
 			},
 
@@ -151,19 +149,17 @@ func TestAccFastlyServiceV1(t *testing.T) {
 	})
 }
 
-func testResourceConfigVCLServiceV1(data map[string] interface{}) string {
+func testResourceConfigVCLServiceV1(data map[string]interface{}) string {
 	return testGetResourceTemplate("service_vcl_basic", data)
 }
 
-func testResourceConfigVCLServiceV1_Versionless(data map[string] interface{}) string {
+func testResourceConfigVCLServiceV1_Versionless(data map[string]interface{}) string {
 	return testGetResourceTemplate("service_vcl_versionless", data)
 }
 
-func testResourceConfigWasmServiceV1(data map[string] interface{}) string {
+func testResourceConfigWasmServiceV1(data map[string]interface{}) string {
 	return testGetResourceTemplate("service_wasm_basic", data)
 }
-
-
 
 // testAccCheckServiceV1Exists verifies that a service in the state exists at the fastly API
 // It works equally well for VCL and WASM services
@@ -190,7 +186,6 @@ func testAccCheckServiceV1Exists(n string, service *gofastly.ServiceDetail) reso
 		return nil
 	}
 }
-
 
 // testAccCheckServiceV1Destroy verifies that a service in the state exists at the fastly API
 // It works equally well for VCL and WASM services
@@ -219,11 +214,3 @@ func testAccCheckServiceV1Destroy(s *terraform.State) error {
 	}
 	return nil
 }
-
-
-
-
-
-
-
-

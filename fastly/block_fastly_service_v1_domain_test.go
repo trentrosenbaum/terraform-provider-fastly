@@ -54,28 +54,27 @@ func TestResourceFastlyFlattenDomains(t *testing.T) {
 }
 
 type FastlyServiceV1DomainTestCase struct {
-	Name string
+	Name    string
 	Domains []FastlyServiceV1DomainTestCaseDomain
 }
 
 type FastlyServiceV1DomainTestCaseDomain struct {
-	Name string
+	Name    string
 	Comment string
 }
-
 
 func TestAccFastlyServiceV1_Domain(t *testing.T) {
 	var service gofastly.ServiceDetail
 
 	var domains = makeTestRandomDomainConfig(2)
 
-	cases := map[string] FastlyServiceV1DomainTestCase{
+	cases := map[string]FastlyServiceV1DomainTestCase{
 		"vcl_domain": FastlyServiceV1DomainTestCase{
-			Name:	 makeTestServiceName(),
+			Name:    makeTestServiceName(),
 			Domains: domains[:1],
 		},
 		"vcl_domain_update": FastlyServiceV1DomainTestCase{
-			Name: 	 makeTestServiceName(), // Update name
+			Name:    makeTestServiceName(), // Update name
 			Domains: domains[:2],
 		},
 	}
@@ -110,7 +109,6 @@ func TestAccFastlyServiceV1_Domain(t *testing.T) {
 	})
 }
 
-
 func testAccCheckFastlyServiceV1Attributes(service *gofastly.ServiceDetail, data FastlyServiceV1DomainTestCase) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
@@ -144,7 +142,6 @@ func testAccCheckFastlyServiceV1Attributes(service *gofastly.ServiceDetail, data
 		return nil
 	}
 }
-
 
 func testResourceConfigVCLServiceV1_Domains(data FastlyServiceV1DomainTestCase) string {
 	return testGetResourceTemplate("service_vcl_domains", data)

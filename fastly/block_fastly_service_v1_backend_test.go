@@ -89,37 +89,36 @@ func TestResourceFastlyFlattenBackend(t *testing.T) {
 }
 
 type FastlyServiceV1BackendTestCase struct {
-	Name string
-	DomainName string
-	Backends []FastlyServiceV1BackendTestCaseBackend
+	Name         string
+	DomainName   string
+	Backends     []FastlyServiceV1BackendTestCaseBackend
 	BackendsTest []FastlyServiceV1BackendTestCaseBackend
-	DefaultTTL int
+	DefaultTTL   int
 }
 
 type FastlyServiceV1BackendTestCaseBackend struct {
-	Name string
+	Name    string
 	Address string
 }
-
 
 func TestAccFastlyServiceV1_Backend(t *testing.T) {
 	var service gofastly.ServiceDetail
 
-	var name 	   = makeTestServiceName()
+	var name = makeTestServiceName()
 	var domainName = makeTestDomainName()
-	var backends   = makeTestRandomBackendConfig(2)
+	var backends = makeTestRandomBackendConfig(2)
 
-	cases := map[string] FastlyServiceV1BackendTestCase{
+	cases := map[string]FastlyServiceV1BackendTestCase{
 		"vcl_backend": FastlyServiceV1BackendTestCase{
-			Name:        	name,
-			DomainName: 	domainName,
-			Backends: 		backends[:1],
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:1],
 		},
 		"vcl_backend_update": FastlyServiceV1BackendTestCase{
-			Name:        	name,
-			DomainName: 	domainName,
-			Backends:		backends[:2],
-			DefaultTTL:		3400,
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:2],
+			DefaultTTL: 3400,
 		},
 	}
 
@@ -141,38 +140,36 @@ func TestAccFastlyServiceV1_Backend(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_update"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef,"backend.#", "2"),
+					resource.TestCheckResourceAttr(TestVCLServiceRef, "backend.#", "2"),
 					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "2"),
 				),
 			},
-
 		},
 	})
 }
 
-
 func TestAccFastlyServiceV1_BackendInvalid(t *testing.T) {
 	var service gofastly.ServiceDetail
 
-	var name 	   = makeTestServiceName()
+	var name = makeTestServiceName()
 	var domainName = makeTestDomainName()
-	var backends   = makeTestRandomBackendConfig(3)
+	var backends = makeTestRandomBackendConfig(3)
 
 	// Make first (00) backend invalid for invalid test
 	backends[0].Address = backends[0].Address + "."
 
-	cases := map[string] FastlyServiceV1BackendTestCase{
+	cases := map[string]FastlyServiceV1BackendTestCase{
 		"vcl_backend_bad": FastlyServiceV1BackendTestCase{
-			Name:        		name,
-			DomainName: 		domainName,
-			Backends:			backends[:1],
-			BackendsTest:   	[]FastlyServiceV1BackendTestCaseBackend{}, // Overrides checking of backends
+			Name:         name,
+			DomainName:   domainName,
+			Backends:     backends[:1],
+			BackendsTest: []FastlyServiceV1BackendTestCaseBackend{}, // Overrides checking of backends
 		},
 		"vcl_backend_bad_update": FastlyServiceV1BackendTestCase{
-			Name:        		name,
-			DomainName: 		domainName,
-			Backends:			backends[1:3],
-			DefaultTTL:			3400,
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[1:3],
+			DefaultTTL: 3400,
 		},
 	}
 
@@ -182,7 +179,7 @@ func TestAccFastlyServiceV1_BackendInvalid(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceConfigVCLServiceV1_Backends(cases["vcl_backend_bad"]),
+				Config:      testResourceConfigVCLServiceV1_Backends(cases["vcl_backend_bad"]),
 				ExpectError: regexp.MustCompile("Bad Request"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
@@ -203,31 +200,30 @@ func TestAccFastlyServiceV1_BackendInvalid(t *testing.T) {
 
 }
 
-
 func TestAccFastlyServiceV1_DefaultTTL(t *testing.T) {
 	var service gofastly.ServiceDetail
 
-	var name 	   = makeTestServiceName()
+	var name = makeTestServiceName()
 	var domainName = makeTestDomainName()
-	var backends   = makeTestRandomBackendConfig(2)
+	var backends = makeTestRandomBackendConfig(2)
 
-	cases := map[string] FastlyServiceV1BackendTestCase{
+	cases := map[string]FastlyServiceV1BackendTestCase{
 		"vcl_backend_default_ttl": FastlyServiceV1BackendTestCase{
-			Name:        		name,
-			DomainName: 		domainName,
-			Backends:			backends[:1],
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:1],
 		},
 		"vcl_backend_default_ttl_update": FastlyServiceV1BackendTestCase{
-			Name:        		name,
-			DomainName: 		domainName,
-			Backends:			backends[:2],
-			DefaultTTL:			3400,
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:2],
+			DefaultTTL: 3400,
 		},
 		"vcl_backend_default_ttl_zero": FastlyServiceV1BackendTestCase{
-			Name:        		name,
-			DomainName: 		domainName,
-			Backends:			backends[:2],
-			DefaultTTL:			0,
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:2],
+			DefaultTTL: 0,
 		},
 	}
 
@@ -269,26 +265,25 @@ func TestAccFastlyServiceV1_DefaultTTL(t *testing.T) {
 
 }
 
-
 func TestAccFastlyServiceV1_CreateDefaultTTL(t *testing.T) {
 	var service gofastly.ServiceDetail
 
-	var name 	   = makeTestServiceName()
+	var name = makeTestServiceName()
 	var domainName = makeTestDomainName()
-	var backends   = makeTestRandomBackendConfig(2)
+	var backends = makeTestRandomBackendConfig(2)
 
-	cases := map[string] FastlyServiceV1BackendTestCase{
+	cases := map[string]FastlyServiceV1BackendTestCase{
 		"vcl_backend_create_default_ttl": FastlyServiceV1BackendTestCase{
-			Name:        	name,
-			DomainName: 	domainName,
-			Backends:		backends[:1],
-			DefaultTTL:		3400,
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:1],
+			DefaultTTL: 3400,
 		},
 		"vcl_backend_create_default_ttl_zero": FastlyServiceV1BackendTestCase{
-			Name:        	name,
-			DomainName: 	domainName,
-			Backends:		backends[1:2],
-			DefaultTTL:		0,
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[1:2],
+			DefaultTTL: 0,
 		},
 	}
 
@@ -319,9 +314,6 @@ func TestAccFastlyServiceV1_CreateDefaultTTL(t *testing.T) {
 	})
 }
 
-
-
-
 func testAccCheckFastlyServiceV1Attributes_Backends(service *gofastly.ServiceDetail, c FastlyServiceV1BackendTestCase) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
@@ -341,12 +333,12 @@ func testAccCheckFastlyServiceV1Attributes_Backends(service *gofastly.ServiceDet
 
 		// Use BackendsTest if provided, default to Backends
 		backendsPtr := c.BackendsTest
-		if backendsPtr==nil {
+		if backendsPtr == nil {
 			backendsPtr = c.Backends
 		}
 
 		expected := len(backendList)
-		if backendsPtr!=nil {
+		if backendsPtr != nil {
 			for _, b := range backendList {
 				for _, e := range backendsPtr {
 					if b.Address == e.Address {
@@ -364,13 +356,12 @@ func testAccCheckFastlyServiceV1Attributes_Backends(service *gofastly.ServiceDet
 	}
 }
 
-
 func makeTestRandomBackendConfig(num int) []FastlyServiceV1BackendTestCaseBackend {
 	var backends = []FastlyServiceV1BackendTestCaseBackend{}
 	for i := 0; i < num; i++ {
 		backends = append(backends, FastlyServiceV1BackendTestCaseBackend{
-			Address:  fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3)),
-			Name:     fmt.Sprintf("tf-test-backend-%02d", i),
+			Address: fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3)),
+			Name:    fmt.Sprintf("tf-test-backend-%02d", i),
 		})
 	}
 	return backends
@@ -383,4 +374,3 @@ func testResourceConfigVCLServiceV1_Backends(data FastlyServiceV1BackendTestCase
 func testResourceConfigVCLServiceV1_BackendsTTL(data FastlyServiceV1BackendTestCase) string {
 	return testGetResourceTemplate("service_vcl_backends_ttl", data)
 }
-
