@@ -9,10 +9,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-const (
-	TestVCLServiceRef  = "fastly_service_v1.foo"
-	TestWasmServiceRef = "fastly_service_wasm.foo"
-)
+type testServiceType struct {
+	code string
+	ref  string
+}
+
+var TestServiceTypeVCL = testServiceType{
+	code: "vcl",
+	ref:  "fastly_service_v1.foo",
+}
+
+var TestServiceTypeWasm = testServiceType{
+	code: "wasm",
+	ref:  "fastly_service_wasm.foo",
+}
+
+var TestServiceTypes = []testServiceType{TestServiceTypeVCL,TestServiceTypeWasm}
+
 
 func TestAccFastlyServiceV1(t *testing.T) {
 	var service gofastly.ServiceDetail
@@ -74,31 +87,31 @@ func TestAccFastlyServiceV1(t *testing.T) {
 			{
 				Config: testResourceConfigVCLServiceV1(cases["vcl_basic"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "name", cases["vcl_basic_update"]["name"].(string)),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "comment", ManagedByTerraform),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "version_comment", ""),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "domain.#", "1"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "backend.#", "1"),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "name", cases["vcl_basic_update"]["name"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "comment", ManagedByTerraform),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "version_comment", ""),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "backend.#", "1"),
 				),
 			},
 			{
 				Config: testResourceConfigVCLServiceV1(cases["vcl_basic_update"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "name", cases["vcl_basic_update"]["name"].(string)),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "comment", cases["vcl_basic_update"]["comment"].(string)),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "version_comment", cases["vcl_basic_update"]["version_comment"].(string)),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "2"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "domain.#", "1"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "backend.#", "1"),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "name", cases["vcl_basic_update"]["name"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "comment", cases["vcl_basic_update"]["comment"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "version_comment", cases["vcl_basic_update"]["version_comment"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "backend.#", "1"),
 				),
 			},
 			{
 				Config: testResourceConfigVCLServiceV1(cases["vcl_basic"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testDestroy,
 				),
 				ExpectNonEmptyPlan: true,
@@ -115,32 +128,32 @@ func TestAccFastlyServiceV1(t *testing.T) {
 			{
 				Config: testResourceConfigWasmServiceV1(cases["wasm_basic"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestWasmServiceRef, &service),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "name", cases["wasm_basic_update"]["name"].(string)),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "comment", ManagedByTerraform),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "version_comment", ""),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "active_version", "1"),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "domain.#", "1"),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "backend.#", "1"),
+					testAccCheckServiceV1Exists(TestServiceTypeWasm.ref, &service),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "name", cases["wasm_basic_update"]["name"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "comment", ManagedByTerraform),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "version_comment", ""),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "backend.#", "1"),
 				),
 			},
 
 			{
 				Config: testResourceConfigWasmServiceV1(cases["wasm_basic_update"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestWasmServiceRef, &service),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "name", cases["wasm_basic_update"]["name"].(string)),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "comment", cases["wasm_basic_update"]["comment"].(string)),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "version_comment", cases["wasm_basic_update"]["version_comment"].(string)),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "active_version", "2"),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "domain.#", "1"),
-					resource.TestCheckResourceAttr(TestWasmServiceRef, "backend.#", "1"),
+					testAccCheckServiceV1Exists(TestServiceTypeWasm.ref, &service),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "name", cases["wasm_basic_update"]["name"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "comment", cases["wasm_basic_update"]["comment"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "version_comment", cases["wasm_basic_update"]["version_comment"].(string)),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "active_version", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "backend.#", "1"),
 				),
 			},
 			{
 				Config: testResourceConfigWasmServiceV1(cases["wasm_basic"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestWasmServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeWasm.ref, &service),
 					testDestroy,
 				),
 				ExpectNonEmptyPlan: true,

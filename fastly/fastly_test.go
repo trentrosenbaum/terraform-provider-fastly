@@ -136,3 +136,4 @@ func testGetResourceTemplate(filename string, data interface{}) string {
 	}
 	return buf.String()
 }
+

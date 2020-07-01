@@ -2,15 +2,14 @@ package fastly
 
 import (
 	"fmt"
+	"reflect"
+	"regexp"
+	"testing"
+
 	gofastly "github.com/fastly/go-fastly/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"reflect"
-	"regexp"
-
-	//"regexp"
-	"testing"
 )
 
 func TestResourceFastlyFlattenBackend(t *testing.T) {
@@ -101,20 +100,21 @@ type FastlyServiceV1BackendTestCaseBackend struct {
 	Address string
 }
 
+
 func TestAccFastlyServiceV1_Backend(t *testing.T) {
 	var service gofastly.ServiceDetail
 
-	var name = makeTestServiceName()
+	var name       = makeTestServiceName()
 	var domainName = makeTestDomainName()
-	var backends = makeTestRandomBackendConfig(2)
+	var backends   = makeTestRandomBackendConfig(2)
 
 	cases := map[string]FastlyServiceV1BackendTestCase{
-		"vcl_backend": FastlyServiceV1BackendTestCase{
+		"backend": FastlyServiceV1BackendTestCase{
 			Name:       name,
 			DomainName: domainName,
 			Backends:   backends[:1],
 		},
-		"vcl_backend_update": FastlyServiceV1BackendTestCase{
+		"backend_update": FastlyServiceV1BackendTestCase{
 			Name:       name,
 			DomainName: domainName,
 			Backends:   backends[:2],
@@ -128,20 +128,53 @@ func TestAccFastlyServiceV1_Backend(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceConfigVCLServiceV1_Backends(cases["vcl_backend"]),
+				Config: testResourceConfigServiceV1_Backends(cases["backend"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
-					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
+					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["backend"]),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
 				),
 			},
 			{
-				Config: testResourceConfigVCLServiceV1_BackendsTTL(cases["vcl_backend_update"]),
+				Config: testResourceConfigServiceV1_BackendsTTL(cases["backend_update"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
-					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_update"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "backend.#", "2"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "2"),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
+					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["backend_update"]),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "backend.#", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "2"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccFastlyServiceV1_BackendWasm provides Wasm with it's own test - no default_ttl allowed.
+func TestAccFastlyServiceV1_BackendWasm(t *testing.T) {
+	var service gofastly.ServiceDetail
+
+	var name       = makeTestServiceName()
+	var domainName = makeTestDomainName()
+	var backends   = makeTestRandomBackendConfig(1)
+
+	cases := map[string]FastlyServiceV1BackendTestCase{
+		"backend": FastlyServiceV1BackendTestCase{
+			Name:       name,
+			DomainName: domainName,
+			Backends:   backends[:1],
+		},
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckServiceV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testResourceConfigServiceV1_Backends(cases["backend"], TestServiceTypeWasm),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceV1Exists(TestServiceTypeWasm.ref, &service),
+					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["backend"]),
+					resource.TestCheckResourceAttr(TestServiceTypeWasm.ref, "active_version", "1"),
 				),
 			},
 		},
@@ -179,20 +212,20 @@ func TestAccFastlyServiceV1_BackendInvalid(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      testResourceConfigVCLServiceV1_Backends(cases["vcl_backend_bad"]),
+				Config:      testResourceConfigServiceV1_Backends(cases["vcl_backend_bad"], TestServiceTypeVCL),
 				ExpectError: regexp.MustCompile("Bad Request"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_bad"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
 				),
 			},
 			{
-				Config: testResourceConfigVCLServiceV1_BackendsTTL(cases["vcl_backend_bad_update"]),
+				Config: testResourceConfigServiceV1_BackendsTTL(cases["vcl_backend_bad_update"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_bad_update"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
 				),
 			},
 		},
@@ -233,31 +266,31 @@ func TestAccFastlyServiceV1_DefaultTTL(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceConfigVCLServiceV1_Backends(cases["vcl_backend_default_ttl"]),
+				Config: testResourceConfigServiceV1_Backends(cases["vcl_backend_default_ttl"],TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_default_ttl"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "default_ttl", "3600"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "default_ttl", "3600"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
 				),
 			},
 			{
-				Config: testResourceConfigVCLServiceV1_BackendsTTL(cases["vcl_backend_default_ttl_update"]),
+				Config: testResourceConfigServiceV1_BackendsTTL(cases["vcl_backend_default_ttl_update"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_default_ttl_update"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "default_ttl", "3400"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "default_ttl", "3400"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "2"),
 				),
 			},
 			// Now update the default_ttl to 0 and encounter the issue https://github.com/hashicorp/terraform/issues/12910
 			{
-				Config: testResourceConfigVCLServiceV1_BackendsTTL(cases["vcl_backend_default_ttl_zero"]),
+				Config: testResourceConfigServiceV1_BackendsTTL(cases["vcl_backend_default_ttl_zero"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_default_ttl_zero"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "default_ttl", "0"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "3"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "default_ttl", "0"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "3"),
 				),
 			},
 		},
@@ -293,26 +326,27 @@ func TestAccFastlyServiceV1_CreateDefaultTTL(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceConfigVCLServiceV1_BackendsTTL(cases["vcl_backend_create_default_ttl"]),
+				Config: testResourceConfigServiceV1_BackendsTTL(cases["vcl_backend_create_default_ttl"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_create_default_ttl"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "default_ttl", "3400"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "default_ttl", "3400"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
 				),
 			},
 			{
-				Config: testResourceConfigVCLServiceV1_BackendsTTL(cases["vcl_backend_create_default_ttl_zero"]),
+				Config: testResourceConfigServiceV1_BackendsTTL(cases["vcl_backend_create_default_ttl_zero"], TestServiceTypeVCL),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes_Backends(&service, cases["vcl_backend_create_default_ttl_zero"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "default_ttl", "0"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "default_ttl", "0"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "2"),
 				),
 			},
 		},
 	})
 }
+
 
 func testAccCheckFastlyServiceV1Attributes_Backends(service *gofastly.ServiceDetail, c FastlyServiceV1BackendTestCase) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -367,10 +401,10 @@ func makeTestRandomBackendConfig(num int) []FastlyServiceV1BackendTestCaseBacken
 	return backends
 }
 
-func testResourceConfigVCLServiceV1_Backends(data FastlyServiceV1BackendTestCase) string {
-	return testGetResourceTemplate("service_vcl_backends", data)
+func testResourceConfigServiceV1_Backends(data FastlyServiceV1BackendTestCase, serviceType testServiceType) string {
+	return testGetResourceTemplate(fmt.Sprintf("service_%s_backends", serviceType.code), data)
 }
 
-func testResourceConfigVCLServiceV1_BackendsTTL(data FastlyServiceV1BackendTestCase) string {
-	return testGetResourceTemplate("service_vcl_backends_ttl", data)
+func testResourceConfigServiceV1_BackendsTTL(data FastlyServiceV1BackendTestCase, serviceType testServiceType) string {
+	return testGetResourceTemplate(fmt.Sprintf("service_%s_backends_ttl", serviceType.code), data)
 }

@@ -87,22 +87,22 @@ func TestAccFastlyServiceV1_Domain(t *testing.T) {
 			{
 				Config: testResourceConfigVCLServiceV1_Domains(cases["vcl_domain"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes(&service, cases["vcl_domain"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "name", cases["vcl_domain"].Name),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "1"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "domain.#", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "name", cases["vcl_domain"].Name),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "1"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "domain.#", "1"),
 				),
 			},
 
 			{
 				Config: testResourceConfigVCLServiceV1_Domains(cases["vcl_domain_update"]),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists(TestVCLServiceRef, &service),
+					testAccCheckServiceV1Exists(TestServiceTypeVCL.ref, &service),
 					testAccCheckFastlyServiceV1Attributes(&service, cases["vcl_domain_update"]),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "name", cases["vcl_domain_update"].Name),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "active_version", "2"),
-					resource.TestCheckResourceAttr(TestVCLServiceRef, "domain.#", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "name", cases["vcl_domain_update"].Name),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "active_version", "2"),
+					resource.TestCheckResourceAttr(TestServiceTypeVCL.ref, "domain.#", "2"),
 				),
 			},
 		},
