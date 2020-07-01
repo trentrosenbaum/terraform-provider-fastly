@@ -3,6 +3,7 @@ package fastly
 import (
 	"bytes"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"io/ioutil"
@@ -126,11 +127,13 @@ func makeTestServiceComment() string {
 	return fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 }
 
-func testGetResourceTemplate(filename string, data map[string] interface{}) string {
+func testGetResourceTemplate(filename string, data interface{}) string {
 	var filepath = fmt.Sprintf("resource_templates/%v.tmpl", filename)
 	t := template.Must(template.ParseFiles(filepath))
-
 	var buf bytes.Buffer
-	t.Execute(&buf, data)
+	err := t.Execute(&buf, data)
+	if err!=nil {
+		log.Fatalf("Cannot execute template: %v", err)
+	}
 	return buf.String()
 }

@@ -1,5 +1,6 @@
 resource "fastly_service_v1" "foo" {
     name = "{{.Name}}"
+    default_ttl="{{.DefaultTTL}}"
 
     domain {
         name    = "{{.DomainName}}"

@@ -38,10 +38,6 @@ func (h *PackageServiceAttributeHandler) Register(s *schema.Resource) error {
 					Optional: true,
 					Computed: true,
 				},
-				"source_code_size": {
-					Type:     schema.TypeInt,
-					Computed: true,
-				},
 			},
 		},
 	}
@@ -97,7 +93,6 @@ func flattenPackage(Package *gofastly.Package, filename string) []map[string]int
 	var pa []map[string]interface{}
 	p := map[string]interface{}{
 		"source_code_hash": Package.Metadata.HashSum,
-		"source_code_size": Package.Metadata.Size,
 		"filename":         filename,
 	}
 

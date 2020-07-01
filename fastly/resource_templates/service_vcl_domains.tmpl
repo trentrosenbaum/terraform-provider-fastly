@@ -1,0 +1,17 @@
+resource "fastly_service_v1" "foo" {
+    name="{{.Name}}"
+
+    {{range .Domains}}
+    domain {
+        name    = "{{.Name}}"
+        comment = "{{.Comment}}"
+    }
+    {{end}}
+
+    backend {
+        address = "aws.amazon.com"
+        name    = "amazon docs"
+    }
+
+    force_destroy = true
+}
