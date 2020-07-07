@@ -4,7 +4,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-var computeAttributes = ServiceMetadata{
+var computeMetadata = ServiceMetadata{
 	ServiceTypeCompute,
 }
 
@@ -12,37 +12,37 @@ var computeAttributes = ServiceMetadata{
 // Some objects may need to be updated first, as they can be referenced by other
 // configuration objects (Backends, Request Headers, etc).
 var computeService = &BaseServiceDefinition{
-	Type: computeAttributes.serviceType,
+	Metadata: computeMetadata,
 	Attributes: []ServiceAttributeDefinition{
-		NewServiceDomain(computeAttributes),
-		NewServiceHealthCheck(computeAttributes),
-		NewServiceBackend(computeAttributes),
-		NewServiceS3Logging(computeAttributes),
-		NewServicePaperTrail(computeAttributes),
-		NewServiceSumologic(computeAttributes),
-		NewServiceGCSLogging(computeAttributes),
-		NewServiceBigQueryLogging(computeAttributes),
-		NewServiceSyslog(computeAttributes),
-		NewServiceLogentries(computeAttributes),
-		NewServiceSplunk(computeAttributes),
-		NewServiceBlobStorageLogging(computeAttributes),
-		NewServiceHTTPSLogging(computeAttributes),
-		NewServiceLoggingElasticSearch(computeAttributes),
-		NewServiceLoggingFTP(computeAttributes),
-		NewServiceLoggingSFTP(computeAttributes),
-		NewServiceLoggingDatadog(computeAttributes),
-		NewServiceLoggingLoggly(computeAttributes),
-		NewServiceLoggingGooglePubSub(computeAttributes),
-		NewServiceLoggingScalyr(computeAttributes),
-		NewServiceLoggingNewRelic(computeAttributes),
-		NewServiceLoggingKafka(computeAttributes),
-		NewServiceLoggingHeroku(computeAttributes),
-		NewServiceLoggingHoneycomb(computeAttributes),
-		NewServiceLoggingLogshuttle(computeAttributes),
-		NewServiceLoggingOpenstack(computeAttributes),
-		NewServiceLoggingDigitalOcean(computeAttributes),
-		NewServiceLoggingCloudfiles(computeAttributes),
-		NewServicePackage(computeAttributes),
+		NewServiceDomain(computeMetadata),
+		NewServiceHealthCheck(computeMetadata),
+		NewServiceBackend(computeMetadata),
+		NewServiceS3Logging(computeMetadata),
+		NewServicePaperTrail(computeMetadata),
+		NewServiceSumologic(computeMetadata),
+		NewServiceGCSLogging(computeMetadata),
+		NewServiceBigQueryLogging(computeMetadata),
+		NewServiceSyslog(computeMetadata),
+		NewServiceLogentries(computeMetadata),
+		NewServiceSplunk(computeMetadata),
+		NewServiceBlobStorageLogging(computeMetadata),
+		NewServiceHTTPSLogging(computeMetadata),
+		NewServiceLoggingElasticSearch(computeMetadata),
+		NewServiceLoggingFTP(computeMetadata),
+		NewServiceLoggingSFTP(computeMetadata),
+		NewServiceLoggingDatadog(computeMetadata),
+		NewServiceLoggingLoggly(computeMetadata),
+		NewServiceLoggingGooglePubSub(computeMetadata),
+		NewServiceLoggingScalyr(computeMetadata),
+		NewServiceLoggingNewRelic(computeMetadata),
+		NewServiceLoggingKafka(computeMetadata),
+		NewServiceLoggingHeroku(computeMetadata),
+		NewServiceLoggingHoneycomb(computeMetadata),
+		NewServiceLoggingLogshuttle(computeMetadata),
+		NewServiceLoggingOpenstack(computeMetadata),
+		NewServiceLoggingDigitalOcean(computeMetadata),
+		NewServiceLoggingCloudfiles(computeMetadata),
+		NewServicePackage(computeMetadata),
 	},
 }
 

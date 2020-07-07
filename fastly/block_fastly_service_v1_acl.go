@@ -12,7 +12,7 @@ type ACLServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceACL(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceACL(sa ServiceMetadata) *ACLServiceAttributeHandler {
 	return &ACLServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "acl",
@@ -22,52 +22,25 @@ func NewServiceACL(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *ACLServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	oldACLVal, newACLVal := d.GetChange(h.GetKey())
-	if oldACLVal == nil {
-		oldACLVal = new(schema.Set)
-	}
-	if newACLVal == nil {
-		newACLVal = new(schema.Set)
-	}
 
-	oldACLSet := oldACLVal.(*schema.Set)
-	newACLSet := newACLVal.(*schema.Set)
-
-	remove := oldACLSet.Difference(newACLSet).List()
-	add := newACLSet.Difference(oldACLSet).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed ACL configurations
-	for _, vRaw := range remove {
-		val := vRaw.(map[string]interface{})
-		opts := gofastly.DeleteACLInput{
-			Service: d.Id(),
-			Version: latestVersion,
-			Name:    val["name"].(string),
-		}
-
-		log.Printf("[DEBUG] Fastly ACL removal opts: %#v", opts)
-		err := conn.DeleteACL(&opts)
-
-		if errRes, ok := err.(*gofastly.HTTPError); ok {
-			if errRes.StatusCode != 404 {
-				return err
-			}
-		} else if err != nil {
+	for _, oRaw := range diff.remove {
+		opts := h.buildDelete(oRaw, d.Id(), latestVersion)
+		err := h.delete(conn, opts)
+		if err != nil {
 			return err
 		}
 	}
 
-	// POST new ACL configurations
-	for _, vRaw := range add {
-		val := vRaw.(map[string]interface{})
-		opts := gofastly.CreateACLInput{
-			Service: d.Id(),
-			Version: latestVersion,
-			Name:    val["name"].(string),
-		}
+	// Create new ACL configurations
+	for _, vRaw := range diff.add {
+		opts := h.buildCreate(vRaw, d.Id(), latestVersion)
 
-		log.Printf("[DEBUG] Fastly ACL creation opts: %#v", opts)
-		_, err := conn.CreateACL(&opts)
+		// No point creating a function which just calls gofastly (yet)
+		_, err := conn.CreateACL(opts)
 		if err != nil {
 			return err
 		}
@@ -77,18 +50,14 @@ func (h *ACLServiceAttributeHandler) Process(d *schema.ResourceData, latestVersi
 
 func (h *ACLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
 
-	log.Printf("[DEBUG] Refreshing ACLs for (%s)", d.Id())
-	aclList, err := conn.ListACLs(&gofastly.ListACLsInput{
-		Service: d.Id(),
-		Version: s.ActiveVersion.Number,
-	})
+	al, err := h.list(conn, d.Id(), s.ActiveVersion.Number)
 	if err != nil {
-		return fmt.Errorf("[ERR] Error looking up ACLs for (%s), version (%v): %s", d.Id(), s.ActiveVersion.Number, err)
+		return err
 	}
 
-	al := flattenACLs(aclList)
-
-	if err := d.Set(h.GetKey(), al); err != nil {
+	alMap := h.flatten(al)
+	err = d.Set(h.GetKey(), alMap)
+	if err != nil {
 		log.Printf("[WARN] Error setting ACLs for (%s): %s", d.Id(), err)
 	}
 
@@ -119,7 +88,54 @@ func (h *ACLServiceAttributeHandler) Register(s *schema.Resource) error {
 	return nil
 }
 
-func flattenACLs(aclList []*gofastly.ACL) []map[string]interface{} {
+func (h *ACLServiceAttributeHandler) buildDelete(oRaw interface{}, serviceID string, serviceVersion int) *gofastly.DeleteACLInput {
+	val := oRaw.(map[string]interface{})
+	opts := gofastly.DeleteACLInput{
+		Service: serviceID,
+		Version: serviceVersion,
+		Name:    val["name"].(string),
+	}
+	log.Printf("[DEBUG] Fastly ACL removal opts: %#v", opts)
+	return &opts
+}
+
+func (h *ACLServiceAttributeHandler) delete(conn *gofastly.Client, opts *gofastly.DeleteACLInput) error {
+	err := conn.DeleteACL(opts)
+	if errRes, ok := err.(*gofastly.HTTPError); ok {
+		if errRes.StatusCode != 404 {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *ACLServiceAttributeHandler) buildCreate(oRaw interface{}, serviceID string, serviceVersion int) *gofastly.CreateACLInput {
+	val := oRaw.(map[string]interface{})
+	opts := gofastly.CreateACLInput{
+		Service: serviceID,
+		Version: serviceVersion,
+		Name:    val["name"].(string),
+	}
+	log.Printf("[DEBUG] Fastly ACL creation opts: %#v", opts)
+	return &opts
+}
+
+func (h *ACLServiceAttributeHandler) list(conn *gofastly.Client, serviceID string, serviceVersion int) ([]*gofastly.ACL, error) {
+	log.Printf("[DEBUG] Refreshing ACLs for (%s)", serviceID)
+	// Don't particularly need a buildList function since the variables are explicitly passed
+	aclList, err := conn.ListACLs(&gofastly.ListACLsInput{
+		Service: serviceID,
+		Version: serviceVersion,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("[ERR] Error looking up ACLs for (%s), version (%v): %s", serviceID, serviceVersion, err)
+	}
+	return aclList, nil
+}
+
+func (h *ACLServiceAttributeHandler) flatten(aclList []*gofastly.ACL) []map[string]interface{} {
 	var al []map[string]interface{}
 	for _, acl := range aclList {
 		// Convert VCLs to a map for saving to state.

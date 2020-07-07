@@ -19,6 +19,38 @@ const (
 	ServiceTypeCompute = "wasm"
 )
 
+// ServiceMetadata provides a container to manage service metadata distinct from service attributes.
+type ServiceMetadata struct {
+	serviceType string
+}
+
+// ServiceDefinition defines the data model for service definitions.
+// There are two types of service: VCL and Compute. This interface specifies the data object from which service resources
+// are constructed.
+type ServiceDefinition interface {
+	// GetType returns whether this is a VCL or Compute service.
+	GetType() string
+
+	// GetAttributeHandler returns the list of attributes/handlers supported by this service.
+	GetAttributeHandler() []ServiceAttributeDefinition
+}
+
+// BaseServiceDefinition is the base implementation of the BaseServiceDefinition interface.
+type BaseServiceDefinition struct {
+	Attributes []ServiceAttributeDefinition
+	Metadata   ServiceMetadata
+}
+
+// GetType returns whether this is a VCL or Compute service.
+func (d *BaseServiceDefinition) GetType() string {
+	return d.Metadata.serviceType
+}
+
+// GetAttributeHandler returns the list of attributes/handlers supported by this service.
+func (d *BaseServiceDefinition) GetAttributeHandler() []ServiceAttributeDefinition {
+	return d.Attributes
+}
+
 // ServiceAttributeDefinition provides an interface for service attributes.
 // We compose a service resource out of attribute objects to allow us to construct both the VCL and Compute service
 // resources from common components.
@@ -39,91 +71,6 @@ type ServiceAttributeDefinition interface {
 	// For example: at present, the settings attributeHandler (block_fastly_service_v1_settings.go) must process when
 	// default_ttl==0 and it is the initialVersion - as well as when default_ttl or default_host have changed.
 	MustProcess(d *schema.ResourceData, initialVersion bool) bool
-}
-
-// ServiceMetadata provides a container to pass service attributes into an Attribute handler.
-type ServiceMetadata struct {
-	serviceType string
-}
-
-// DefaultServiceAttributeHandler provides a base implementation for ServiceAttributeDefinition.
-type DefaultServiceAttributeHandler struct {
-	key             string
-	serviceMetadata ServiceMetadata
-}
-
-// GetKey is provided since most attributes will just use their private "key" for interacting with the service.
-func (h *DefaultServiceAttributeHandler) GetKey() string {
-	return h.key
-}
-
-// GetServiceType is provided to allow internal methods to get the service Type
-func (h *DefaultServiceAttributeHandler) GetServiceMetadata() ServiceMetadata {
-	return h.serviceMetadata
-}
-
-// See interface definition for comments.
-func (h *DefaultServiceAttributeHandler) HasChange(d *schema.ResourceData) bool {
-	return d.HasChange(h.key)
-}
-
-// See interface definition for comments.
-func (h *DefaultServiceAttributeHandler) MustProcess(d *schema.ResourceData, initialVersion bool) bool {
-	return h.HasChange(d)
-}
-
-type VCLLoggingAttributes struct {
-	format            string
-	formatVersion     uint
-	placement         string
-	responseCondition string
-}
-
-// NewVCLLoggingAttributes provides default values to Compute services for VCL only logging attributes
-func (h *DefaultServiceAttributeHandler) getVCLLoggingAttributes(data map[string]interface{}) VCLLoggingAttributes {
-	var vla = VCLLoggingAttributes{
-		placement: "none",
-	}
-	if h.GetServiceMetadata().serviceType == ServiceTypeVCL {
-		if val, ok := data["format"]; ok {
-			vla.format = val.(string)
-		}
-		if val, ok := data["format_version"]; ok {
-			vla.formatVersion = uint(val.(int))
-		}
-		if val, ok := data["placement"]; ok {
-			vla.placement = val.(string)
-		}
-		if val, ok := data["response_condition"]; ok {
-			vla.responseCondition = val.(string)
-		}
-	}
-	return vla
-}
-
-// ServiceDefinition defines the data model for service definitions
-// There are two types of service: VCL and Compute. This interface specifies the data object from which service resources
-// are constructed.
-type ServiceDefinition interface {
-	// GetType returns whether this is a VCL or Compute service.
-	GetType() string
-
-	// GetAttributeHandler returns the list of attributes/handlers supported by this service.
-	GetAttributeHandler() []ServiceAttributeDefinition
-}
-
-// BaseServiceDefinition is the base implementation of the BaseServiceDefinition interface.
-type BaseServiceDefinition struct {
-	Attributes []ServiceAttributeDefinition
-	Type       string
-}
-
-func (d *BaseServiceDefinition) GetType() string {
-	return d.Type
-}
-
-func (d *BaseServiceDefinition) GetAttributeHandler() []ServiceAttributeDefinition {
-	return d.Attributes
 }
 
 // resourceService returns a Terraform resource schema for VCL or Compute.
