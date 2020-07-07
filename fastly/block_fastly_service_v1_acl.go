@@ -122,3 +122,11 @@ func (h *ACLServiceAttributeHandler) flatten(aclList []interface{}) []map[string
 	}
 	return al
 }
+
+func acl2Generic(src []*gofastly.ACL) []interface{} {
+	genericList := make([]interface{}, len(src))
+	for i := range src {
+		genericList[i] = src[i]
+	}
+	return genericList
+}

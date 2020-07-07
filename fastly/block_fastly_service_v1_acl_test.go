@@ -14,7 +14,7 @@ import (
 func TestResourceFastlyFlattenAcl(t *testing.T) {
 	cases := []struct {
 		sm     ServiceMetadata
-		remote []interface{}
+		remote []*gofastly.ACL
 		local  []map[string]interface{}
 	}{
 		{
@@ -38,7 +38,7 @@ func TestResourceFastlyFlattenAcl(t *testing.T) {
 
 	for _, c := range cases {
 		acl := NewServiceACL(c.sm)
-		out := acl.flatten(c.remote)
+		out := acl.flatten(acl2Generic(c.remote))
 		if !reflect.DeepEqual(out, c.local) {
 			t.Fatalf("Error matching:\nexpected: %#v\ngot: %#v", c.local, out)
 		}
