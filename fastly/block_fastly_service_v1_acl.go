@@ -102,13 +102,7 @@ func (h *ACLServiceAttributeHandler) list(conn *gofastly.Client, serviceID strin
 	if err != nil {
 		return nil, fmt.Errorf("[ERR] Error looking up ACLs for (%s), version (%v): %s", serviceID, serviceVersion, err)
 	}
-
-	genericList := make([]interface{}, len(aclList))
-	for i := range aclList {
-		genericList[i] = aclList[i]
-	}
-
-	return genericList, nil
+	return h.listToGeneric(aclList), nil
 }
 
 func (h *ACLServiceAttributeHandler) flatten(aclList []interface{}) []map[string]interface{} {
@@ -123,7 +117,7 @@ func (h *ACLServiceAttributeHandler) flatten(aclList []interface{}) []map[string
 	return al
 }
 
-func acl2Generic(src []*gofastly.ACL) []interface{} {
+func (h *ACLServiceAttributeHandler) listToGeneric(src []*gofastly.ACL) []interface{} {
 	genericList := make([]interface{}, len(src))
 	for i := range src {
 		genericList[i] = src[i]
