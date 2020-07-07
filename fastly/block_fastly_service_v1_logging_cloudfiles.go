@@ -23,25 +23,13 @@ func NewServiceLoggingCloudfiles(sa ServiceMetadata) ServiceAttributeDefinition 
 
 func (h *CloudfilesServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
-	ol, nl := d.GetChange(h.GetKey())
-
-	if ol == nil {
-		ol = new(schema.Set)
-	}
-	if nl == nil {
-		nl = new(schema.Set)
-	}
-
-	ols := ol.(*schema.Set)
-	nls := nl.(*schema.Set)
-
-	removeCloudfilesLogging := ols.Difference(nls).List()
-	addCloudfilesLogging := nls.Difference(ols).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Cloud Files logging endpoints.
-	for _, oRaw := range removeCloudfilesLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
-		opts := h.buildDelete(of, serviceID, latestVersion)
+		opts := h.buildDelete(of, d.Id(), latestVersion)
 
 		log.Printf("[DEBUG] Fastly Cloud Files logging endpoint removal opts: %#v", opts)
 
@@ -51,7 +39,7 @@ func (h *CloudfilesServiceAttributeHandler) Process(d *schema.ResourceData, late
 	}
 
 	// POST new/updated Cloud Files logging endpoints.
-	for _, nRaw := range addCloudfilesLogging {
+	for _, nRaw := range diff.add {
 		lf := nRaw.(map[string]interface{})
 
 		// @HACK for a TF SDK Issue.

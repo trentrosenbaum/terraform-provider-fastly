@@ -22,22 +22,11 @@ func NewServiceDomain(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *DomainServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	od, nd := d.GetChange(h.GetKey())
-	if od == nil {
-		od = new(schema.Set)
-	}
-	if nd == nil {
-		nd = new(schema.Set)
-	}
-
-	ods := od.(*schema.Set)
-	nds := nd.(*schema.Set)
-
-	remove := ods.Difference(nds).List()
-	add := nds.Difference(ods).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed domains
-	for _, dRaw := range remove {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteDomainInput{
 			Service: d.Id(),
@@ -57,7 +46,7 @@ func (h *DomainServiceAttributeHandler) Process(d *schema.ResourceData, latestVe
 	}
 
 	// POST new Domains
-	for _, dRaw := range add {
+	for _, dRaw := range diff.add {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.CreateDomainInput{
 			Service: d.Id(),

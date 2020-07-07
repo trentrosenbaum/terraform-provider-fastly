@@ -22,46 +22,11 @@ func NewServiceACL(sa ServiceMetadata) *ACLServiceAttributeHandler {
 }
 
 func (h *ACLServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-
-	o, n := d.GetChange(h.GetKey())
-	diff := h.diffSchemaChanges(o, n)
-
-	// Delete removed ACL configurations
-	for _, oRaw := range diff.remove {
-		opts := h.buildDelete(oRaw, d.Id(), latestVersion)
-		err := h.delete(conn, opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Create new ACL configurations
-	for _, vRaw := range diff.add {
-		opts := h.buildCreate(vRaw, d.Id(), latestVersion)
-
-		// No point creating a function which just calls gofastly (yet)
-		_, err := conn.CreateACL(opts)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return ProcessServiceAttribute(h, d, latestVersion, conn)
 }
 
 func (h *ACLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
-
-	al, err := h.list(conn, d.Id(), s.ActiveVersion.Number)
-	if err != nil {
-		return err
-	}
-
-	alMap := h.flatten(al)
-	err = d.Set(h.GetKey(), alMap)
-	if err != nil {
-		log.Printf("[WARN] Error setting ACLs for (%s): %s", d.Id(), err)
-	}
-
-	return nil
+	return ReadServiceAttribute(h, d, s, conn)
 }
 
 func (h *ACLServiceAttributeHandler) Register(s *schema.Resource) error {
@@ -88,7 +53,7 @@ func (h *ACLServiceAttributeHandler) Register(s *schema.Resource) error {
 	return nil
 }
 
-func (h *ACLServiceAttributeHandler) buildDelete(oRaw interface{}, serviceID string, serviceVersion int) *gofastly.DeleteACLInput {
+func (h *ACLServiceAttributeHandler) buildDelete(oRaw interface{}, serviceID string, serviceVersion int) interface{} {
 	val := oRaw.(map[string]interface{})
 	opts := gofastly.DeleteACLInput{
 		Service: serviceID,
@@ -99,8 +64,8 @@ func (h *ACLServiceAttributeHandler) buildDelete(oRaw interface{}, serviceID str
 	return &opts
 }
 
-func (h *ACLServiceAttributeHandler) delete(conn *gofastly.Client, opts *gofastly.DeleteACLInput) error {
-	err := conn.DeleteACL(opts)
+func (h *ACLServiceAttributeHandler) delete(conn *gofastly.Client, opts interface{}) error {
+	err := conn.DeleteACL(opts.(*gofastly.DeleteACLInput))
 	if errRes, ok := err.(*gofastly.HTTPError); ok {
 		if errRes.StatusCode != 404 {
 			return err
@@ -111,7 +76,7 @@ func (h *ACLServiceAttributeHandler) delete(conn *gofastly.Client, opts *gofastl
 	return nil
 }
 
-func (h *ACLServiceAttributeHandler) buildCreate(oRaw interface{}, serviceID string, serviceVersion int) *gofastly.CreateACLInput {
+func (h *ACLServiceAttributeHandler) buildCreate(oRaw interface{}, serviceID string, serviceVersion int) interface{} {
 	val := oRaw.(map[string]interface{})
 	opts := gofastly.CreateACLInput{
 		Service: serviceID,
@@ -122,7 +87,12 @@ func (h *ACLServiceAttributeHandler) buildCreate(oRaw interface{}, serviceID str
 	return &opts
 }
 
-func (h *ACLServiceAttributeHandler) list(conn *gofastly.Client, serviceID string, serviceVersion int) ([]*gofastly.ACL, error) {
+func (h *ACLServiceAttributeHandler) create(conn *gofastly.Client, opts interface{}) error {
+	_, err := conn.CreateACL(opts.(*gofastly.CreateACLInput))
+	return err
+}
+
+func (h *ACLServiceAttributeHandler) list(conn *gofastly.Client, serviceID string, serviceVersion int) ([]interface{}, error) {
 	log.Printf("[DEBUG] Refreshing ACLs for (%s)", serviceID)
 	// Don't particularly need a buildList function since the variables are explicitly passed
 	aclList, err := conn.ListACLs(&gofastly.ListACLsInput{
@@ -132,27 +102,23 @@ func (h *ACLServiceAttributeHandler) list(conn *gofastly.Client, serviceID strin
 	if err != nil {
 		return nil, fmt.Errorf("[ERR] Error looking up ACLs for (%s), version (%v): %s", serviceID, serviceVersion, err)
 	}
-	return aclList, nil
-}
 
-func (h *ACLServiceAttributeHandler) flatten(aclList []*gofastly.ACL) []map[string]interface{} {
-	var al []map[string]interface{}
-	for _, acl := range aclList {
-		// Convert VCLs to a map for saving to state.
-		vclMap := map[string]interface{}{
-			"acl_id": acl.ID,
-			"name":   acl.Name,
-		}
-
-		// prune any empty values that come from the default string value in structs
-		for k, v := range vclMap {
-			if v == "" {
-				delete(vclMap, k)
-			}
-		}
-
-		al = append(al, vclMap)
+	genericList := make([]interface{}, len(aclList))
+	for i := range aclList {
+		genericList[i] = aclList[i]
 	}
 
+	return genericList, nil
+}
+
+func (h *ACLServiceAttributeHandler) flatten(aclList []interface{}) []map[string]interface{} {
+	var al []map[string]interface{}
+	for _, acl := range aclList {
+		ao := acl.(*gofastly.ACL)
+		al = append(al, h.pruneMap(map[string]interface{}{
+			"acl_id": ao.ID,
+			"name":   ao.Name,
+		}))
+	}
 	return al
 }

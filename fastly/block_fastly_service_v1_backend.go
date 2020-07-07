@@ -23,21 +23,12 @@ func NewServiceBackend(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *BackendServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	ob, nb := d.GetChange(h.GetKey())
-	if ob == nil {
-		ob = new(schema.Set)
-	}
-	if nb == nil {
-		nb = new(schema.Set)
-	}
 
-	obs := ob.(*schema.Set)
-	nbs := nb.(*schema.Set)
-	removeBackends := obs.Difference(nbs).List()
-	addBackends := nbs.Difference(obs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Backends
-	for _, bRaw := range removeBackends {
+	for _, bRaw := range diff.remove {
 		bf := bRaw.(map[string]interface{})
 		opts := gofastly.DeleteBackendInput{
 			Service: d.Id(),
@@ -57,7 +48,7 @@ func (h *BackendServiceAttributeHandler) Process(d *schema.ResourceData, latestV
 	}
 
 	// Find and post new Backends
-	for _, dRaw := range addBackends {
+	for _, dRaw := range diff.add {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.CreateBackendInput{
 			Service:             d.Id(),

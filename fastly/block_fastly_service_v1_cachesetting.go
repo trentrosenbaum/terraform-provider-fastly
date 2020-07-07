@@ -23,22 +23,11 @@ func NewServiceCacheSetting(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *CacheSettingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	oc, nc := d.GetChange(h.GetKey())
-	if oc == nil {
-		oc = new(schema.Set)
-	}
-	if nc == nil {
-		nc = new(schema.Set)
-	}
-
-	ocs := oc.(*schema.Set)
-	ncs := nc.(*schema.Set)
-
-	remove := ocs.Difference(ncs).List()
-	add := ncs.Difference(ocs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed Cache Settings
-	for _, dRaw := range remove {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteCacheSettingInput{
 			Service: d.Id(),
@@ -58,7 +47,7 @@ func (h *CacheSettingServiceAttributeHandler) Process(d *schema.ResourceData, la
 	}
 
 	// POST new Cache Settings
-	for _, dRaw := range add {
+	for _, dRaw := range diff.add {
 		opts, err := buildCacheSetting(dRaw.(map[string]interface{}))
 		if err != nil {
 			log.Printf("[DEBUG] Error building Cache Setting: %s", err)

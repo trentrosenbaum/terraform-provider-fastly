@@ -23,23 +23,11 @@ func NewServiceLoggingDigitalOcean(sa ServiceMetadata) ServiceAttributeDefinitio
 
 func (h *DigitalOceanServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
-	ol, nl := d.GetChange(h.GetKey())
-
-	if ol == nil {
-		ol = new(schema.Set)
-	}
-	if nl == nil {
-		nl = new(schema.Set)
-	}
-
-	ols := ol.(*schema.Set)
-	nls := nl.(*schema.Set)
-
-	removeDigitalOceanLogging := ols.Difference(nls).List()
-	addDigitalOceanLogging := nls.Difference(ols).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old DigitalOcean Spaces logging endpoints.
-	for _, oRaw := range removeDigitalOceanLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
 		opts := h.buildDelete(of, serviceID, latestVersion)
 
@@ -51,7 +39,7 @@ func (h *DigitalOceanServiceAttributeHandler) Process(d *schema.ResourceData, la
 	}
 
 	// POST new/updated DigitalOcean Spaces logging endpoints.
-	for _, nRaw := range addDigitalOceanLogging {
+	for _, nRaw := range diff.add {
 		lf := nRaw.(map[string]interface{})
 
 		// @HACK for a TF SDK Issue.

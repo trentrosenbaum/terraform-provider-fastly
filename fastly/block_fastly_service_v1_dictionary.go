@@ -22,23 +22,11 @@ func NewServiceDictionary(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *DictionaryServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	oldDictVal, newDictVal := d.GetChange(h.GetKey())
-
-	if oldDictVal == nil {
-		oldDictVal = new(schema.Set)
-	}
-	if newDictVal == nil {
-		newDictVal = new(schema.Set)
-	}
-
-	oldDictSet := oldDictVal.(*schema.Set)
-	newDictSet := newDictVal.(*schema.Set)
-
-	remove := oldDictSet.Difference(newDictSet).List()
-	add := newDictSet.Difference(oldDictSet).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed dictionary configurations
-	for _, dRaw := range remove {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteDictionaryInput{
 			Service: d.Id(),
@@ -58,7 +46,7 @@ func (h *DictionaryServiceAttributeHandler) Process(d *schema.ResourceData, late
 	}
 
 	// POST new dictionary configurations
-	for _, dRaw := range add {
+	for _, dRaw := range diff.add {
 		opts, err := buildDictionary(dRaw.(map[string]interface{}))
 		if err != nil {
 			log.Printf("[DEBUG] Error building Dicitionary: %s", err)

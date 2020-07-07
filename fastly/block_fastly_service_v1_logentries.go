@@ -22,21 +22,11 @@ func NewServiceLogentries(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *LogentriesServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	os, ns := d.GetChange(h.GetKey())
-	if os == nil {
-		os = new(schema.Set)
-	}
-	if ns == nil {
-		ns = new(schema.Set)
-	}
-
-	oss := os.(*schema.Set)
-	nss := ns.(*schema.Set)
-	removeLogentries := oss.Difference(nss).List()
-	addLogentries := nss.Difference(oss).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old logentries configurations
-	for _, pRaw := range removeLogentries {
+	for _, pRaw := range diff.remove {
 		slf := pRaw.(map[string]interface{})
 		opts := gofastly.DeleteLogentriesInput{
 			Service: d.Id(),
@@ -56,7 +46,7 @@ func (h *LogentriesServiceAttributeHandler) Process(d *schema.ResourceData, late
 	}
 
 	// POST new/updated Logentries
-	for _, pRaw := range addLogentries {
+	for _, pRaw := range diff.add {
 		slf := pRaw.(map[string]interface{})
 
 		var vla = h.getVCLLoggingAttributes(slf)

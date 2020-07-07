@@ -22,21 +22,11 @@ func NewServiceBigQueryLogging(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	os, ns := d.GetChange(h.GetKey())
-	if os == nil {
-		os = new(schema.Set)
-	}
-	if ns == nil {
-		ns = new(schema.Set)
-	}
-
-	oss := os.(*schema.Set)
-	nss := ns.(*schema.Set)
-	removeBigquerylogging := oss.Difference(nss).List()
-	addBigquerylogging := nss.Difference(oss).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old bigquerylogging configurations
-	for _, pRaw := range removeBigquerylogging {
+	for _, pRaw := range diff.remove {
 		sf := pRaw.(map[string]interface{})
 		opts := gofastly.DeleteBigQueryInput{
 			Service: d.Id(),
@@ -56,7 +46,7 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 	}
 
 	// POST new/updated bigquerylogging
-	for _, pRaw := range addBigquerylogging {
+	for _, pRaw := range diff.add {
 		sf := pRaw.(map[string]interface{})
 
 		// @HACK for a TF SDK Issue.

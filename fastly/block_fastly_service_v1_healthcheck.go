@@ -22,21 +22,11 @@ func NewServiceHealthCheck(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *HealthCheckServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	oh, nh := d.GetChange(h.GetKey())
-	if oh == nil {
-		oh = new(schema.Set)
-	}
-	if nh == nil {
-		nh = new(schema.Set)
-	}
-
-	ohs := oh.(*schema.Set)
-	nhs := nh.(*schema.Set)
-	removeHealthCheck := ohs.Difference(nhs).List()
-	addHealthCheck := nhs.Difference(ohs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old healthcheck configurations
-	for _, hRaw := range removeHealthCheck {
+	for _, hRaw := range diff.remove {
 		hf := hRaw.(map[string]interface{})
 		opts := gofastly.DeleteHealthCheckInput{
 			Service: d.Id(),
@@ -56,7 +46,7 @@ func (h *HealthCheckServiceAttributeHandler) Process(d *schema.ResourceData, lat
 	}
 
 	// POST new/updated Healthcheck
-	for _, hRaw := range addHealthCheck {
+	for _, hRaw := range diff.add {
 		hf := hRaw.(map[string]interface{})
 
 		opts := gofastly.CreateHealthCheckInput{

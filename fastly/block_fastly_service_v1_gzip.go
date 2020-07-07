@@ -23,22 +23,11 @@ func NewServiceGzip(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *GzipServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	og, ng := d.GetChange(h.GetKey())
-	if og == nil {
-		og = new(schema.Set)
-	}
-	if ng == nil {
-		ng = new(schema.Set)
-	}
-
-	ogs := og.(*schema.Set)
-	ngs := ng.(*schema.Set)
-
-	remove := ogs.Difference(ngs).List()
-	add := ngs.Difference(ogs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed gzip rules
-	for _, dRaw := range remove {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteGzipInput{
 			Service: d.Id(),
@@ -58,7 +47,7 @@ func (h *GzipServiceAttributeHandler) Process(d *schema.ResourceData, latestVers
 	}
 
 	// POST new Gzips
-	for _, dRaw := range add {
+	for _, dRaw := range diff.add {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.CreateGzipInput{
 			Service:        d.Id(),

@@ -94,23 +94,11 @@ func (h *GooglePubSubServiceAttributeHandler) Register(s *schema.Resource) error
 
 func (h *GooglePubSubServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
-	oldLogCfg, newLogCfg := d.GetChange(h.GetKey())
-
-	if oldLogCfg == nil {
-		oldLogCfg = new(schema.Set)
-	}
-	if newLogCfg == nil {
-		newLogCfg = new(schema.Set)
-	}
-
-	oldLogSet := oldLogCfg.(*schema.Set)
-	newLogSet := newLogCfg.(*schema.Set)
-
-	removeGooglePubSubLogging := oldLogSet.Difference(newLogSet).List()
-	addGooglePubSubLogging := newLogSet.Difference(oldLogSet).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Google Cloud Pub/Sub logging endpoints.
-	for _, oRaw := range removeGooglePubSubLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
 		opts := h.buildDelete(of, serviceID, latestVersion)
 
@@ -122,7 +110,7 @@ func (h *GooglePubSubServiceAttributeHandler) Process(d *schema.ResourceData, la
 	}
 
 	// POST new/updated Google Cloud Pub/Sub logging endponts.
-	for _, nRaw := range addGooglePubSubLogging {
+	for _, nRaw := range diff.add {
 		cfg := nRaw.(map[string]interface{})
 		opts := h.buildCreate(cfg, serviceID, latestVersion)
 

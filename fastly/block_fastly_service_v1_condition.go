@@ -29,21 +29,11 @@ func (h *ConditionServiceAttributeHandler) Process(d *schema.ResourceData, lates
 	// get the full diff not a partial set item diff. Because this is done
 	// on a new version of the Fastly Service configuration, this is considered safe
 
-	oc, nc := d.GetChange(h.GetKey())
-	if oc == nil {
-		oc = new(schema.Set)
-	}
-	if nc == nil {
-		nc = new(schema.Set)
-	}
-
-	ocs := oc.(*schema.Set)
-	ncs := nc.(*schema.Set)
-	removeConditions := ocs.Difference(ncs).List()
-	addConditions := ncs.Difference(ocs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Conditions
-	for _, cRaw := range removeConditions {
+	for _, cRaw := range diff.remove {
 		cf := cRaw.(map[string]interface{})
 		opts := gofastly.DeleteConditionInput{
 			Service: d.Id(),
@@ -63,7 +53,7 @@ func (h *ConditionServiceAttributeHandler) Process(d *schema.ResourceData, lates
 	}
 
 	// POST new Conditions
-	for _, cRaw := range addConditions {
+	for _, cRaw := range diff.add {
 		cf := cRaw.(map[string]interface{})
 		opts := gofastly.CreateConditionInput{
 			Service: d.Id(),

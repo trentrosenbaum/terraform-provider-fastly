@@ -23,23 +23,11 @@ func NewServiceLoggingHoneycomb(sa ServiceMetadata) ServiceAttributeDefinition {
 
 func (h *HoneycombServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
-	ol, nl := d.GetChange(h.GetKey())
-
-	if ol == nil {
-		ol = new(schema.Set)
-	}
-	if nl == nil {
-		nl = new(schema.Set)
-	}
-
-	ols := ol.(*schema.Set)
-	nls := nl.(*schema.Set)
-
-	removeHoneycombLogging := ols.Difference(nls).List()
-	addHoneycombLogging := nls.Difference(ols).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Honeycomb logging endpoints.
-	for _, oRaw := range removeHoneycombLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
 		opts := h.buildDelete(of, serviceID, latestVersion)
 
@@ -51,7 +39,7 @@ func (h *HoneycombServiceAttributeHandler) Process(d *schema.ResourceData, lates
 	}
 
 	// POST new/updated Honeycomb logging endpoints.
-	for _, nRaw := range addHoneycombLogging {
+	for _, nRaw := range diff.add {
 		lf := nRaw.(map[string]interface{})
 		opts := h.buildCreate(lf, serviceID, latestVersion)
 

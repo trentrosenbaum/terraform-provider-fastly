@@ -22,21 +22,11 @@ func NewServiceGCSLogging(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *GCSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	os, ns := d.GetChange(h.GetKey())
-	if os == nil {
-		os = new(schema.Set)
-	}
-	if ns == nil {
-		ns = new(schema.Set)
-	}
-
-	oss := os.(*schema.Set)
-	nss := ns.(*schema.Set)
-	removeGcslogging := oss.Difference(nss).List()
-	addGcslogging := nss.Difference(oss).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old gcslogging configurations
-	for _, pRaw := range removeGcslogging {
+	for _, pRaw := range diff.remove {
 		sf := pRaw.(map[string]interface{})
 		opts := gofastly.DeleteGCSInput{
 			Service: d.Id(),
@@ -56,7 +46,7 @@ func (h *GCSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, late
 	}
 
 	// POST new/updated gcslogging
-	for _, pRaw := range addGcslogging {
+	for _, pRaw := range diff.add {
 		sf := pRaw.(map[string]interface{})
 		var vla = h.getVCLLoggingAttributes(sf)
 		opts := gofastly.CreateGCSInput{

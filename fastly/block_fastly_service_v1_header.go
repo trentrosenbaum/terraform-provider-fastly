@@ -23,22 +23,11 @@ func NewServiceHeader(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *HeaderServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	oh, nh := d.GetChange(h.GetKey())
-	if oh == nil {
-		oh = new(schema.Set)
-	}
-	if nh == nil {
-		nh = new(schema.Set)
-	}
-
-	ohs := oh.(*schema.Set)
-	nhs := nh.(*schema.Set)
-
-	remove := ohs.Difference(nhs).List()
-	add := nhs.Difference(ohs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed headers
-	for _, dRaw := range remove {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteHeaderInput{
 			Service: d.Id(),
@@ -58,7 +47,7 @@ func (h *HeaderServiceAttributeHandler) Process(d *schema.ResourceData, latestVe
 	}
 
 	// POST new Headers
-	for _, dRaw := range add {
+	for _, dRaw := range diff.add {
 		opts, err := buildHeader(dRaw.(map[string]interface{}))
 		if err != nil {
 			log.Printf("[DEBUG] Error building Header: %s", err)

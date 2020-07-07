@@ -22,22 +22,11 @@ func NewServiceDirector(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *DirectorServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	od, nd := d.GetChange(h.GetKey())
-	if od == nil {
-		od = new(schema.Set)
-	}
-	if nd == nil {
-		nd = new(schema.Set)
-	}
-
-	ods := od.(*schema.Set)
-	nds := nd.(*schema.Set)
-
-	removeDirector := ods.Difference(nds).List()
-	addDirector := nds.Difference(ods).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old director configurations
-	for _, dRaw := range removeDirector {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteDirectorInput{
 			Service: d.Id(),
@@ -57,7 +46,7 @@ func (h *DirectorServiceAttributeHandler) Process(d *schema.ResourceData, latest
 	}
 
 	// POST new/updated Director
-	for _, dRaw := range addDirector {
+	for _, dRaw := range diff.add {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.CreateDirectorInput{
 			Service:  d.Id(),

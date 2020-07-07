@@ -588,3 +588,65 @@ func (h *DefaultServiceAttributeHandler) diffSchemaChanges(o interface{}, n inte
 		os.Difference(ns).List(),
 	}
 }
+
+func (h *DefaultServiceAttributeHandler) pruneMap(m map[string]interface{}) map[string]interface{} {
+	// prune any empty values that come from the default string value in structs
+	for k, v := range m {
+		if v == "" {
+			delete(m, k)
+		}
+	}
+	return m
+}
+
+type ServiceAttributeProcess interface {
+	GetKey() string
+	diffSchemaChanges(o interface{}, n interface{}) DiffSchemaChangesResult
+	buildDelete(oRaw interface{}, serviceID string, serviceVersion int) interface{}
+	delete(conn *gofastly.Client, opts interface{}) error
+	buildCreate(oRaw interface{}, serviceID string, serviceVersion int) interface{}
+	create(conn *gofastly.Client, opts interface{}) error
+	list(conn *gofastly.Client, serviceID string, serviceVersion int) ([]interface{}, error)
+	flatten(ls []interface{}) []map[string]interface{}
+}
+
+func ProcessServiceAttribute(h ServiceAttributeProcess, d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
+
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
+
+	// Delete removed ACL configurations
+	for _, oRaw := range diff.remove {
+		opts := h.buildDelete(oRaw, d.Id(), latestVersion)
+		err := h.delete(conn, opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Create new ACL configurations
+	for _, vRaw := range diff.add {
+		opts := h.buildCreate(vRaw, d.Id(), latestVersion)
+		err := h.create(conn, opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ReadServiceAttribute(h ServiceAttributeProcess, d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
+	al, err := h.list(conn, d.Id(), s.ActiveVersion.Number)
+	if err != nil {
+		return err
+	}
+
+	alMap := h.flatten(al)
+	err = d.Set(h.GetKey(), alMap)
+	if err != nil {
+		log.Printf("[WARN] Error setting ACLs for (%s): %s", d.Id(), err)
+	}
+
+	return nil
+}

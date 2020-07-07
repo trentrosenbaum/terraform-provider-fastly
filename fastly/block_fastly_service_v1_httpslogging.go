@@ -23,26 +23,13 @@ func NewServiceHTTPSLogging(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *HTTPSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	serviceID := d.Id()
-	oh, nh := d.GetChange(h.GetKey())
-
-	if oh == nil {
-		oh = new(schema.Set)
-	}
-	if nh == nil {
-		nh = new(schema.Set)
-	}
-
-	ohs := oh.(*schema.Set)
-	nhs := nh.(*schema.Set)
-
-	removeHTTPSLogging := ohs.Difference(nhs).List()
-	addHTTPSLogging := nhs.Difference(ohs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old HTTPS logging endpoints
-	for _, oRaw := range removeHTTPSLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
-		opts := h.buildDelete(of, serviceID, latestVersion)
+		opts := h.buildDelete(of, d.Id(), latestVersion)
 
 		log.Printf("[DEBUG] Fastly HTTPS logging endpoint removal opts: %#v", opts)
 
@@ -52,9 +39,9 @@ func (h *HTTPSLoggingServiceAttributeHandler) Process(d *schema.ResourceData, la
 	}
 
 	// POST new/updated HTTPS logging endponts
-	for _, nRaw := range addHTTPSLogging {
+	for _, nRaw := range diff.add {
 		hf := nRaw.(map[string]interface{})
-		opts := h.buildCreate(hf, serviceID, latestVersion)
+		opts := h.buildCreate(hf, d.Id(), latestVersion)
 
 		log.Printf("[DEBUG] Fastly HTTPS logging addition opts: %#v", opts)
 

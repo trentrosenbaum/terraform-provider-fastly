@@ -25,22 +25,11 @@ func NewServiceDynamicSnippet(sa ServiceMetadata) ServiceAttributeDefinition {
 func (h *DynamicSnippetServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	// Note: as above with Gzip and S3 logging, we don't utilize the PUT
 	// endpoint to update a VCL dynamic snippet, we simply destroy it and create a new one.
-	oldDynamicSnippetVal, newDynamicSnippetVal := d.GetChange(h.GetKey())
-	if oldDynamicSnippetVal == nil {
-		oldDynamicSnippetVal = new(schema.Set)
-	}
-	if newDynamicSnippetVal == nil {
-		newDynamicSnippetVal = new(schema.Set)
-	}
-
-	oldDynamicSnippetSet := oldDynamicSnippetVal.(*schema.Set)
-	newDynamicSnippetSet := newDynamicSnippetVal.(*schema.Set)
-
-	remove := oldDynamicSnippetSet.Difference(newDynamicSnippetSet).List()
-	add := newDynamicSnippetSet.Difference(oldDynamicSnippetSet).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// Delete removed VCL Snippet configurations
-	for _, dRaw := range remove {
+	for _, dRaw := range diff.remove {
 		df := dRaw.(map[string]interface{})
 		opts := gofastly.DeleteSnippetInput{
 			Service: d.Id(),
@@ -60,7 +49,7 @@ func (h *DynamicSnippetServiceAttributeHandler) Process(d *schema.ResourceData, 
 	}
 
 	// POST new VCL Snippet configurations
-	for _, dRaw := range add {
+	for _, dRaw := range diff.add {
 		opts, err := buildDynamicSnippet(dRaw.(map[string]interface{}))
 		if err != nil {
 			log.Printf("[DEBUG] Error building VCL Dynamic Snippet: %s", err)

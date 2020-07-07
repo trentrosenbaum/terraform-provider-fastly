@@ -23,23 +23,11 @@ func NewServiceLoggingFTP(sa ServiceMetadata) ServiceAttributeDefinition {
 
 func (h *FTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
-	of, nf := d.GetChange(h.GetKey())
-
-	if of == nil {
-		of = new(schema.Set)
-	}
-	if nf == nil {
-		nf = new(schema.Set)
-	}
-
-	ofs := of.(*schema.Set)
-	nfs := nf.(*schema.Set)
-
-	removeFTPLogging := ofs.Difference(nfs).List()
-	addFTPLogging := nfs.Difference(ofs).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old FTP logging endpoints.
-	for _, oRaw := range removeFTPLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
 		opts := h.buildDelete(of, serviceID, latestVersion)
 
@@ -51,7 +39,7 @@ func (h *FTPServiceAttributeHandler) Process(d *schema.ResourceData, latestVersi
 	}
 
 	// POST new/updated FTP logging endpoints.
-	for _, nRaw := range addFTPLogging {
+	for _, nRaw := range diff.add {
 		ef := nRaw.(map[string]interface{})
 
 		// @HACK for a TF SDK Issue.

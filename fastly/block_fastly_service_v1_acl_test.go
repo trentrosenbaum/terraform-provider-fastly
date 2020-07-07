@@ -14,7 +14,7 @@ import (
 func TestResourceFastlyFlattenAcl(t *testing.T) {
 	cases := []struct {
 		sm     ServiceMetadata
-		remote []*gofastly.ACL
+		remote []interface{}
 		local  []map[string]interface{}
 	}{
 		{

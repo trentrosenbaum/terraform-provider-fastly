@@ -23,23 +23,11 @@ func NewServiceLoggingElasticSearch(sa ServiceMetadata) ServiceAttributeDefiniti
 
 func (h *ElasticSearchServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
 	serviceID := d.Id()
-	oe, ne := d.GetChange(h.GetKey())
-
-	if oe == nil {
-		oe = new(schema.Set)
-	}
-	if ne == nil {
-		ne = new(schema.Set)
-	}
-
-	oes := oe.(*schema.Set)
-	nes := ne.(*schema.Set)
-
-	removeElasticsearchLogging := oes.Difference(nes).List()
-	addElasticsearchLogging := nes.Difference(oes).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Elasticsearch logging endpoints.
-	for _, oRaw := range removeElasticsearchLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
 		opts := h.buildDelete(of, serviceID, latestVersion)
 
@@ -51,7 +39,7 @@ func (h *ElasticSearchServiceAttributeHandler) Process(d *schema.ResourceData, l
 	}
 
 	// POST new/updated Elasticsearch logging endpoints.
-	for _, nRaw := range addElasticsearchLogging {
+	for _, nRaw := range diff.add {
 		ef := nRaw.(map[string]interface{})
 		opts := h.buildCreate(ef, serviceID, latestVersion)
 

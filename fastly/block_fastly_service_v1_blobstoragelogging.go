@@ -22,22 +22,11 @@ func NewServiceBlobStorageLogging(sa ServiceMetadata) ServiceAttributeDefinition
 }
 
 func (h *BlobStorageLoggingServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	obsl, nbsl := d.GetChange(h.GetKey())
-	if obsl == nil {
-		obsl = new(schema.Set)
-	}
-	if nbsl == nil {
-		nbsl = new(schema.Set)
-	}
-
-	obsls := obsl.(*schema.Set)
-	nbsls := nbsl.(*schema.Set)
-
-	remove := obsls.Difference(nbsls).List()
-	add := nbsls.Difference(obsls).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Blob Storage logging configurations
-	for _, bslRaw := range remove {
+	for _, bslRaw := range diff.remove {
 		bslf := bslRaw.(map[string]interface{})
 		opts := gofastly.DeleteBlobStorageInput{
 			Service: d.Id(),
@@ -57,7 +46,7 @@ func (h *BlobStorageLoggingServiceAttributeHandler) Process(d *schema.ResourceDa
 	}
 
 	// POST new/updated Blob Storage logging configurations
-	for _, bslRaw := range add {
+	for _, bslRaw := range diff.add {
 		bslf := bslRaw.(map[string]interface{})
 
 		// @HACK for a TF SDK Issue.

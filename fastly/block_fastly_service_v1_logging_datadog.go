@@ -22,26 +22,13 @@ func NewServiceLoggingDatadog(sa ServiceMetadata) ServiceAttributeDefinition {
 }
 
 func (h *DatadogServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	serviceID := d.Id()
-	od, nd := d.GetChange(h.GetKey())
-
-	if od == nil {
-		od = new(schema.Set)
-	}
-	if nd == nil {
-		nd = new(schema.Set)
-	}
-
-	ods := od.(*schema.Set)
-	nds := nd.(*schema.Set)
-
-	removeDatadogLogging := ods.Difference(nds).List()
-	addDatadogLogging := nds.Difference(ods).List()
+	o, n := d.GetChange(h.GetKey())
+	diff := h.diffSchemaChanges(o, n)
 
 	// DELETE old Datadog logging endpoints.
-	for _, oRaw := range removeDatadogLogging {
+	for _, oRaw := range diff.remove {
 		of := oRaw.(map[string]interface{})
-		opts := h.buildDelete(of, serviceID, latestVersion)
+		opts := h.buildDelete(of, d.Id(), latestVersion)
 
 		log.Printf("[DEBUG] Fastly Datadog logging endpoint removal opts: %#v", opts)
 
@@ -51,9 +38,9 @@ func (h *DatadogServiceAttributeHandler) Process(d *schema.ResourceData, latestV
 	}
 
 	// POST new/updated Datadog logging endpoints.
-	for _, nRaw := range addDatadogLogging {
+	for _, nRaw := range diff.add {
 		df := nRaw.(map[string]interface{})
-		opts := h.buildCreate(df, serviceID, latestVersion)
+		opts := h.buildCreate(df, d.Id(), latestVersion)
 
 		log.Printf("[DEBUG] Fastly Datadog logging addition opts: %#v", opts)
 
