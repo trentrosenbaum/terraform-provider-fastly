@@ -615,7 +615,7 @@ func ProcessServiceAttribute(h ServiceAttributeProcess, d *schema.ResourceData, 
 	o, n := d.GetChange(h.GetKey())
 	diff := h.diffSchemaChanges(o, n)
 
-	// Delete removed ACL configurations
+	// Delete removed configurations
 	for _, oRaw := range diff.remove {
 		opts := h.buildDelete(oRaw, d.Id(), latestVersion)
 		err := h.delete(conn, opts)
@@ -624,7 +624,7 @@ func ProcessServiceAttribute(h ServiceAttributeProcess, d *schema.ResourceData, 
 		}
 	}
 
-	// Create new ACL configurations
+	// Create new configurations
 	for _, vRaw := range diff.add {
 		opts := h.buildCreate(vRaw, d.Id(), latestVersion)
 		err := h.create(conn, opts)

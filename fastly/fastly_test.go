@@ -1,7 +1,12 @@
 package fastly
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"io/ioutil"
+	"log"
+	"text/template"
 )
 
 import (
@@ -98,3 +103,32 @@ func TestEscapePercentSign(t *testing.T) {
 func appendNewLine(s string) string {
 	return s + "\n"
 }
+
+
+
+
+
+func makeTestServiceName() string {
+	return fmt.Sprintf("tf_test_%s", acctest.RandString(10))
+}
+
+func makeTestBlockName(block string) string {
+	return fmt.Sprintf("tf_test_%s_%s", block, acctest.RandString(10))
+}
+
+func makeTestServiceComment() string {
+	return fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+}
+
+func testGetResourceTemplate(filename string, data interface{}) string {
+	var filepath = fmt.Sprintf("resource_templates/test/%v.tmpl", filename)
+	t := template.Must(template.ParseFiles(filepath))
+	var buf bytes.Buffer
+	err := t.Execute(&buf, data)
+	if err != nil {
+		log.Fatalf("Cannot execute template: %v", err)
+	}
+	return buf.String()
+}
+
+

@@ -1,0 +1,19 @@
+resource "fastly_service_v1" "foo" {
+    name = "{{.Name}}"
+    domain {
+        name    = "{{.DomainName}}"
+        comment = "tf-testing-domain"
+    }
+    backend {
+        name    = "tf -test backend"
+        address = "{{.BackendName}}"
+
+    }
+    {{range .Acls}}
+    acl {
+        name = "{{.Name}}"
+        acl_id = "{{.AclID}}"
+    }
+    {{end}}
+    force_destroy = true
+}

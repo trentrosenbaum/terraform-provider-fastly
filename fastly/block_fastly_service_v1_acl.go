@@ -21,13 +21,6 @@ func NewServiceACL(sa ServiceMetadata) *ACLServiceAttributeHandler {
 	}
 }
 
-func (h *ACLServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
-	return ProcessServiceAttribute(h, d, latestVersion, conn)
-}
-
-func (h *ACLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
-	return ReadServiceAttribute(h, d, s, conn)
-}
 
 func (h *ACLServiceAttributeHandler) Register(s *schema.Resource) error {
 	s.Schema[h.GetKey()] = &schema.Schema{
@@ -51,6 +44,14 @@ func (h *ACLServiceAttributeHandler) Register(s *schema.Resource) error {
 		},
 	}
 	return nil
+}
+
+func (h *ACLServiceAttributeHandler) Process(d *schema.ResourceData, latestVersion int, conn *gofastly.Client) error {
+	return ProcessServiceAttribute(h, d, latestVersion, conn)
+}
+
+func (h *ACLServiceAttributeHandler) Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error {
+	return ReadServiceAttribute(h, d, s, conn)
 }
 
 func (h *ACLServiceAttributeHandler) buildDelete(oRaw interface{}, serviceID string, serviceVersion int) interface{} {
