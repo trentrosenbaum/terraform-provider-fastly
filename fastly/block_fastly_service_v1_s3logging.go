@@ -13,7 +13,7 @@ type S3LoggingServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceS3Logging(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceS3Logging(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &S3LoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "s3logging",

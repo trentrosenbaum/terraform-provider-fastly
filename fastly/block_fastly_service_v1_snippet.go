@@ -13,7 +13,7 @@ type SnippetServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceSnippet(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceSnippet(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &SnippetServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "snippet",

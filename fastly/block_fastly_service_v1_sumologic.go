@@ -12,7 +12,7 @@ type SumologicServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceSumologic(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceSumologic(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &SumologicServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "sumologic",

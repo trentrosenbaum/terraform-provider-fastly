@@ -12,7 +12,7 @@ type BigQueryLoggingServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceBigQueryLogging(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceBigQueryLogging(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &BigQueryLoggingServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "bigquerylogging",
@@ -32,6 +32,10 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 
 	oss := os.(*schema.Set)
 	nss := ns.(*schema.Set)
+	return h.processSets(oss, nss, d.Id(), latestVersion, conn)
+}
+
+func (h *BigQueryLoggingServiceAttributeHandler) processSets(oss, nss *schema.Set, serviceId string, latestVersion int, conn Interface) error {
 	removeBigquerylogging := oss.Difference(nss).List()
 	addBigquerylogging := nss.Difference(oss).List()
 
@@ -39,7 +43,7 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 	for _, pRaw := range removeBigquerylogging {
 		sf := pRaw.(map[string]interface{})
 		opts := gofastly.DeleteBigQueryInput{
-			Service: d.Id(),
+			Service: serviceId,
 			Version: latestVersion,
 			Name:    sf["name"].(string),
 		}
@@ -75,7 +79,7 @@ func (h *BigQueryLoggingServiceAttributeHandler) Process(d *schema.ResourceData,
 
 		var vla = h.getVCLLoggingAttributes(sf)
 		opts := gofastly.CreateBigQueryInput{
-			Service:           d.Id(),
+			Service:           serviceId,
 			Version:           latestVersion,
 			Name:              sf["name"].(string),
 			ProjectID:         sf["project_id"].(string),

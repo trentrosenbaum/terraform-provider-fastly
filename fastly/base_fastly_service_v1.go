@@ -41,6 +41,13 @@ type ServiceAttributeDefinition interface {
 	MustProcess(d *schema.ResourceData, initialVersion bool) bool
 }
 
+// ServiceBlockAttributeDefinition provides an interface to service attributes that are contained within a single block
+type ServiceBlockAttributeDefinition interface {
+	ServiceAttributeDefinition
+	// GetKey returns the block key
+	GetKey() string
+}
+
 // ServiceMetadata provides a container to pass service attributes into an Attribute handler.
 type ServiceMetadata struct {
 	serviceType string

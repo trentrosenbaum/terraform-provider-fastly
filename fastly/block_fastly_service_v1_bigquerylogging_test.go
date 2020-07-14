@@ -2,6 +2,7 @@ package fastly
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"os"
 	"reflect"
 	"testing"
@@ -37,6 +38,181 @@ func TestAccFastlyServiceV1_bigquerylogging(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccFastlyServiceV1_bigquerylogging_schema(t *testing.T) {
+	var service gofastly.ServiceDetail
+
+	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+	bqName := fmt.Sprintf("bq %s", acctest.RandString(10))
+
+	secretKey, err := generateKey()
+	if err != nil {
+		t.Errorf("Failed to generate key: %s", err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckServiceV1Destroy,
+		Steps: []resource.TestStep{
+			{
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Config:             testAccServiceV1Config_bigquery(name, bqName, secretKey),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
+					testAccCheckFastlyServiceV1Attributes_bq(&service, name, bqName),
+				),
+			},
+		},
+	})
+}
+
+func TestBigQueryLoggingProcessSets(t *testing.T) {
+	var actualCreated, actualDeleted int
+	createFn := func(input *gofastly.CreateBigQueryInput) (*gofastly.BigQuery, error) {
+		actualCreated++
+		return &gofastly.BigQuery{}, nil
+	}
+	deleteFn := func(input *gofastly.DeleteBigQueryInput) error {
+		actualDeleted++
+		return nil
+	}
+	cases := []struct {
+		scenario        string
+		serviceType     string
+		oldSet          []map[string]interface{}
+		newSet          []map[string]interface{}
+		expectedCreated int
+		expectedDeleted int
+		api             API
+	}{
+		{
+			scenario:    "Adding new logging",
+			serviceType: ServiceTypeVCL,
+			oldSet:      []map[string]interface{}{},
+			newSet: []map[string]interface{}{
+				{
+					"name":       "B",
+					"project_id": "",
+					"dataset":    "",
+					"table":      "",
+					"email":      "",
+					"secret_key": "",
+					"template":   "",
+				},
+			},
+			api: API{
+				CreateBigQueryFn: createFn,
+				DeleteBigQueryFn: deleteFn,
+			},
+			expectedCreated: 1,
+			expectedDeleted: 0,
+		},
+		{
+			scenario:    "Changing existing logging",
+			serviceType: ServiceTypeVCL,
+			oldSet: []map[string]interface{}{
+				{
+					"name":       "A",
+					"project_id": "",
+					"dataset":    "",
+					"table":      "",
+					"email":      "",
+					"secret_key": "",
+					"template":   "",
+				},
+			},
+			newSet: []map[string]interface{}{
+				{
+					"name":       "B",
+					"project_id": "",
+					"dataset":    "",
+					"table":      "",
+					"email":      "",
+					"secret_key": "",
+					"template":   "",
+				},
+			},
+			api: API{
+				CreateBigQueryFn: createFn,
+				DeleteBigQueryFn: deleteFn,
+			},
+			expectedCreated: 1,
+			expectedDeleted: 1,
+		},
+		{
+			scenario:    "Removing logging",
+			serviceType: ServiceTypeVCL,
+			oldSet: []map[string]interface{}{
+				{
+					"name":       "A",
+					"project_id": "",
+					"dataset":    "",
+					"table":      "",
+					"email":      "",
+					"secret_key": "",
+					"template":   "",
+				},
+			},
+			newSet: []map[string]interface{}{},
+			api: API{
+				CreateBigQueryFn: createFn,
+				DeleteBigQueryFn: deleteFn,
+			},
+			expectedCreated: 0,
+			expectedDeleted: 1,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("BigQueryLogging.%s: %s", c.serviceType, c.scenario), func(t *testing.T) {
+			// No parallel for now
+			actualCreated = 0
+			actualDeleted = 0
+			sbad := NewServiceBigQueryLogging(ServiceMetadata{serviceType: c.serviceType}).(*BigQueryLoggingServiceAttributeHandler)
+			s := &schema.Resource{
+				Schema: map[string]*schema.Schema{},
+			}
+			sbad.Register(s)
+
+			hashFunc := getSchemaSetFunc(s, sbad)
+
+			oldSet := createSet(hashFunc, c.oldSet)
+			newSet := createSet(hashFunc, c.newSet)
+
+			err := sbad.processSets(oldSet, newSet, "service-id", 1, c.api)
+			if err != nil {
+				t.Fatalf("Unexpected error %v", err)
+			}
+
+			if c.expectedCreated != actualCreated {
+				t.Fatalf("Expected to create %d set(s)", c.expectedCreated)
+			}
+
+			if c.expectedDeleted != actualDeleted {
+				t.Fatalf("Expected to delete %d set(s)", c.expectedDeleted)
+			}
+
+		})
+	}
+}
+
+func getSchemaSetFunc(s *schema.Resource, sbad ServiceBlockAttributeDefinition) schema.SchemaSetFunc {
+	return schema.HashResource(s.Schema[sbad.GetKey()].Elem.(*schema.Resource))
+}
+
+func createSet(hashFunc schema.SchemaSetFunc, items []map[string]interface{}) *schema.Set {
+	return schema.NewSet(hashFunc, toArrayInterface(items))
+}
+
+func toArrayInterface(arrayOfMaps []map[string]interface{}) []interface{} {
+	var result []interface{}
+	for _, c := range arrayOfMaps {
+		result = append(result, c)
+	}
+	return result
 }
 
 func TestAccFastlyServiceV1_bigquerylogging_compute(t *testing.T) {

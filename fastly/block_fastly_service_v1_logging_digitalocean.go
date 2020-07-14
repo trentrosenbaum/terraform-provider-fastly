@@ -12,7 +12,7 @@ type DigitalOceanServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceLoggingDigitalOcean(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceLoggingDigitalOcean(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &DigitalOceanServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "logging_digitalocean",

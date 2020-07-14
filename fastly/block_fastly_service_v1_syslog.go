@@ -12,7 +12,7 @@ type SyslogServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceSyslog(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceSyslog(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &SyslogServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "syslog",

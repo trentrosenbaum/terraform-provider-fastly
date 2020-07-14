@@ -13,7 +13,7 @@ type DynamicSnippetServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceDynamicSnippet(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceDynamicSnippet(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &DynamicSnippetServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "dynamicsnippet",

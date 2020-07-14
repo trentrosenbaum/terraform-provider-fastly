@@ -2,6 +2,7 @@ package fastly
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"reflect"
 	"regexp"
 	"testing"
@@ -540,6 +541,86 @@ func TestAccFastlyServiceV1_createZeroDefaultTTL(t *testing.T) {
 			},
 		},
 	})
+}
+
+// The idea is to later used list to create vclService and computeService. Leaving this
+// in the test section for now
+var loggingConstructors = []func(metadata ServiceMetadata) ServiceBlockAttributeDefinition{
+	NewServiceS3Logging,
+	NewServicePaperTrail,
+	NewServiceSumologic,
+	NewServiceGCSLogging,
+	NewServiceBigQueryLogging,
+	NewServiceSyslog,
+	NewServiceLogentries,
+	NewServiceSplunk,
+	NewServiceBlobStorageLogging,
+	NewServiceHTTPSLogging,
+	NewServiceLoggingElasticSearch,
+	NewServiceLoggingFTP,
+	NewServiceLoggingSFTP,
+	NewServiceLoggingDatadog,
+	NewServiceLoggingLoggly,
+	NewServiceLoggingGooglePubSub,
+	NewServiceLoggingScalyr,
+	NewServiceLoggingNewRelic,
+	NewServiceLoggingKafka,
+	NewServiceLoggingHeroku,
+	NewServiceLoggingHoneycomb,
+	NewServiceLoggingLogshuttle,
+	NewServiceLoggingOpenstack,
+	NewServiceLoggingDigitalOcean,
+	NewServiceLoggingCloudfiles,
+}
+
+func TestLoggingProperties(t *testing.T) {
+	cases := []struct {
+		serviceType      string
+		allowedFields    []string
+		disallowedFields []string
+	}{
+		{
+			serviceType:      ServiceTypeVCL,
+			allowedFields:    []string{"format", "format_version", "placement", "response_condition"},
+			disallowedFields: []string{},
+		},
+		{
+			serviceType:      ServiceTypeCompute,
+			allowedFields:    []string{},
+			disallowedFields: []string{"format", "format_version", "placement", "response_condition"},
+		},
+	}
+
+	for _, c := range cases {
+		for _, constructor := range loggingConstructors {
+			sbad := constructor(ServiceMetadata{serviceType: c.serviceType})
+			t.Run(fmt.Sprintf("%s.%s", c.serviceType, sbad.GetKey()), func(t *testing.T) {
+
+				s := &schema.Resource{
+					Schema: map[string]*schema.Schema{},
+				}
+				err := sbad.Register(s)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if s.Schema[sbad.GetKey()] == nil {
+					t.Fatalf("Attribute is missing: %s", sbad.GetKey())
+				}
+				elem := s.Schema[sbad.GetKey()].Elem.(*schema.Resource)
+				for _, field := range c.allowedFields {
+					if elem.Schema[field] == nil {
+						t.Fatalf("Field is missing %s in element %s", field, sbad.GetKey())
+					}
+				}
+				for _, field := range c.disallowedFields {
+					if elem.Schema[field] != nil {
+						t.Fatalf("Field not allowed %s in element %s", field, sbad.GetKey())
+					}
+				}
+			})
+		}
+	}
 }
 
 func testAccCheckServiceV1Destroy(s *terraform.State) error {

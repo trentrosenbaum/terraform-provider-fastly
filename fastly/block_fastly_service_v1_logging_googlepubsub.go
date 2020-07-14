@@ -13,7 +13,7 @@ type GooglePubSubServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceLoggingGooglePubSub(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceLoggingGooglePubSub(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &GooglePubSubServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "logging_googlepubsub",

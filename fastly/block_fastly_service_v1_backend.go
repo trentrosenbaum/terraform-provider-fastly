@@ -13,7 +13,7 @@ type BackendServiceAttributeHandler struct {
 	*DefaultServiceAttributeHandler
 }
 
-func NewServiceBackend(sa ServiceMetadata) ServiceAttributeDefinition {
+func NewServiceBackend(sa ServiceMetadata) ServiceBlockAttributeDefinition {
 	return &BackendServiceAttributeHandler{
 		&DefaultServiceAttributeHandler{
 			key:             "backend",
