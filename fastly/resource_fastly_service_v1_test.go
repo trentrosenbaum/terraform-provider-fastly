@@ -2,7 +2,6 @@ package fastly
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"testing"
 
@@ -12,133 +11,67 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestResourceFastlyFlattenDomains(t *testing.T) {
-	cases := []struct {
-		remote []*gofastly.Domain
-		local  []map[string]interface{}
-	}{
-		{
-			remote: []*gofastly.Domain{
-				{
-					Name:    "test.notexample.com",
-					Comment: "not comment",
-				},
-			},
-			local: []map[string]interface{}{
-				{
-					"name":    "test.notexample.com",
-					"comment": "not comment",
-				},
-			},
-		},
-		{
-			remote: []*gofastly.Domain{
-				{
-					Name: "test.notexample.com",
-				},
-			},
-			local: []map[string]interface{}{
-				{
-					"name":    "test.notexample.com",
-					"comment": "",
-				},
-			},
-		},
-	}
-
-	for _, c := range cases {
-		out := flattenDomains(c.remote)
-		if !reflect.DeepEqual(out, c.local) {
-			t.Fatalf("Error matching:\nexpected: %#v\ngot: %#v", c.local, out)
-		}
-	}
+// serviceMetadataV1 defines metadata for a vcl service.
+var serviceMetadataV1 = SuperTestService{
+	SuperTestServiceMetadata{
+		Type:         ServiceTypeVCL,
+		ResourceId:   "fastly_service_v1.foo",
+		TemplateName: "service_v1",
+	},
 }
 
-func TestResourceFastlyFlattenBackend(t *testing.T) {
-	cases := []struct {
-		serviceMetadata ServiceMetadata
-		remote          []*gofastly.Backend
-		local           []map[string]interface{}
-	}{
-		{
-			serviceMetadata: ServiceMetadata{
-				serviceType: ServiceTypeVCL,
-			},
-			remote: []*gofastly.Backend{
-				{
-					Name:                "test.notexample.com",
-					Address:             "www.notexample.com",
-					OverrideHost:        "origin.example.com",
-					Port:                uint(80),
-					AutoLoadbalance:     true,
-					BetweenBytesTimeout: uint(10000),
-					ConnectTimeout:      uint(1000),
-					ErrorThreshold:      uint(0),
-					FirstByteTimeout:    uint(15000),
-					MaxConn:             uint(200),
-					RequestCondition:    "",
-					HealthCheck:         "",
-					UseSSL:              false,
-					SSLCheckCert:        true,
-					SSLHostname:         "",
-					SSLCACert:           "",
-					SSLCertHostname:     "",
-					SSLSNIHostname:      "",
-					SSLClientKey:        "",
-					SSLClientCert:       "",
-					MaxTLSVersion:       "",
-					MinTLSVersion:       "",
-					SSLCiphers:          []string{"foo", "bar", "baz"},
-					Shield:              "New York",
-					Weight:              uint(100),
-				},
-			},
-			local: []map[string]interface{}{
-				{
-					"name":                  "test.notexample.com",
-					"address":               "www.notexample.com",
-					"override_host":         "origin.example.com",
-					"port":                  80,
-					"auto_loadbalance":      true,
-					"between_bytes_timeout": 10000,
-					"connect_timeout":       1000,
-					"error_threshold":       0,
-					"first_byte_timeout":    15000,
-					"max_conn":              200,
-					"request_condition":     "",
-					"healthcheck":           "",
-					"use_ssl":               false,
-					"ssl_check_cert":        true,
-					"ssl_hostname":          "",
-					"ssl_ca_cert":           "",
-					"ssl_cert_hostname":     "",
-					"ssl_sni_hostname":      "",
-					"ssl_client_key":        "",
-					"ssl_client_cert":       "",
-					"max_tls_version":       "",
-					"min_tls_version":       "",
-					"ssl_ciphers":           "foo,bar,baz",
-					"shield":                "New York",
-					"weight":                100,
-				},
-			},
-		},
+// NewV1SuperTest is a constructor for a vcl service SuperTest.
+func NewV1SuperTest() *SuperTest {
+	superTest := &SuperTest{
+		SuperTestService:              &serviceMetadataV1,
+		SuperTestComponentBase:        NewSuperTestComponentBase(&serviceMetadataV1),
+		SuperTestComponentBackend:     NewSuperTestComponentBackend(&serviceMetadataV1),
+		SuperTestComponentDomain:      NewSuperTestComponentDomain(&serviceMetadataV1),
+		SuperTestComponentHealthCheck: NewSuperTestComponentHealthCheck(&serviceMetadataV1),
+		SuperTestComponentCloudFiles:  NewSuperTestComponentCloudFiles(&serviceMetadataV1),
+		SuperTestComponentPackage:     nil,
+		lookup:                        nil, // See below
 	}
-
-	for _, c := range cases {
-		out := flattenBackend(c.remote, c.serviceMetadata)
-		if !reflect.DeepEqual(out, c.local) {
-			t.Fatalf("Error matching:\nexpected: %#v\n     got: %#v", c.local, out)
-		}
-	}
+	// Lookup provides an iterable list of components - using reflection in a defined location to initialise this list.
+	// SuperTestComponent* objects are added, nil objects are ignored, allowing us to exclude irrelevant blocks,
+	// such as Package for VCL services.
+	superTest.initLookup()
+	return superTest
 }
 
-func TestAccFastlyServiceV1_updateDomain(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	nameUpdate := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domainName1 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	domainName2 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
+func TestAccFastlyServiceV1(t *testing.T) {
+	var serviceDetail gofastly.ServiceDetail
+
+	// "Create resource" test
+	test := NewV1SuperTest()
+
+	// "Update blocks" test
+	testUpdate := test.Copy()
+	testUpdate.SuperTestComponentBackend.UpdateRandom()
+	testUpdate.SuperTestComponentDomain.UpdateRandom()
+	testUpdate.SuperTestComponentHealthCheck.UpdateRandom()
+
+	// "Add blocks" test
+	testAdd := testUpdate.Copy()
+	testAdd.SuperTestComponentBackend.AddRandom()
+	testAdd.SuperTestComponentDomain.AddRandom()
+	testAdd.SuperTestComponentHealthCheck.AddRandom()
+
+	// "Delete blocks" test
+	testDelete := testAdd.Copy()
+	testDelete.SuperTestComponentBackend.DeleteRandom()
+	testDelete.SuperTestComponentDomain.DeleteRandom()
+	testDelete.SuperTestComponentHealthCheck.DeleteRandom()
+
+	// "Bad Backend" test
+	testBadBackend := testDelete.Copy()
+	testBadBackend.SuperTestComponentBackend.AddRandom()
+	testBadBackend.Backends[len(testBadBackend.Backends)-1].Address = fmt.Sprintf("%s.aws.amazon.com.", acctest.RandString(3))
+
+	// "Zero TTL"
+	testZeroTTL := testBadBackend.Copy()
+	testZeroTTL.Backends = testZeroTTL.Backends[:len(testZeroTTL.Backends)-1]
+	testZeroTTL.DefaultTTL = 0
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -146,157 +79,29 @@ func TestAccFastlyServiceV1_updateDomain(t *testing.T) {
 		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1Config(name, domainName1),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes(&service, name, []string{domainName1}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "domain.#", "1"),
-				),
+				Config: test.GetConfig(),
+				Check:  test.GetTestCheckFunc(&serviceDetail),
 			},
-
 			{
-				Config: testAccServiceV1Config_domainUpdate(nameUpdate, domainName1, domainName2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes(&service, nameUpdate, []string{domainName1, domainName2}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "name", nameUpdate),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "2"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "domain.#", "2"),
-				),
+				Config: testUpdate.GetConfig(),
+				Check:  testUpdate.GetTestCheckFunc(&serviceDetail),
 			},
-		},
-	})
-}
-
-func TestAccFastlyServiceV1_updateBackend(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-	backendName2 := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceV1Config_backend(name, domain, backendName),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName}),
-				),
+				Config: testAdd.GetConfig(),
+				Check:  testAdd.GetTestCheckFunc(&serviceDetail),
 			},
-
 			{
-				Config: testAccServiceV1Config_backend_update(name, domain, backendName, backendName2, 3400),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName, backendName2}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "2"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "backend.#", "2"),
-				),
+				Config: testDelete.GetConfig(),
+				Check:  testDelete.GetTestCheckFunc(&serviceDetail),
 			},
-		},
-	})
-}
-
-func TestAccFastlyServiceV1_updateInvalidBackend(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	badBackendName := fmt.Sprintf("%s.aws.amazon.com.", acctest.RandString(3))
-	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-	backendName2 := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
 			{
-				Config:      testAccServiceV1Config_backend(name, domain, badBackendName),
+				Config:      testBadBackend.GetConfig(),
 				ExpectError: regexp.MustCompile("Bad Request"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{}),
-				),
 			},
-
+			// Now update the default_ttl to 0 and encounter the issue https://github.com/hashicorp/terraform/issues/12910
 			{
-				Config: testAccServiceV1Config_backend_update(name, domain, backendName, backendName2, 3400),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName, backendName2}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "backend.#", "2"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccFastlyServiceV1_basic(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	comment := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	versionComment := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domainName1 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	domainName2 := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccServiceV1Config(name, domainName1),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "comment", "Managed by Terraform"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "version_comment", ""),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "domain.#", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "backend.#", "1"),
-				),
-			},
-
-			{
-				Config: testAccServiceV1Config_basicUpdate(name, comment, versionComment, domainName2),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "comment", comment),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "version_comment", versionComment),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "2"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "domain.#", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "backend.#", "1"),
-				),
+				Config: testZeroTTL.GetConfig(),
+				Check:  testZeroTTL.GetTestCheckFunc(&serviceDetail),
 			},
 		},
 	})
@@ -351,106 +156,11 @@ func TestAccFastlyServiceV1_disappears(t *testing.T) {
 	})
 }
 
-func testAccCheckServiceV1Exists(n string, service *gofastly.ServiceDetail) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Service ID is set")
-		}
-
-		conn := testAccProvider.Meta().(*FastlyClient).conn
-		latest, err := conn.GetServiceDetails(&gofastly.GetServiceInput{
-			ID: rs.Primary.ID,
-		})
-
-		if err != nil {
-			return err
-		}
-
-		*service = *latest
-
-		return nil
-	}
-}
-
-func testAccCheckFastlyServiceV1Attributes(service *gofastly.ServiceDetail, name string, domains []string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-
-		if service.Name != name {
-			return fmt.Errorf("Bad name, expected (%s), got (%s)", name, service.Name)
-		}
-
-		conn := testAccProvider.Meta().(*FastlyClient).conn
-		domainList, err := conn.ListDomains(&gofastly.ListDomainsInput{
-			Service: service.ID,
-			Version: service.ActiveVersion.Number,
-		})
-
-		if err != nil {
-			return fmt.Errorf("[ERR] Error looking up Domains for (%s), version (%v): %s", service.Name, service.ActiveVersion.Number, err)
-		}
-
-		expected := len(domains)
-		for _, d := range domainList {
-			for _, e := range domains {
-				if d.Name == e {
-					expected--
-				}
-			}
-		}
-
-		if expected > 0 {
-			return fmt.Errorf("Domain count mismatch, expected: %#v, got: %#v", domains, domainList)
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckFastlyServiceV1Attributes_backends(service *gofastly.ServiceDetail, name string, backends []string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-
-		if service.Name != name {
-			return fmt.Errorf("Bad name, expected (%s), got (%s)", name, service.Name)
-		}
-
-		conn := testAccProvider.Meta().(*FastlyClient).conn
-		backendList, err := conn.ListBackends(&gofastly.ListBackendsInput{
-			Service: service.ID,
-			Version: service.ActiveVersion.Number,
-		})
-
-		if err != nil {
-			return fmt.Errorf("[ERR] Error looking up Backends for (%s), version (%v): %s", service.Name, service.ActiveVersion.Number, err)
-		}
-
-		expected := len(backendList)
-		for _, b := range backendList {
-			for _, e := range backends {
-				if b.Address == e {
-					expected--
-				}
-			}
-		}
-
-		if expected > 0 {
-			return fmt.Errorf("Backend count mismatch, expected: %#v, got: %#v", backends, backendList)
-		}
-
-		return nil
-	}
-}
-
 func TestAccFastlyServiceV1_defaultTTL(t *testing.T) {
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	domain := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
 	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-	backendName2 := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -466,102 +176,8 @@ func TestAccFastlyServiceV1_defaultTTL(t *testing.T) {
 						"fastly_service_v1.foo", "default_ttl", "3600"),
 				),
 			},
-
-			{
-				Config: testAccServiceV1Config_backend_update(name, domain, backendName, backendName2, 3400),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName, backendName2}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "default_ttl", "3400"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "2"),
-				),
-			},
-			// Now update the default_ttl to 0 and encounter the issue https://github.com/hashicorp/terraform/issues/12910
-			{
-				Config: testAccServiceV1Config_backend_update(name, domain, backendName, backendName2, 0),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName, backendName2}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "default_ttl", "0"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "active_version", "3"),
-				),
-			},
 		},
 	})
-}
-
-func TestAccFastlyServiceV1_createDefaultTTL(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccServiceV1Config_backendTTL(name, domain, backendName, 3400),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "default_ttl", "3400"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccFastlyServiceV1_createZeroDefaultTTL(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain := fmt.Sprintf("fastly-test.tf-%s.com", acctest.RandString(10))
-	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccServiceV1Config_backendTTL(name, domain, backendName, 0),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.foo", &service),
-					testAccCheckFastlyServiceV1Attributes_backends(&service, name, []string{backendName}),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.foo", "default_ttl", "0"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckServiceV1Destroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "fastly_service_v1" {
-			continue
-		}
-
-		conn := testAccProvider.Meta().(*FastlyClient).conn
-		l, err := conn.ListServices(&gofastly.ListServicesInput{})
-		if err != nil {
-			return fmt.Errorf("[WARN] Error listing servcies when deleting Fastly Service (%s): %s", rs.Primary.ID, err)
-		}
-
-		for _, s := range l {
-			if s.ID == rs.Primary.ID {
-				// service still found
-				return fmt.Errorf("[WARN] Tried deleting Service (%s), but was still found", rs.Primary.ID)
-			}
-		}
-	}
-	return nil
 }
 
 func TestAccFastlyServiceV1_import(t *testing.T) {
@@ -610,51 +226,6 @@ resource "fastly_service_v1" "foo" {
 }`, name, domain)
 }
 
-func testAccServiceV1Config_basicUpdate(name, comment, versionComment, domain string) string {
-	return fmt.Sprintf(`
-resource "fastly_service_v1" "foo" {
-  name    = "%s"
-  comment = "%s"
-  version_comment = "%s"
-
-  domain {
-    name    = "%s"
-    comment = "tf-testing-domain"
-  }
-
-  backend {
-    address = "aws.amazon.com"
-    name    = "amazon docs"
-  }
-
-  force_destroy = true
-}`, name, comment, versionComment, domain)
-}
-
-func testAccServiceV1Config_domainUpdate(name, domain1, domain2 string) string {
-	return fmt.Sprintf(`
-resource "fastly_service_v1" "foo" {
-  name = "%s"
-
-  domain {
-    name    = "%s"
-    comment = "tf-testing-domain"
-  }
-
-  domain {
-    name    = "%s"
-    comment = "tf-testing-other-domain"
-  }
-
-  backend {
-    address = "aws.amazon.com"
-    name    = "amazon docs"
-  }
-
-  force_destroy = true
-}`, name, domain1, domain2)
-}
-
 func testAccServiceV1Config_backend(name, domain, backend string) string {
 	return fmt.Sprintf(`
 resource "fastly_service_v1" "foo" {
@@ -674,51 +245,38 @@ resource "fastly_service_v1" "foo" {
 }`, name, domain, backend)
 }
 
-func testAccServiceV1Config_backendTTL(name, domain, backend string, ttl uint) string {
-	return fmt.Sprintf(`
-resource "fastly_service_v1" "foo" {
-  name = "%s"
+func testAccCheckFastlyServiceV1Attributes_backends(service *gofastly.ServiceDetail, name string, backends []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
 
-  default_ttl = %d
+		if service.Name != name {
+			return fmt.Errorf("Bad name, expected (%s), got (%s)", name, service.Name)
+		}
 
-  domain {
-    name    = "%s"
-    comment = "tf-testing-domain"
-  }
+		conn := testAccProvider.Meta().(*FastlyClient).conn
+		backendList, err := conn.ListBackends(&gofastly.ListBackendsInput{
+			Service: service.ID,
+			Version: service.ActiveVersion.Number,
+		})
 
-  backend {
-    address = "%s"
-    name    = "tf -test backend"
-  }
+		if err != nil {
+			return fmt.Errorf("[ERR] Error looking up Backends for (%s), version (%v): %s", service.Name, service.ActiveVersion.Number, err)
+		}
 
-  force_destroy = true
-}`, name, ttl, domain, backend)
-}
+		expected := len(backendList)
+		for _, b := range backendList {
+			for _, e := range backends {
+				if b.Address == e {
+					expected--
+				}
+			}
+		}
 
-func testAccServiceV1Config_backend_update(name, domain, backend, backend2 string, ttl uint) string {
-	return fmt.Sprintf(`
-resource "fastly_service_v1" "foo" {
-  name = "%s"
+		if expected > 0 {
+			return fmt.Errorf("Backend count mismatch, expected: %#v, got: %#v", backends, backendList)
+		}
 
-	default_ttl = %d
-
-  domain {
-    name    = "%s"
-    comment = "tf-testing-domain"
-  }
-
-  backend {
-    address = "%s"
-    name    = "tf-test-backend"
-  }
-
-  backend {
-    address = "%s"
-    name    = "tf-test-backend-other"
-  }
-
-  force_destroy = true
-}`, name, ttl, domain, backend, backend2)
+		return nil
+	}
 }
 
 func testAccServiceV1_import(serviceName string) string {

@@ -1,0 +1,15 @@
+{{define "component_healthcheck"}}{{range .HealthChecks}}
+healthcheck {
+    name = "{{.Name}}"
+    host = "{{.Host}}"
+    path = "{{.Path}}"
+    check_interval = {{.CheckInterval}}
+    expected_response = {{.ExpectedResponse}}
+    http_version = "{{.HTTPVersion}}"
+    initial = {{.Initial}}
+    method = "{{.Method}}"
+    threshold = {{.Threshold}}
+    timeout = {{.Timeout}}
+    window = {{.Window}}
+}
+{{end}}{{end}}

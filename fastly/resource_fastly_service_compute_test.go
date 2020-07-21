@@ -2,121 +2,86 @@ package fastly
 
 import (
 	"fmt"
-	"reflect"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"testing"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestResourceFastlyFlattenBackendCompute(t *testing.T) {
-	cases := []struct {
-		serviceMetadata ServiceMetadata
-		remote          []*gofastly.Backend
-		local           []map[string]interface{}
-	}{
-		{
-			serviceMetadata: ServiceMetadata{
-				serviceType: ServiceTypeCompute,
-			},
-			remote: []*gofastly.Backend{
-				{
-					Name:                "test.notexample.com",
-					Address:             "www.notexample.com",
-					OverrideHost:        "origin.example.com",
-					Port:                uint(80),
-					AutoLoadbalance:     true,
-					BetweenBytesTimeout: uint(10000),
-					ConnectTimeout:      uint(1000),
-					ErrorThreshold:      uint(0),
-					FirstByteTimeout:    uint(15000),
-					MaxConn:             uint(200),
-					HealthCheck:         "",
-					UseSSL:              false,
-					SSLCheckCert:        true,
-					SSLHostname:         "",
-					SSLCACert:           "",
-					SSLCertHostname:     "",
-					SSLSNIHostname:      "",
-					SSLClientKey:        "",
-					SSLClientCert:       "",
-					MaxTLSVersion:       "",
-					MinTLSVersion:       "",
-					SSLCiphers:          []string{"foo", "bar", "baz"},
-					Shield:              "New York",
-					Weight:              uint(100),
-				},
-			},
-			local: []map[string]interface{}{
-				{
-					"name":                  "test.notexample.com",
-					"address":               "www.notexample.com",
-					"override_host":         "origin.example.com",
-					"port":                  80,
-					"auto_loadbalance":      true,
-					"between_bytes_timeout": 10000,
-					"connect_timeout":       1000,
-					"error_threshold":       0,
-					"first_byte_timeout":    15000,
-					"max_conn":              200,
-					"healthcheck":           "",
-					"use_ssl":               false,
-					"ssl_check_cert":        true,
-					"ssl_hostname":          "",
-					"ssl_ca_cert":           "",
-					"ssl_cert_hostname":     "",
-					"ssl_sni_hostname":      "",
-					"ssl_client_key":        "",
-					"ssl_client_cert":       "",
-					"max_tls_version":       "",
-					"min_tls_version":       "",
-					"ssl_ciphers":           "foo,bar,baz",
-					"shield":                "New York",
-					"weight":                100,
-				},
-			},
-		},
-	}
-
-	for _, c := range cases {
-		out := flattenBackend(c.remote, c.serviceMetadata)
-		if !reflect.DeepEqual(out, c.local) {
-			t.Fatalf("Error matching:\nexpected: %#v\n     got: %#v", c.local, out)
-		}
-	}
+// serviceMetadataCompute defines metadata for a compute service.
+var serviceMetadataCompute = SuperTestService{
+	SuperTestServiceMetadata{
+		Type:         ServiceTypeCompute,
+		ResourceId:   "fastly_service_compute.foo",
+		TemplateName: "service_compute",
+	},
 }
 
-func TestAccFastlyServiceCompute1_basic(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domainName1 := fmt.Sprintf("fastly-test1.tf-%s.com", acctest.RandString(10))
+// NewComputeSuperTest is a constructor for a compute service SuperTest.
+func NewComputeSuperTest() *SuperTest {
+	superTest := &SuperTest{
+		SuperTestService:              &serviceMetadataCompute,
+		SuperTestComponentBase:        NewSuperTestComponentBase(&serviceMetadataCompute),
+		SuperTestComponentBackend:     NewSuperTestComponentBackend(&serviceMetadataCompute),
+		SuperTestComponentDomain:      NewSuperTestComponentDomain(&serviceMetadataCompute),
+		SuperTestComponentHealthCheck: NewSuperTestComponentHealthCheck(&serviceMetadataCompute),
+		SuperTestComponentPackage:     NewSuperTestComponentPackage("valid", &serviceMetadataCompute),
+		SuperTestComponentCloudFiles:  NewSuperTestComponentCloudFiles(&serviceMetadataCompute),
+		lookup:                        nil, // See below
+	}
+	// Lookup provides an iterable list of components - using reflection in a defined location to initialise this list.
+	// SuperTestComponent* objects are added, nil objects are ignored, allowing us to exclude irrelevant blocks,
+	// such as VCL for compute services.
+	superTest.initLookup()
+	return superTest
+}
+
+func TestAccFastlyServiceCompute(t *testing.T) {
+	var serviceDetail gofastly.ServiceDetail
+
+	// "Create resource" test
+	test := NewComputeSuperTest()
+
+	// "Update blocks" test
+	testUpdate := test.Copy()
+	testUpdate.SuperTestComponentBackend.UpdateRandom()
+	testUpdate.SuperTestComponentDomain.UpdateRandom()
+	testUpdate.SuperTestComponentHealthCheck.UpdateRandom()
+
+	// "Add blocks" test
+	testAdd := testUpdate.Copy()
+	testAdd.SuperTestComponentBackend.AddRandom()
+	testAdd.SuperTestComponentDomain.AddRandom()
+	testAdd.SuperTestComponentHealthCheck.AddRandom()
+
+	// "Delete blocks" test
+	testDelete := testAdd.Copy()
+	testDelete.SuperTestComponentBackend.DeleteRandom()
+	testDelete.SuperTestComponentDomain.DeleteRandom()
+	testDelete.SuperTestComponentHealthCheck.DeleteRandom()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceComputeV1Destroy,
+		CheckDestroy: testAccCheckServiceV1Destroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccServiceComputeV1Config(name, domainName1),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_compute.foo", &service),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "comment", "Managed by Terraform"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "version_comment", ""),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "active_version", "0"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "domain.#", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "backend.#", "1"),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.foo", "package.#", "1"),
-				),
+				Config: test.GetConfig(),
+				Check:  test.GetTestCheckFunc(&serviceDetail),
+			},
+			{
+				Config: testUpdate.GetConfig(),
+				Check:  testUpdate.GetTestCheckFunc(&serviceDetail),
+			},
+			{
+				Config: testAdd.GetConfig(),
+				Check:  testAdd.GetTestCheckFunc(&serviceDetail),
+			},
+			{
+				Config: testDelete.GetConfig(),
+				Check:  testDelete.GetTestCheckFunc(&serviceDetail),
 			},
 		},
 	})

@@ -1,0 +1,28 @@
+{{define "component_backend"}}{{range .Backends}}
+backend {
+    name    = "{{.Name}}"
+    address = "{{.Address}}"
+    auto_loadbalance = "{{.AutoLoadbalance}}"
+    between_bytes_timeout = "{{.BetweenBytesTimeout}}"
+    connect_timeout= "{{.ConnectTimeout}}"
+    error_threshold= "{{.ErrorThreshold}}"
+    first_byte_timeout= "{{.FirstByteTimeout}}"
+    max_conn= "{{.MaxConn}}"
+    port= "{{.Port}}"
+    override_host = "{{.OverrideHost}}"
+    {{if eq $.Service.Type "vcl"}}request_condition = "{{.RequestCondition}}"{{end}}
+    use_ssl = "{{.UseSSL}}"
+    max_tls_version = "{{.MaxTLSVersion}}"
+    min_tls_version = "{{.MinTLSVersion}}"
+    ssl_ciphers = "{{StringsJoin .SSLCiphers ","}}"
+    ssl_ca_cert = "{{.SSLCACert}}"
+    ssl_client_cert = "{{.SSLClientCert}}"
+    ssl_client_key = "{{.SSLClientKey}}"
+    ssl_check_cert = "{{.SSLCheckCert}}"
+    ssl_cert_hostname = "{{.SSLCertHostname}}"
+    ssl_sni_hostname = "{{.SSLSNIHostname}}"
+    shield = "{{.Shield}}"
+    weight = "{{.Weight}}"
+    healthcheck = "{{.HealthCheck}}"
+}
+{{end}}{{end}}

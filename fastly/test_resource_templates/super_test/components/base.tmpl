@@ -1,0 +1,11 @@
+{{define "component_base"}}
+name = "{{.Name}}"
+comment = "{{.Comment}}"
+version_comment = "{{.VersionComment}}"
+activate = {{.Activate}}
+force_destroy = {{.ForceDestroy}}
+{{if eq $.Service.Type "vcl"}}
+default_ttl = "{{.DefaultTTL}}"
+default_host = "{{.DefaultHost}}"
+{{end}}
+{{end}}}

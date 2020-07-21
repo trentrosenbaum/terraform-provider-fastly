@@ -2,7 +2,8 @@ package fastly
 
 import (
 	"fmt"
-	"log"
+	"math/rand"
+	"strconv"
 	"testing"
 
 	gofastly "github.com/fastly/go-fastly/fastly"
@@ -11,6 +12,185 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
+
+// SuperTestCloudFilesData provides a data structure for multiple CloudFiles logging blocks.
+// This uses the existing gofastly structure for CloudFiles
+type SuperTestCloudFilesData struct {
+	CloudFiles []*gofastly.Cloudfiles
+}
+
+// SuperTestComponentCloudFiles mixes-in the shared SuperTestComponent functions with SuperTestCloudFilesData.
+type SuperTestComponentCloudFiles struct {
+	*SuperTestComponentShared
+	*SuperTestCloudFilesData
+}
+
+// NewSuperTestComponentCloudFiles is the constructor for a SuperTestComponentCloudFiles.
+// It injects the service metadata and creates a single random gofastly.Cloudfiles block.
+func NewSuperTestComponentCloudFiles(service *SuperTestService) *SuperTestComponentCloudFiles {
+	var c SuperTestComponentCloudFiles
+	c.SuperTestComponentShared = &SuperTestComponentShared{
+		service,
+	}
+	c.SuperTestCloudFilesData = &SuperTestCloudFilesData{
+		[]*gofastly.Cloudfiles{
+			c.randomCloudFiles(),
+		},
+	}
+	return &c
+}
+
+// randomCloudFiles creates a random gofastly.Cloudfiles block.
+func (c *SuperTestComponentCloudFiles) randomCloudFiles() *gofastly.Cloudfiles {
+	return &gofastly.Cloudfiles{
+		Name:              fmt.Sprintf("tf-test-logging-cloudfiles-%s", acctest.RandString(5)),
+		BucketName:        fmt.Sprintf("tf-test-logging-cloudfiles-bucket-%s", acctest.RandString(5)),
+		User:              fmt.Sprintf("user_%s", acctest.RandString(5)),
+		AccessKey:         fmt.Sprintf("secret_%s", acctest.RandString(5)),
+		PublicKey:         pgpPublicKey(nil),
+		GzipLevel:         c.randomGzipLevel(),
+		MessageType:       c.randomChoiceString([]string{"classic", "loggly", "logplex", "blank"}),
+		Path:              fmt.Sprintf("%s/", acctest.RandString(5)),
+		Region:            c.randomChoiceString([]string{"ORD", "LON", "SYD", "DFW", "IAD", "HKG"}),
+		Period:            c.randomVarianceUint(3600, 1000),
+		TimestampFormat:   c.randomTimestampFormat(),
+		Format:            c.randomFormat(),
+		FormatVersion:     c.randomFormatVersion(),
+		ResponseCondition: "", // ToDo: Add Condition to V1 test and reference in this block
+		Placement:         c.randomPlacement(),
+	}
+}
+
+// AddRandom fulfils the SuperTestComponent interface.
+// It appends a random gofastly.Cloudfiles block to the list.
+func (c *SuperTestComponentCloudFiles) AddRandom() error {
+	c.CloudFiles = append(c.CloudFiles, c.randomCloudFiles())
+	return nil
+}
+
+// UpdateRandom fulfils the SuperTestComponent interface.
+// It updates a randomly selected gofastly.Cloudfiles block to a new random set of values.
+func (c *SuperTestComponentCloudFiles) UpdateRandom() error {
+	var randomIndex = c.randomIndex()
+	c.CloudFiles[randomIndex] = c.randomCloudFiles()
+	return nil
+}
+
+// DeleteRandom fulfils the SuperTestComponent interface.
+// It deletes a random gofastly.Cloudfiles block.
+func (c *SuperTestComponentCloudFiles) DeleteRandom() error {
+	var numLoggingCloudFiles = len(c.CloudFiles)
+	if numLoggingCloudFiles < 2 {
+		return fmt.Errorf("cannot delete random cloudfiles logging block only have %v", numLoggingCloudFiles)
+	}
+	var randomIndex = c.randomIndex()
+	c.CloudFiles = append(c.CloudFiles[:randomIndex], c.CloudFiles[randomIndex+1:]...)
+	return nil
+}
+
+// randomIndex selects an index at random from the list of gofastly.Cloudfiles blocks.
+func (c *SuperTestComponentCloudFiles) randomIndex() int {
+	return rand.Intn(len(c.CloudFiles))
+}
+
+// GetTestCheckFunc fulfils the SuperTestComponent interface.
+// It composes a series of tests to verify this component of a provisioned resource against
+// the data used to provision it.
+func (c *SuperTestComponentCloudFiles) GetTestCheckFunc(serviceDetail *gofastly.ServiceDetail) []resource.TestCheckFunc {
+	var numLoggingCloudfiles = len(c.CloudFiles)
+	var r = []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(c.Service.ResourceId, "logging_cloudfiles.#", strconv.Itoa(numLoggingCloudfiles)),
+		c.testState(),
+		c.testApi(serviceDetail),
+	}
+	return r
+}
+
+// testState checks a provisioned resource CloudFiles logging *state* against the data used to provision it.
+func (c *SuperTestComponentCloudFiles) testState() resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		var sourceList = flattenCloudfiles(c.CloudFiles)
+		var targetList, err = c.getStateTypeSetBlocks(s, "logging_cloudfiles")
+		if err != nil {
+			return err
+		}
+
+		if !c.testEquivalent(sourceList, targetList) {
+			return fmt.Errorf("state cloudfiles_logging mismatch, expected: %#v, got: %#v", sourceList, targetList)
+		}
+
+		return nil
+	}
+}
+
+// testApi checks a provisioned resource CloudFiles logging at the *api* against the data used to provision it.
+func (c *SuperTestComponentCloudFiles) testApi(serviceDetail *gofastly.ServiceDetail) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		conn := testAccProvider.Meta().(*FastlyClient).conn
+		apiList, err := conn.ListCloudfiles(&gofastly.ListCloudfilesInput{
+			Service: serviceDetail.ID,
+			Version: serviceDetail.Version.Number,
+		})
+		if err != nil {
+			return err
+		}
+
+		var sourceList = flattenCloudfiles(c.CloudFiles)
+		var targetList = flattenCloudfiles(apiList)
+
+		if !c.testEquivalent(sourceList, targetList) {
+			return fmt.Errorf("api cloudfiles mismatch, expected: %#v, got: %#v", sourceList, targetList)
+		}
+
+		return nil
+	}
+}
+
+// testEquivalent compares two flattened data Domains
+func (c *SuperTestComponentCloudFiles) testEquivalent(ms1 []map[string]interface{}, ms2 []map[string]interface{}) bool {
+	expected := len(ms1)
+	for _, m1 := range ms1 {
+		for _, m2 := range ms2 {
+
+			// Flatten removes empty keys, so must run this to ensure equivalence
+			c.removeEmptyKeys(&m1)
+			c.removeEmptyKeys(&m2)
+
+			ok := c.compareKey(m1, m2, "name") &&
+				c.compareKey(m1, m2, "bucket_name") &&
+				c.compareKey(m1, m2, "user") &&
+				c.compareKey(m1, m2, "access_key") &&
+				c.compareKey(m1, m2, "public_key") &&
+				c.compareKey(m1, m2, "gzip_level") &&
+				c.compareKey(m1, m2, "message_type") &&
+				c.compareKey(m1, m2, "path") &&
+				c.compareKey(m1, m2, "region") &&
+				c.compareKey(m1, m2, "period") &&
+				c.compareKey(m1, m2, "timestamp_format")
+
+			if ok && c.Service.Type == "vcl" {
+				ok = c.compareKey(m1, m2, "format") &&
+					c.compareKey(m1, m2, "format_version") &&
+					c.compareKey(m1, m2, "response_condition") &&
+					c.compareKey(m1, m2, "placement")
+			}
+
+			if ok {
+				expected--
+			}
+		}
+	}
+	return expected <= 0
+}
+
+func (c *SuperTestComponentCloudFiles) removeEmptyKeys(m *map[string]interface{}) {
+	for k, v := range *m {
+		if v == "" {
+			delete(*m, k)
+		}
+	}
+}
 
 func TestResourceFastlyFlattenCloudfiles(t *testing.T) {
 	cases := []struct {
@@ -66,334 +246,4 @@ func TestResourceFastlyFlattenCloudfiles(t *testing.T) {
 			t.Fatalf("Error matching: %s", diff)
 		}
 	}
-}
-
-func TestAccFastlyServiceV1_logging_cloudfiles_basic(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain := fmt.Sprintf("fastly-test.%s.com", name)
-
-	log1 := gofastly.Cloudfiles{
-		Version:           1,
-		Name:              "cloudfiles-endpoint",
-		BucketName:        "bucket",
-		User:              "user",
-		AccessKey:         "secret",
-		PublicKey:         pgpPublicKey(t),
-		Format:            "%h %l %u %t \"%r\" %>s %b",
-		FormatVersion:     2,
-		GzipLevel:         0,
-		MessageType:       "classic",
-		Path:              "/",
-		Region:            "ORD",
-		Period:            3600,
-		Placement:         "none",
-		ResponseCondition: "response_condition_test",
-		TimestampFormat:   "%Y-%m-%dT%H:%M:%S.000",
-	}
-
-	log1_after_update := gofastly.Cloudfiles{
-		Version:           1,
-		Name:              "cloudfiles-endpoint",
-		BucketName:        "bucketupdate",
-		User:              "userupdate",
-		AccessKey:         "secretupdate",
-		PublicKey:         pgpPublicKey(t),
-		Format:            "%h %l %u %t \"%r\" %>s %b %T",
-		FormatVersion:     2,
-		GzipLevel:         1,
-		MessageType:       "blank",
-		Path:              "new/",
-		Region:            "LON",
-		Period:            3601,
-		Placement:         "none",
-		ResponseCondition: "response_condition_test",
-		TimestampFormat:   "%Y-%m-%dT%H:%M:%S.000",
-	}
-
-	log2 := gofastly.Cloudfiles{
-		Version:           1,
-		Name:              "another-cloudfiles-endpoint",
-		BucketName:        "bucket2",
-		User:              "user2",
-		AccessKey:         "secret2",
-		PublicKey:         pgpPublicKey(t),
-		Format:            "%h %l %u %t \"%r\" %>s %b",
-		FormatVersion:     2,
-		GzipLevel:         0,
-		MessageType:       "classic",
-		Path:              "two/",
-		Region:            "SYD",
-		Period:            3600,
-		Placement:         "none",
-		ResponseCondition: "response_condition_test",
-		TimestampFormat:   "%Y-%m-%dT%H:%M:%S.000",
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccServiceV1CloudfilesConfig(name, domain),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.none", &service),
-					testAccCheckFastlyServiceV1CloudfilesAttributes(&service, []*gofastly.Cloudfiles{&log1}, ServiceTypeVCL),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.none", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.none", "logging_cloudfiles.#", "1"),
-				),
-			},
-
-			{
-				Config: testAccServiceV1CloudfilesConfig_update(name, domain),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_v1.none", &service),
-					testAccCheckFastlyServiceV1CloudfilesAttributes(&service, []*gofastly.Cloudfiles{&log1_after_update, &log2}, ServiceTypeVCL),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.none", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_v1.none", "logging_cloudfiles.#", "2"),
-				),
-			},
-		},
-	})
-}
-
-func TestAccFastlyServiceV1_logging_cloudfiles_basicCompute(t *testing.T) {
-	var service gofastly.ServiceDetail
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
-	domain := fmt.Sprintf("fastly-test.%s.com", name)
-
-	log1Compute := gofastly.Cloudfiles{
-		Version:         1,
-		Name:            "cloudfiles-endpoint",
-		BucketName:      "bucket",
-		User:            "user",
-		AccessKey:       "secret",
-		PublicKey:       pgpPublicKey(t),
-		GzipLevel:       0,
-		MessageType:     "classic",
-		Path:            "/",
-		Region:          "ORD",
-		Period:          3600,
-		TimestampFormat: "%Y-%m-%dT%H:%M:%S.000",
-	}
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckServiceV1Destroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccServiceV1ComputeCloudfilesConfig(name, domain),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceV1Exists("fastly_service_compute.none", &service),
-					testAccCheckFastlyServiceV1CloudfilesAttributes(&service, []*gofastly.Cloudfiles{&log1Compute}, ServiceTypeCompute),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.none", "name", name),
-					resource.TestCheckResourceAttr(
-						"fastly_service_compute.none", "logging_cloudfiles.#", "1"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckFastlyServiceV1CloudfilesAttributes(service *gofastly.ServiceDetail, cloudfiles []*gofastly.Cloudfiles, serviceType string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-
-		conn := testAccProvider.Meta().(*FastlyClient).conn
-		cloudfilesList, err := conn.ListCloudfiles(&gofastly.ListCloudfilesInput{
-			Service: service.ID,
-			Version: service.ActiveVersion.Number,
-		})
-
-		if err != nil {
-			return fmt.Errorf("[ERR] Error looking up Cloud Files Logging for (%s), version (%d): %s", service.Name, service.ActiveVersion.Number, err)
-		}
-
-		if len(cloudfilesList) != len(cloudfiles) {
-			return fmt.Errorf("Cloud Files List count mismatch, expected (%d), got (%d)", len(cloudfiles), len(cloudfilesList))
-		}
-
-		log.Printf("[DEBUG] cloudfilesList = %#v\n", cloudfilesList)
-
-		for _, e := range cloudfiles {
-			for _, el := range cloudfilesList {
-				if e.Name == el.Name {
-					// we don't know these things ahead of time, so populate them now
-					e.ServiceID = service.ID
-					e.Version = service.ActiveVersion.Number
-					// We don't track these, so clear them out because we also wont know
-					// these ahead of time
-					el.CreatedAt = nil
-					el.UpdatedAt = nil
-
-					// Ignore VCL attributes for Compute and set to whatever is returned from the API.
-					if serviceType == ServiceTypeCompute {
-						el.FormatVersion = e.FormatVersion
-						el.Format = e.Format
-						el.ResponseCondition = e.ResponseCondition
-						el.Placement = e.Placement
-					}
-
-					if diff := cmp.Diff(e, el); diff != "" {
-						return fmt.Errorf("Bad match Cloud Files logging match: %s", diff)
-					}
-				}
-			}
-		}
-
-		return nil
-	}
-}
-
-func testAccServiceV1ComputeCloudfilesConfig(name string, domain string) string {
-	return fmt.Sprintf(`
-resource "fastly_service_compute" "none" {
-  name = "%s"
-
-  domain {
-    name    = "%s"
-    comment = "tf-cloudfiles-logging"
-  }
-
-  backend {
-    address = "aws.amazon.com"
-    name    = "amazon docs"
-  }
-
-  logging_cloudfiles {
-    name   = "cloudfiles-endpoint"
-    bucket_name = "bucket"
-    user = "user"
-    access_key = "secret"
-    public_key = file("test_fixtures/fastly_test_publickey")
-    message_type = "classic"
-	path = "/"
-	region = "ORD"
-	period = 3600
-	gzip_level = 0
-	timestamp_format = "%%Y-%%m-%%dT%%H:%%M:%%S.000"
-  }
- 
-  package {
-    filename = "test_fixtures/package/valid.tar.gz"
-	source_code_hash = filesha512("test_fixtures/package/valid.tar.gz")
-  }
-
-  force_destroy = true
-}
-`, name, domain)
-}
-
-func testAccServiceV1CloudfilesConfig(name string, domain string) string {
-	return fmt.Sprintf(`
-resource "fastly_service_v1" "none" {
-  name = "%s"
-
-  domain {
-    name    = "%s"
-    comment = "tf-cloudfiles-logging"
-  }
-
-  backend {
-    address = "aws.amazon.com"
-    name    = "amazon docs"
-  }
-
-  condition {
-    name      = "response_condition_test"
-    type      = "RESPONSE"
-    priority  = 8
-    statement = "resp.status == 418"
-  }
-
-  logging_cloudfiles {
-    name   = "cloudfiles-endpoint"
-    bucket_name = "bucket"
-    user = "user"
-    access_key = "secret"
-    public_key = file("test_fixtures/fastly_test_publickey")
-    format = "%%h %%l %%u %%t \"%%r\" %%>s %%b"
-		message_type = "classic"
-		path = "/"
-		region = "ORD"
-		period = 3600
-		placement = "none"
-		response_condition = "response_condition_test"
-    gzip_level = 0
-    format_version = 2
-		timestamp_format = "%%Y-%%m-%%dT%%H:%%M:%%S.000"
-  }
-
-  force_destroy = true
-}
-`, name, domain)
-}
-
-func testAccServiceV1CloudfilesConfig_update(name, domain string) string {
-	return fmt.Sprintf(`
-resource "fastly_service_v1" "none" {
-  name = "%s"
-
-  domain {
-    name    = "%s"
-    comment = "tf-cloudfiles-logging"
-  }
-
-  backend {
-    address = "aws.amazon.com"
-    name    = "amazon docs"
-  }
-
-  condition {
-    name      = "response_condition_test"
-    type      = "RESPONSE"
-    priority  = 8
-    statement = "resp.status == 418"
-  }
-
-  logging_cloudfiles {
-    name   = "cloudfiles-endpoint"
-    bucket_name = "bucketupdate"
-    user = "userupdate"
-    access_key = "secretupdate"
-    public_key = file("test_fixtures/fastly_test_publickey")
-    format = "%%h %%l %%u %%t \"%%r\" %%>s %%b %%T"
-		message_type = "blank"
-		path = "new/"
-		region = "LON"
-		period = 3601
-		placement = "none"
-		response_condition = "response_condition_test"
-    gzip_level = 1
-    format_version = 2
-		timestamp_format = "%%Y-%%m-%%dT%%H:%%M:%%S.000"
-  }
-
-  logging_cloudfiles {
-    name   = "another-cloudfiles-endpoint"
-    bucket_name = "bucket2"
-    user = "user2"
-    access_key = "secret2"
-    public_key = file("test_fixtures/fastly_test_publickey")
-    format = "%%h %%l %%u %%t \"%%r\" %%>s %%b"
-		message_type = "classic"
-		path = "two/"
-		region = "SYD"
-		period = 3600
-		placement = "none"
-		response_condition = "response_condition_test"
-    gzip_level = 0
-    format_version = 2
-		timestamp_format = "%%Y-%%m-%%dT%%H:%%M:%%S.000"
-  }
-
-  force_destroy = true
-}
-`, name, domain)
 }
