@@ -1,0 +1,21 @@
+{{define "component_logging_cloudfiles"}}{{range .CloudFiles}}
+logging_cloudfiles {
+    name    = "{{.Name}}"
+    bucket_name = "{{.BucketName}}"
+    user = "{{.User}}"
+    access_key = "{{.AccessKey}}"
+    public_key = file("test_fixtures/fastly_test_publickey")
+    gzip_level = "{{.GzipLevel}}"
+    message_type = "{{.MessageType}}"
+    path = "{{.Path}}"
+    region = "{{.Region}}"
+    period = "{{.Period}}"
+    timestamp_format = "{{.TimestampFormat}}"
+    {{if eq $.Service.Type "vcl"}}
+    format = "{{.Format}}"
+    format_version = "{{.FormatVersion}}"
+    response_condition = "{{.ResponseCondition}}"
+    placement = "{{.Placement}}"
+    {{end}}
+}
+{{end}}{{end}}

@@ -1,0 +1,9 @@
+{{define "service_v1"}}
+resource "fastly_service_v1" "foo" {
+    {{template "component_base" .}}
+    {{template "component_backend" .}}
+    {{template "component_domain" .}}
+    {{template "component_healthcheck" .}}
+    {{template "component_logging_cloudfiles" .}}
+}
+{{end}}
