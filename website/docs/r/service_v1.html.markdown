@@ -278,6 +278,16 @@ Defined below.
 Defined below.
 * `logging_heroku` - (Optional) A Heroku endpoint to send streaming logs to.
 Defined below.
+* `logging_honeycomb` - (Optional) A Honeycomb endpoint to send streaming logs to.
+Defined below.
+* `logging_logshuttle` - (Optional) A Log Shuttle endpoint to send streaming logs to.
+Defined below.
+* `logging_openstack` - (Optional) An OpenStack endpoint to send streaming logs to.
+Defined below.
+* `logging_digitalocean` - (Optional) A DigitalOcean Spaces endpoint to send streaming logs to.
+Defined below.
+* `logging_cloudfiles` - (Optional) A Rackspace Cloud Files endpoint to send streaming logs to.
+Defined below.
 * `response_object` - (Optional) Allows you to create synthetic responses that exist entirely on the varnish machine. Useful for creating error or maintenance pages that exists outside the scope of your datacenter. Best when used with Condition objects.
 * `snippet` - (Optional) A set of custom, "regular" (non-dynamic) VCL Snippet configuration blocks.  Defined below.
 * `dynamicsnippet` - (Optional) A set of custom, "dynamic" VCL Snippet configuration blocks.  Defined below.
@@ -445,7 +455,7 @@ then specify the corresponding bucket endpoint. Example: `s3-us-west-2.amazonaws
 * `public_key` - (Optional) A PGP public key that Fastly will use to encrypt your log files before writing them to disk.
 * `period` - (Optional) How frequently the logs should be transferred, in
 seconds. Default `3600`.
-* `gzip_level` - (Optional) Level of GZIP compression, from `0-9`. `0` is no
+* `gzip_level` - (Optional) Level of Gzip compression, from `0-9`. `0` is no
 compression. `1` is fastest and least compressed, `9` is slowest and most
 compressed. Default `0`.
 * `format` - (Optional) Apache-style string or VCL variables to use for log formatting. Defaults to Apache Common Log format (`%h %l %u %t %r %>s`).
@@ -487,7 +497,7 @@ The `gcslogging` block supports:
 If this field is left empty, the files will be saved in the bucket's root path.
 * `period` - (Optional) How frequently the logs should be transferred, in
 seconds. Default `3600`.
-* `gzip_level` - (Optional) Level of GZIP compression, from `0-9`. `0` is no
+* `gzip_level` - (Optional) Level of Gzip compression, from `0-9`. `0` is no
 compression. `1` is fastest and least compressed, `9` is slowest and most
 compressed. Default `0`.
 * `format` - (Optional) Apache-style string or VCL variables to use for log formatting. Defaults to Apache Common Log format (`%h %l %u %t %r %>s`)
@@ -558,7 +568,7 @@ The `blobstoragelogging` block supports:
 * `path` - (Optional) The path to upload logs to. Must end with a trailing slash. If this field is left empty, the files will be saved in the container's root path.
 * `period` - (Optional) How frequently the logs should be transferred in seconds. Default `3600`.
 * `timestamp_format` - (Optional) `strftime` specified timestamp formatting. Default `%Y-%m-%dT%H:%M:%S.000`.
-* `gzip_level` - (Optional) Level of GZIP compression from `0`to `9`. `0` means no compression. `1` is the fastest and the least compressed version, `9` is the slowest and the most compressed version. Default `0`.
+* `gzip_level` - (Optional) Level of Gzip compression from `0`to `9`. `0` means no compression. `1` is the fastest and the least compressed version, `9` is the slowest and the most compressed version. Default `0`.
 * `public_key` - (Optional) A PGP public key that Fastly will use to encrypt your log files before writing them to disk.
 * `format` - (Optional) Apache-style string or VCL variables to use for log formatting. Default `%h %l %u %t \"%r\" %>s %b`.
 * `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. The logging call gets placed by default in `vcl_log` if `format_version` is set to `2` and in `vcl_deliver` if `format_version` is set to `1`. Default `2`.
@@ -633,7 +643,7 @@ The `logging_sftp` block supports:
 * `port` - (Optional) The port the SFTP service listens on. (Default: `22`).
 * `password` - (Optional) The password for the server. If both `password` and `secret_key` are passed, `secret_key` will be preferred.
 * `secret_key` - (Optional) The SSH private key for the server. If both `password` and `secret_key` are passed, `secret_key` will be preferred.
-* `gzip_level` - (Optional) What level of GZIP encoding to have when dumping logs (default 0, no compression).
+* `gzip_level` - (Optional) What level of Gzip encoding to have when dumping logs (default 0, no compression).
 * `period` - (Optional) How frequently log files are finalized so they can be available for reading (in seconds, default `3600`).
 * `placement` - (Optional) Where in the generated VCL the logging call should be placed.
 * `public_key` - (Optional) A PGP public key that Fastly will use to encrypt your log files before writing them to disk.
@@ -719,6 +729,82 @@ The `logging_heroku` block supports:
 * `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. (default: `2`).
 * `placement` - (Optional) Where in the generated VCL the logging call should be placed. Can be `none` or `waf_debug`.
 * `response_condition` - (Optional) The name of an existing condition in the configured endpoint, or leave blank to always execute.
+
+The `logging_honeycomb` block supports:
+
+* `name` - (Required) The unique name of the Honeycomb logging endpoint.
+* `dataset` - (Required) The Honeycomb Dataset you want to log to.
+* `token` - (Required) The Write Key from the Account page of your Honeycomb account.
+* `format` - (Optional) Apache style log formatting. Your log must produce valid JSON that Honeycomb can ingest.
+* `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. (default: `2`).
+* `placement` - (Optional) Where in the generated VCL the logging call should be placed. Can be `none` or `waf_debug`.
+* `response_condition` - (Optional) The name of an existing condition in the configured endpoint, or leave blank to always execute.
+
+The `logging_logshuttle` block supports:
+
+* `name` - (Required) The unique name of the Logshuttle logging endpoint.
+* `token` - (Required) The data authentication token associated with this endpoint.
+* `url` - (Required) Your Log Shuttle endpoint url.
+* `format` - (Optional) Apache style log formatting.
+* `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. (default: `2`).
+* `placement` - (Optional) Where in the generated VCL the logging call should be placed. Can be `none` or `waf_debug`.
+* `response_condition` - (Optional) The name of an existing condition in the configured endpoint, or leave blank to always execute.
+
+The `logging_openstack` block supports:
+
+* `name` - (Required) The unique name of the OpenStack logging endpoint.
+* `bucket_name` - (Required) The name of your OpenStack container.
+* `url` - (Required) Your OpenStack auth url.
+* `user` - (Required) The username for your OpenStack account.
+* `access_key` - (Required) Your OpenStack account access key.
+* `public_key` - (Optional) A PGP public key that Fastly will use to encrypt your log files before writing them to disk.
+* `path` - (Optional) Path to store the files. Must end with a trailing slash.
+If this field is left empty, the files will be saved in the bucket's root path.
+* `period` - (Optional) How frequently the logs should be transferred, in
+seconds. Default `3600`.
+* `gzip_level` - (Optional) What level of Gzip encoding to have when dumping logs (default 0, no compression).
+* `message_type` - (Optional) How the message should be formatted; one of: `classic`, `loggly`, `logplex` or `blank`. Default `classic`. [Fastly Documentation](https://developer.fastly.com/reference/api/logging/gcs/)
+* `format` - (Optional) Apache style log formatting.
+* `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. The logging call gets placed by default in `vcl_log` if `format_version` is set to `2` and in `vcl_deliver` if `format_version` is set to `1`. Default `2`.
+* `timestamp_format` - (Optional) The strftime specified timestamp formatting (default `%Y-%m-%dT%H:%M:%S.000`).
+* `response_condition` - (Optional) The name of an existing condition in the configured endpoint, or leave blank to always execute.
+* `placement` - (Optional) Where in the generated VCL the logging call should be placed; one of: `none` or `waf_debug`.
+
+The `logging_digitalocean` block supports:
+
+* `name` - (Required) The unique name of the DigitalOcean Spaces logging endpoint.
+* `bucket_name` - (Required) The name of the DigitalOcean Space.
+* `access_key` - (Required) Your DigitalOcean Spaces account access key.
+* `secret_key` - (Required) Your DigitalOcean Spaces account secret key.
+* `public_key` - (Optional) A PGP public key that Fastly will use to encrypt your log files before writing them to disk.
+* `domain` - (Optional) The domain of the DigitalOcean Spaces endpoint (default "nyc3.digitaloceanspaces.com").
+* `path` - (Optional) The path to upload logs to.
+* `period` - (Optional) How frequently log files are finalized so they can be available for reading (in seconds, default 3600).
+* `timestamp_format` - (Optional) The strftime specified timestamp formatting (default `%Y-%m-%dT%H:%M:%S.000`).
+* `gzip_level` - (Optional) What level of Gzip encoding to have when dumping logs (default 0, no compression).
+* `format` - (Optional) Apache-style string or VCL variables to use for log formatting.
+* `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. (default: `2`).
+* `message_type` - (Optional) How the message should be formatted. One of: classic (default), loggly, logplex or blank.
+* `placement` - (Optional) Where in the generated VCL the logging call should be placed. Can be `none` or `waf_debug`.
+* `response_condition` - (Optional) The name of an existing condition in the configured endpoint, or leave blank to always execute.
+
+The `logging_cloudfiles` block supports:
+
+* `name` - (Required) The unique name of the Rackspace Cloud Files logging endpoint.
+* `user` - (Required) The username for your Cloud Files account.
+* `bucket_name` - (Required) The name of your Cloud Files container.
+* `access_key` - (Required) Your Cloud File account access key.
+* `public_key` - (Optional) The PGP public key that Fastly will use to encrypt your log files before writing them to disk.
+* `format` - (Optional) Apache style log formatting.
+* `format_version` - (Optional) The version of the custom logging format used for the configured endpoint. Can be either `1` or `2`. (default: `2`).
+* `gzip_level` - (Optional) What level of GZIP encoding to have when dumping logs (default 0, no compression).
+* `message_type` - (Optional) How the message should be formatted. One of: classic (default), loggly, logplex or blank.
+* `path` - (Optional) The path to upload logs to.
+* `region` - (Optional) The region to stream logs to. One of: DFW (Dallas), ORD (Chicago), IAD (Northern Virginia), LON (London), SYD (Sydney), HKG (Hong Kong).
+* `period` - (Optional) How frequently log files are finalized so they can be available for reading (in seconds, default 3600).
+* `placement` - (Optional) Where in the generated VCL the logging call should be placed. Can be `none` or `waf_debug`.
+* `response_condition` - (Optional) The name of an existing condition in the configured endpoint, or leave blank to always execute.
+* `timestamp_format` - (Optional) The strftime specified timestamp formatting (default `%Y-%m-%dT%H:%M:%S.000`).
 
 The `response_object` block supports:
 

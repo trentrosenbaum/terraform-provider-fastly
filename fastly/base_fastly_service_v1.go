@@ -12,12 +12,19 @@ import (
 
 var fastlyNoServiceFoundErr = errors.New("No matching Fastly Service found")
 
+const (
+	// ServiceTypeVCL is the type for VCL services.
+	ServiceTypeVCL = "vcl"
+	// ServiceTypeCompute is the type for Compute services.
+	ServiceTypeCompute = "wasm"
+)
+
 // ServiceAttributeDefinition provides an interface for service attributes.
-// We compose a service resource out of attribute objects to allow us to construct both the VCL and Wasm service
+// We compose a service resource out of attribute objects to allow us to construct both the VCL and Compute service
 // resources from common components.
 type ServiceAttributeDefinition interface {
 	// Register add the attribute to the resource schema.
-	Register(d *schema.Resource) error
+	Register(s *schema.Resource) error
 
 	// Read refreshes the attribute state against the Fastly API.
 	Read(d *schema.ResourceData, s *gofastly.ServiceDetail, conn *gofastly.Client) error
@@ -34,15 +41,25 @@ type ServiceAttributeDefinition interface {
 	MustProcess(d *schema.ResourceData, initialVersion bool) bool
 }
 
+// ServiceMetadata provides a container to pass service attributes into an Attribute handler.
+type ServiceMetadata struct {
+	serviceType string
+}
+
 // DefaultServiceAttributeHandler provides a base implementation for ServiceAttributeDefinition.
 type DefaultServiceAttributeHandler struct {
-	schema *schema.Schema
-	key    string
+	key             string
+	serviceMetadata ServiceMetadata
 }
 
 // GetKey is provided since most attributes will just use their private "key" for interacting with the service.
 func (h *DefaultServiceAttributeHandler) GetKey() string {
 	return h.key
+}
+
+// GetServiceMetadata is provided to allow internal methods to get the service Metadata
+func (h *DefaultServiceAttributeHandler) GetServiceMetadata() ServiceMetadata {
+	return h.serviceMetadata
 }
 
 // See interface definition for comments.
@@ -55,11 +72,40 @@ func (h *DefaultServiceAttributeHandler) MustProcess(d *schema.ResourceData, ini
 	return h.HasChange(d)
 }
 
+type VCLLoggingAttributes struct {
+	format            string
+	formatVersion     uint
+	placement         string
+	responseCondition string
+}
+
+// getVCLLoggingAttributes provides default values to Compute services for VCL only logging attributes
+func (h *DefaultServiceAttributeHandler) getVCLLoggingAttributes(data map[string]interface{}) VCLLoggingAttributes {
+	var vla = VCLLoggingAttributes{
+		placement: "none",
+	}
+	if h.GetServiceMetadata().serviceType == ServiceTypeVCL {
+		if val, ok := data["format"]; ok {
+			vla.format = val.(string)
+		}
+		if val, ok := data["format_version"]; ok {
+			vla.formatVersion = uint(val.(int))
+		}
+		if val, ok := data["placement"]; ok {
+			vla.placement = val.(string)
+		}
+		if val, ok := data["response_condition"]; ok {
+			vla.responseCondition = val.(string)
+		}
+	}
+	return vla
+}
+
 // ServiceDefinition defines the data model for service definitions
-// There are two types of service: VCL and Wasm. This interface specifies the data object from which service resources
+// There are two types of service: VCL and Compute. This interface specifies the data object from which service resources
 // are constructed.
 type ServiceDefinition interface {
-	// GetType returns whether this is a VCL or Wasm service.
+	// GetType returns whether this is a VCL or Compute service.
 	GetType() string
 
 	// GetAttributeHandler returns the list of attributes/handlers supported by this service.
@@ -80,16 +126,14 @@ func (d *BaseServiceDefinition) GetAttributeHandler() []ServiceAttributeDefiniti
 	return d.Attributes
 }
 
-// resourceService returns a Terraform resource schema for VCL or Wasm.
+// resourceService returns a Terraform resource schema for VCL or Compute.
 func resourceService(serviceDef ServiceDefinition) *schema.Resource {
 	s := &schema.Resource{
-		Create: resourceCreate(serviceDef),
-		Read:   resourceRead(serviceDef),
-		Update: resourceUpdate(serviceDef),
-		Delete: resourceDelete(serviceDef),
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
+		Create:   resourceCreate(serviceDef),
+		Read:     resourceRead(serviceDef),
+		Update:   resourceUpdate(serviceDef),
+		Delete:   resourceDelete(serviceDef),
+		Importer: resourceImport(serviceDef),
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -167,7 +211,7 @@ func resourceCreate(serviceDef ServiceDefinition) schema.CreateFunc {
 // while injecting the ServiceDefinition into the true Read functionality.
 func resourceRead(serviceDef ServiceDefinition) schema.ReadFunc {
 	return func(data *schema.ResourceData, i interface{}) error {
-		return resourceServiceRead(data, i, serviceDef)
+		return resourceServiceRead(data, i, serviceDef, false)
 	}
 }
 
@@ -184,6 +228,20 @@ func resourceUpdate(serviceDef ServiceDefinition) schema.UpdateFunc {
 func resourceDelete(serviceDef ServiceDefinition) schema.DeleteFunc {
 	return func(data *schema.ResourceData, i interface{}) error {
 		return resourceServiceDelete(data, i, serviceDef)
+	}
+}
+
+// resourceImport satisfies the Terraform resource schema Importer "interface"
+// while injecting the ServiceDefinition into the true Import functionality.
+func resourceImport(serviceDef ServiceDefinition) *schema.ResourceImporter {
+	return &schema.ResourceImporter{
+		State: func(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+			error := resourceServiceRead(d, m, serviceDef, true)
+			if error != nil {
+				return nil, error
+			}
+			return []*schema.ResourceData{d}, nil
+		},
 	}
 }
 
@@ -356,11 +414,11 @@ func resourceServiceUpdate(d *schema.ResourceData, meta interface{}, serviceDef 
 		}
 	}
 
-	return resourceServiceRead(d, meta, serviceDef)
+	return resourceServiceRead(d, meta, serviceDef, false)
 }
 
 // resourceServiceRead provides service resource Read functionality.
-func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) error {
+func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition, isImport bool) error {
 	conn := meta.(*FastlyClient).conn
 
 	// Find the Service. Discard the service because we need the ServiceDetails,
@@ -380,15 +438,23 @@ func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef Se
 	s, err := conn.GetServiceDetails(&gofastly.GetServiceInput{
 		ID: d.Id(),
 	})
-
 	if err != nil {
 		return err
+	}
+
+	// Check for service type mismatch (i.e. when importing)
+	if s.Type != serviceDef.GetType() {
+		return fmt.Errorf("[ERR] Service type mismatch in READ, expected: %s, got: %s", serviceDef.GetType(), s.Type)
 	}
 
 	d.Set("name", s.Name)
 	d.Set("comment", s.Comment)
 	d.Set("version_comment", s.Version.Comment)
 	d.Set("active_version", s.ActiveVersion.Number)
+
+	if s.ActiveVersion.Number == 0 && isImport {
+		s.ActiveVersion.Number = s.Version.Number
+	}
 
 	// If CreateService succeeds, but initial updates to the Service fail, we'll
 	// have an empty ActiveService version (no version is active, so we can't
@@ -402,8 +468,7 @@ func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef Se
 				return err
 			}
 		}
-
-	} else {
+	} else if !isImport {
 		log.Printf("[DEBUG] Active Version for Service (%s) is empty, no state to refresh", d.Id())
 	}
 

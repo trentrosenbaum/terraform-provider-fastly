@@ -190,15 +190,13 @@ func (c *Client) UpdateDictionaryItem(i *UpdateDictionaryItemInput) (*Dictionary
 }
 
 type BatchModifyDictionaryItemsInput struct {
-	Service    string `json:"-,"`
-	Dictionary string `json:"-,"`
+	Service    string `json:"-"`
+	Dictionary string `json:"-"`
 
 	Items []*BatchDictionaryItem `json:"items"`
 }
 
 type BatchDictionaryItem struct {
-
-
 	Operation BatchOperation `json:"op"`
 	ItemKey   string         `json:"item_key"`
 	ItemValue string         `json:"item_value"`
