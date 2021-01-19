@@ -23,7 +23,7 @@ func resourceTLSPrivateKeyV1() *schema.Resource {
 			},
 			"name": {
 				Type:        schema.TypeString,
-				Optional:    true,
+				Required:    true,
 				ForceNew:    true,
 				Description: "Customisable name of the private key.",
 			},
