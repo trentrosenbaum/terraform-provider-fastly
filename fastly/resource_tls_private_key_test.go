@@ -32,6 +32,12 @@ func TestAccFastlyTLSPrivateKeyV1_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("fastly_tls_private_key.foo", "name", name),
 				),
 			},
+			{
+				ResourceName:            "fastly_tls_private_key.foo",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"key_pem"},
+			},
 		},
 	})
 }
