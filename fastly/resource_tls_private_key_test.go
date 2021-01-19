@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestAccFastlyTLSPrivateKeyV1Create(t *testing.T) {
+func TestAccFastlyTLSPrivateKeyV1_basic(t *testing.T) {
 	key, _, err := generateKeyAndCert()
 	if err != nil {
 		t.Fatalf("Failed to generate private key: %v", err)
@@ -46,7 +46,7 @@ func testAccCheckPrivateKeyDestroy(state *terraform.State) error {
 		keys, err := conn.ListPrivateKeys(&gofastly.ListPrivateKeysInput{})
 		if err != nil {
 			return fmt.Errorf(
-				"error listing private keys when deleting private key %s: %w",
+				"[WARN] Error listing private keys when deleting private key %s: %w",
 				resourceState.Primary.ID,
 				err,
 			)
@@ -55,7 +55,7 @@ func testAccCheckPrivateKeyDestroy(state *terraform.State) error {
 		for _, key := range keys {
 			if key.ID == resourceState.Primary.ID {
 				return fmt.Errorf(
-					"tried deleting private key (%s) but was still found",
+					"[WARN] Tried deleting private key (%s) but was still found",
 					resourceState.Primary.ID,
 				)
 			}
