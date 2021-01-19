@@ -5,11 +5,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceTLSPrivateKeyV1() *schema.Resource {
+func resourceTLSPrivateKey() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceTLSPrivateKeyV1Create,
-		Read:   resourceTlSPrivateKeyV1Read,
-		Delete: resourceTLSPrivateKeyV1Delete,
+		Create: resourceTLSPrivateKeyCreate,
+		Read:   resourceTlSPrivateKeyRead,
+		Delete: resourceTLSPrivateKeyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,16 +28,19 @@ func resourceTLSPrivateKeyV1() *schema.Resource {
 				Description: "Customisable name of the private key.",
 			},
 			"created_at": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Time-stamp (GMT) when the private key was created.",
 			},
 			"key_length": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "The key length used to generate the private key.",
 			},
 			"key_type": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The algorithm used to generate the private key. Must be RSA.",
 			},
 			"replace": {
 				Type:        schema.TypeBool,
@@ -45,14 +48,15 @@ func resourceTLSPrivateKeyV1() *schema.Resource {
 				Description: "Whether Fastly recommends replacing this private key.",
 			},
 			"public_key_sha1": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Useful for safely identifying the key.",
 			},
 		},
 	}
 }
 
-func resourceTLSPrivateKeyV1Create(d *schema.ResourceData, meta interface{}) error {
+func resourceTLSPrivateKeyCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
 	privateKey, err := conn.CreatePrivateKey(&gofastly.CreatePrivateKeyInput{
@@ -65,10 +69,10 @@ func resourceTLSPrivateKeyV1Create(d *schema.ResourceData, meta interface{}) err
 
 	d.SetId(privateKey.ID)
 
-	return resourceTlSPrivateKeyV1Read(d, meta)
+	return resourceTlSPrivateKeyRead(d, meta)
 }
 
-func resourceTlSPrivateKeyV1Read(d *schema.ResourceData, meta interface{}) error {
+func resourceTlSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
 	privateKey, err := conn.GetPrivateKey(&gofastly.GetPrivateKeyInput{
@@ -79,16 +83,34 @@ func resourceTlSPrivateKeyV1Read(d *schema.ResourceData, meta interface{}) error
 	}
 
 	err = d.Set("name", privateKey.Name)
+	if err != nil {
+		return err
+	}
 	err = d.Set("created_at", privateKey.CreatedAt.String())
+	if err != nil {
+		return err
+	}
 	err = d.Set("key_length", privateKey.KeyLength)
+	if err != nil {
+		return err
+	}
 	err = d.Set("key_type", privateKey.KeyType)
+	if err != nil {
+		return err
+	}
 	err = d.Set("replace", privateKey.Replace)
+	if err != nil {
+		return err
+	}
 	err = d.Set("public_key_sha1", privateKey.PublicKeySHA1)
+	if err != nil {
+		return err
+	}
 
 	return err
 }
 
-func resourceTLSPrivateKeyV1Delete(d *schema.ResourceData, meta interface{}) error {
+func resourceTLSPrivateKeyDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
 	err := conn.DeletePrivateKey(&gofastly.DeletePrivateKeyInput{

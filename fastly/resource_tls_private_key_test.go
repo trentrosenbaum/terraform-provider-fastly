@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestAccFastlyTLSPrivateKeyV1_basic(t *testing.T) {
+func TestAccFastlyTLSPrivateKey_basic(t *testing.T) {
 	key, _, err := generateKeyAndCert()
 	if err != nil {
 		t.Fatalf("Failed to generate private key: %v", err)
@@ -25,7 +25,7 @@ func TestAccFastlyTLSPrivateKeyV1_basic(t *testing.T) {
 		CheckDestroy: testAccCheckPrivateKeyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccFastlyTLSPrivateKeyV1Config_simple_private_key(key, name),
+				Config: testAccFastlyTLSPrivateKeyConfig_simple_private_key(key, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckPrivateKeyExists("fastly_tls_private_key.foo"),
 					resource.TestCheckResourceAttr("fastly_tls_private_key.foo", "name", name),
@@ -69,7 +69,7 @@ func testAccCheckPrivateKeyDestroy(state *terraform.State) error {
 	return nil
 }
 
-func testAccFastlyTLSPrivateKeyV1Config_simple_private_key(key, name string) string {
+func testAccFastlyTLSPrivateKeyConfig_simple_private_key(key, name string) string {
 	return fmt.Sprintf(`
 resource "fastly_tls_private_key" "foo" {
   key_pem = "%s"
