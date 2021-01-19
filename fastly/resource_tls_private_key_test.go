@@ -36,8 +36,31 @@ func TestAccFastlyTLSPrivateKeyV1Create(t *testing.T) {
 	})
 }
 
-func testAccCheckPrivateKeyDestroy(_ *terraform.State) error {
-	// TODO: implement check destroy
+func testAccCheckPrivateKeyDestroy(state *terraform.State) error {
+	for _, resourceState := range state.RootModule().Resources {
+		if resourceState.Type != "fastly_tls_private_key" {
+			continue
+		}
+
+		conn := testAccProvider.Meta().(*FastlyClient).conn
+		keys, err := conn.ListPrivateKeys(&gofastly.ListPrivateKeysInput{})
+		if err != nil {
+			return fmt.Errorf(
+				"error listing private keys when deleting private key %s: %w",
+				resourceState.Primary.ID,
+				err,
+			)
+		}
+
+		for _, key := range keys {
+			if key.ID == resourceState.Primary.ID {
+				return fmt.Errorf(
+					"tried deleting private key (%s) but was still found",
+					resourceState.Primary.ID,
+				)
+			}
+		}
+	}
 	return nil
 }
 
