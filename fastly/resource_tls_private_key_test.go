@@ -15,7 +15,6 @@ func TestAccFastlyTLSPrivateKeyV1_basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to generate private key: %v", err)
 	}
-	// TODO: string replacement in the resourceCreate function?
 	key = strings.ReplaceAll(key, "\n", `\n`)
 
 	name := acctest.RandString(10)
