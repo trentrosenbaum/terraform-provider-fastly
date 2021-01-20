@@ -10,14 +10,14 @@ import (
 	"testing"
 )
 
-func TestAccFastlyTLSPrivateKey_basic(t *testing.T) {
+func TestAccFastlyResourceTLSPrivateKey_basic(t *testing.T) {
 	key, _, err := generateKeyAndCert()
 	if err != nil {
 		t.Fatalf("Failed to generate private key: %v", err)
 	}
 	key = strings.ReplaceAll(key, "\n", `\n`)
 
-	name := acctest.RandString(10)
+	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
