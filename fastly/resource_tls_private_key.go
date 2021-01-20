@@ -3,6 +3,7 @@ package fastly
 import (
 	gofastly "github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"time"
 )
 
 func resourceTLSPrivateKey() *schema.Resource {
@@ -86,7 +87,7 @@ func resourceTlSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = d.Set("created_at", privateKey.CreatedAt.String())
+	err = d.Set("created_at", privateKey.CreatedAt.Format(time.RFC3339))
 	if err != nil {
 		return err
 	}
