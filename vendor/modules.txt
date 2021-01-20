@@ -59,7 +59,7 @@ github.com/bgentry/go-netrc/netrc
 github.com/bgentry/speakeasy
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/fastly/go-fastly/v2 v2.1.0
+# github.com/fastly/go-fastly/v2 v2.1.0 => github.com/opencredo/go-fastly/v2 v2.0.0-20210120105619-a13767a18fb8
 ## explicit
 github.com/fastly/go-fastly/v2/fastly
 # github.com/fatih/color v1.7.0
@@ -222,7 +222,6 @@ github.com/spf13/afero/mem
 # github.com/stretchr/testify v1.3.0
 ## explicit
 github.com/stretchr/testify/assert
-github.com/stretchr/testify/require
 # github.com/ulikunitz/xz v0.5.5
 github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
