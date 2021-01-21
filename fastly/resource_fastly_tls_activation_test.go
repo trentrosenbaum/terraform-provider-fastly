@@ -18,6 +18,7 @@ func TestAccFastlyTLSActivationBasic(t *testing.T) {
 	key = strings.ReplaceAll(key, "\n", `\n`)
 	cert = strings.ReplaceAll(cert, "\n", `\n`)
 
+	resourceName := "fastly_tls_activation.test"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -25,6 +26,13 @@ func TestAccFastlyTLSActivationBasic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccFastlyTLSActivationBasicConfig(key, cert, domain),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "certificate_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "configuration_id"),
+					resource.TestCheckResourceAttr(resourceName, "domain", domain),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					testAccFastlyTLSActivationCheckExists(resourceName),
+				),
 			},
 		},
 	})
@@ -66,6 +74,18 @@ resource "fastly_tls_activation" "test" {
   depends_on = [fastly_service_v1.test]
 }
 `, name, domain, key, name, cert, name, domain)
+}
+
+func testAccFastlyTLSActivationCheckExists(resourceName string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		conn := testAccProvider.Meta().(*FastlyClient).conn
+
+		r := state.RootModule().Resources[resourceName]
+		_, err := conn.GetTLSActivation(&fastly.GetTLSActivationInput{
+			ID: r.Primary.ID,
+		})
+		return err
+	}
 }
 
 func testAccFastlyTLSActivationCheckDestroy(state *terraform.State) error {
