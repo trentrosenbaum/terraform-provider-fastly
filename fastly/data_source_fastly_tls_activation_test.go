@@ -35,7 +35,7 @@ func TestAccDataSourceFastlyTLSActivationBasic(t *testing.T) {
 }
 
 func testAccDataSourceFastlyTLSActivationConfig(key, cert, domain string) string {
-	name := acctest.RandomWithPrefix("tf-test-")
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	return fmt.Sprintf(
 		`
