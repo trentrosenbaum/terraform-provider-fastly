@@ -27,16 +27,18 @@ resource "tls_self_signed_cert" "cert" {
   private_key_pem = tls_private_key.key.private_key_pem
 
   subject {
-    common_name  = "example.com"
+    common_name = "example.com"
   }
 
-  validity_period_hours = 12
+  is_ca_certificate     = true
+  validity_period_hours = 360
 
   allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
+    "cert_signing",
     "server_auth",
   ]
+
+  dns_names = ["example.com"]
 }
 
 resource "fastly_tls_private_key" "key" {
