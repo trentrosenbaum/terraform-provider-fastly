@@ -19,15 +19,15 @@ func init() {
 }
 
 func TestAccFastlyTLSActivation_basic(t *testing.T) {
-	domain := fmt.Sprintf("tf-test-%s.com", acctest.RandString(10))
+	domain := fmt.Sprintf("%s.com", acctest.RandomWithPrefix(testResourcePrefix))
 	key, cert, cert2, err := generateKeyAndMultipleCerts(domain)
 	require.NoError(t, err)
 	key = strings.ReplaceAll(key, "\n", `\n`)
 	cert = strings.ReplaceAll(cert, "\n", `\n`)
 	cert2 = strings.ReplaceAll(cert2, "\n", `\n`)
 
-	name := fmt.Sprintf("tf-test-%s", acctest.RandString(20))
-	updatedName := fmt.Sprintf("tf-test-%s", acctest.RandString(20))
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	updatedName := acctest.RandomWithPrefix(testResourcePrefix)
 
 	resourceName := "fastly_tls_activation.test"
 	resource.ParallelTest(t, resource.TestCase{
