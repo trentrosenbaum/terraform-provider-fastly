@@ -11,6 +11,13 @@ import (
 	"testing"
 )
 
+func init() {
+	resource.AddTestSweepers("fastly_tls_activation", &resource.Sweeper{
+		Name: "fastly_tls_activation",
+		F:    testSweepTLSActivation,
+	})
+}
+
 func TestAccFastlyTLSActivation_basic(t *testing.T) {
 	domain := fmt.Sprintf("tf-test-%s.com", acctest.RandString(10))
 	key, cert, cert2, err := generateKeyAndMultipleCerts(domain)
@@ -124,5 +131,30 @@ func testAccFastlyTLSActivationCheckDestroy(state *terraform.State) error {
 			}
 		}
 	}
+	return nil
+}
+
+func testSweepTLSActivation(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	activations, err := client.ListTLSActivations(&fastly.ListTLSActivationsInput{PageSize: 1000})
+	if err != nil {
+		return err
+	}
+
+	for _, activation := range activations {
+		if !strings.HasPrefix(activation.Domain.ID, testResourcePrefix) {
+			continue
+		}
+
+		err = client.DeleteTLSActivation(&fastly.DeleteTLSActivationInput{ID: activation.ID})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
