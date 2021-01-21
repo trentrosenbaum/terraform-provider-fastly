@@ -19,7 +19,7 @@ Basic usage:
 
 ```hcl
 resource "tls_private_key" "key" {
-  algorithm = "ECDSA"
+  algorithm = "RSA"
 }
 
 resource "tls_self_signed_cert" "cert" {
