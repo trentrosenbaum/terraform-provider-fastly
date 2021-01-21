@@ -78,10 +78,10 @@ func dataSourceTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	var privateKeys []*fastly.PrivateKey
-	cursor := 0
+	pageNumber := 1
 	for {
 		list, err := conn.ListPrivateKeys(&fastly.ListPrivateKeysInput{
-			PageNumber: cursor,
+			PageNumber: pageNumber,
 		})
 		if err != nil {
 			return err
@@ -89,7 +89,7 @@ func dataSourceTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error
 		if len(list) == 0 {
 			break
 		}
-		cursor += len(list)
+		pageNumber++
 
 		for _, privateKey := range list {
 			if filterPrivateKey(privateKey, filters) {
