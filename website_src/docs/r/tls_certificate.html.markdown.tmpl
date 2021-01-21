@@ -31,13 +31,14 @@ resource "tls_self_signed_cert" "cert" {
   }
 
   is_ca_certificate     = true
-  validity_period_hours = 12
+  validity_period_hours = 360
 
   allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
+    "cert_signing",
     "server_auth",
   ]
+
+  dns_names = ["example.com"]
 }
 
 resource "fastly_tls_private_key" "key" {
