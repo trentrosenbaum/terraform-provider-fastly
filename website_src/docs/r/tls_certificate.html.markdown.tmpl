@@ -27,9 +27,10 @@ resource "tls_self_signed_cert" "cert" {
   private_key_pem = tls_private_key.key.private_key_pem
 
   subject {
-    common_name  = "example.com"
+    common_name = "example.com"
   }
 
+  is_ca_certificate     = true
   validity_period_hours = 12
 
   allowed_uses = [
