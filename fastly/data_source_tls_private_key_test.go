@@ -18,14 +18,9 @@ func TestAccFastlyDataSourceTLSPrivateKeyBasic(t *testing.T) {
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                  func() { testAccPreCheck(t) },
-		Providers:                 testAccProviders,
-		PreventPostDestroyRefresh: true, // Testing data source so state refresh will fail after destroy
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			{
-				// Just the resource, no data sources, so no checks needed
-				Config: testAccFastlyDataSourceTLSPrivateKeyConfigResources(key, name),
-			},
 			{
 				Config: testAccFastlyDataSourceTLSPrivateKeyConfig(key, name),
 				Check: resource.ComposeTestCheckFunc(
@@ -37,20 +32,15 @@ func TestAccFastlyDataSourceTLSPrivateKeyBasic(t *testing.T) {
 	})
 }
 
-func testAccFastlyDataSourceTLSPrivateKeyConfigResources(key, name string) string {
+func testAccFastlyDataSourceTLSPrivateKeyConfig(key, name string) string {
 	return fmt.Sprintf(`
 resource "fastly_tls_private_key" "test" {
   key_pem = "%s"
   name = "%s"
 }
-`, key, name)
-}
 
-func testAccFastlyDataSourceTLSPrivateKeyConfig(key, name string) string {
-	return fmt.Sprintf(`
-%s
 data "fastly_tls_private_key" "subject" {
-  name = "%s"
+  name = fastly_tls_private_key.test.name
 }
-`, testAccFastlyDataSourceTLSPrivateKeyConfigResources(key, name), name)
+`, key, name)
 }
