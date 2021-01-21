@@ -11,4 +11,4 @@ require (
 	github.com/stretchr/testify v1.3.0
 )
 
-replace github.com/fastly/go-fastly/v2 v2.1.0 => github.com/opencredo/go-fastly/v2 v2.0.0-20210121112611-37bdba677670
+replace github.com/fastly/go-fastly/v2 v2.1.0 => github.com/opencredo/go-fastly/v2 v2.0.0-20210121142953-eeab9a460968
