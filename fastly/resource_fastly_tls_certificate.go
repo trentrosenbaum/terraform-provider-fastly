@@ -153,7 +153,6 @@ func resourceTLSCertificateRead(d *schema.ResourceData, meta interface{}) error 
 func resourceTLSCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	// API mandates the `CertBlob` field, but Fastly service doesn't allow the certificate to be updated
 	input := &fastly.UpdateCustomTLSCertificateInput{
 		ID:       d.Id(),
 		CertBlob: d.Get("certificate_body").(string),
