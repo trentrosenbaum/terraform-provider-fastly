@@ -3,6 +3,7 @@ package fastly
 import (
 	"github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"time"
 )
 
 func resourceTLSActivation() *schema.Resource {
@@ -24,6 +25,7 @@ func resourceTLSActivation() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
+				Computed:    true,
 				Description: "ID of TLS configuration to be used to terminate TLS traffic, or use the default one if missing.",
 			},
 			"domain": {
@@ -85,7 +87,7 @@ func resourceTLSActivationRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = d.Set("created_at", activation.CreatedAt)
+	err = d.Set("created_at", activation.CreatedAt.Format(time.RFC3339))
 
 	return err
 }

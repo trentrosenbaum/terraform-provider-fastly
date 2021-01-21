@@ -31,9 +31,24 @@ func TestAccFastlyTLSActivationBasic(t *testing.T) {
 }
 
 func testAccFastlyTLSActivationBasicConfig(key, cert, domain string) string {
-	certificateName := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 
 	return fmt.Sprintf(`
+resource "fastly_service_v1" "test" {
+  name = "%s"
+
+  domain {
+    name    = "%s"
+  }
+
+  backend {
+    address = "127.0.0.1"
+    name    = "localhost"
+  }
+
+  force_destroy = true
+}
+
 resource "fastly_tls_private_key" "test" {
   key_pem = "%s"
   name = "%s"
@@ -42,13 +57,15 @@ resource "fastly_tls_private_key" "test" {
 resource "fastly_tls_certificate" "test" {
   certificate_body = "%s"
   name = "%s"
+  depends_on = [fastly_tls_private_key.test]
 }
 
 resource "fastly_tls_activation" "test" {
   certificate_id = fastly_tls_certificate.test.id
   domain = "%s"
+  depends_on = [fastly_service_v1.test]
 }
-`, key, certificateName, cert, certificateName, domain)
+`, name, domain, key, name, cert, name, domain)
 }
 
 func testAccFastlyTLSActivationCheckDestroy(state *terraform.State) error {
