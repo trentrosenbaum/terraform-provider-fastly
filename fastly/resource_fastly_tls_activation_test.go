@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestAccFastlyTLSActivationBasic(t *testing.T) {
+func TestAccFastlyTLSActivation_basic(t *testing.T) {
 	domain := fmt.Sprintf("tf-test-%s.com", acctest.RandString(10))
 	key, cert, cert2, err := generateKeyAndMultipleCerts(domain)
 	require.NoError(t, err)
@@ -29,7 +29,7 @@ func TestAccFastlyTLSActivationBasic(t *testing.T) {
 		CheckDestroy: testAccFastlyTLSActivationCheckDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccFastlyTLSActivationBasicConfig(name, name, key, name, cert, domain),
+				Config: testAccFastlyTLSActivationConfig(name, name, key, name, cert, domain),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "certificate_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "configuration_id"),
@@ -39,14 +39,19 @@ func TestAccFastlyTLSActivationBasic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccFastlyTLSActivationBasicConfig(name, name, key, updatedName, cert2, domain),
+				Config: testAccFastlyTLSActivationConfig(name, name, key, updatedName, cert2, domain),
 				Check:  testAccFastlyTLSActivationCheckExists(resourceName),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func testAccFastlyTLSActivationBasicConfig(serviceName, keyName, key, certName, cert, domain string) string {
+func testAccFastlyTLSActivationConfig(serviceName, keyName, key, certName, cert, domain string) string {
 	return fmt.Sprintf(`
 resource "fastly_service_v1" "test" {
   name = "%s"

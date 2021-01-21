@@ -88,21 +88,22 @@ func resourceTLSActivationRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	err = d.Set("created_at", activation.CreatedAt.Format(time.RFC3339))
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func resourceTLSActivationUpdate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	if d.HasChange("certificate_id") {
-		_, err := conn.UpdateTLSActivation(&fastly.UpdateTLSActivationInput{
-			ID:          d.Id(),
-			Certificate: &fastly.CustomTLSCertificate{ID: d.Get("certificate_id").(string)},
-		})
-		if err != nil {
-			return err
-		}
+	_, err := conn.UpdateTLSActivation(&fastly.UpdateTLSActivationInput{
+		ID:          d.Id(),
+		Certificate: &fastly.CustomTLSCertificate{ID: d.Get("certificate_id").(string)},
+	})
+	if err != nil {
+		return err
 	}
 
 	return resourceTLSActivationRead(d, meta)
@@ -114,6 +115,9 @@ func resourceTLSActivationDelete(d *schema.ResourceData, meta interface{}) error
 	err := conn.DeleteTLSActivation(&fastly.DeleteTLSActivationInput{
 		ID: d.Id(),
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
