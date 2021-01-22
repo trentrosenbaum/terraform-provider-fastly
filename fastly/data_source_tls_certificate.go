@@ -20,29 +20,33 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 				Computed:    true,
 			},
 			"name": {
-				Type:        schema.TypeString,
-				Description: "Human-readable name used to identify the certificate",
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Description:   "Human-readable name used to identify the certificate",
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"id"},
 			},
 			"issued_to": {
-				Type:        schema.TypeString,
-				Description: "The hostname for which a certificate was issued",
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Description:   "The hostname for which a certificate was issued",
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"id"},
 			},
 			"domains": {
-				Type:        schema.TypeSet,
-				Description: "Domains that are listed in any certificate's Subject Alternative Names (SAN) list",
-				Optional:    true,
-				Computed:    true,
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				Type:          schema.TypeSet,
+				Description:   "Domains that are listed in any certificate's Subject Alternative Names (SAN) list",
+				Optional:      true,
+				Computed:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"id"},
 			},
 			"issuer": {
-				Type:        schema.TypeString,
-				Description: "The certificate authority that issued the certificate",
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Description:   "The certificate authority that issued the certificate",
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"id"},
 			},
 			"created_at": {
 				Type:        schema.TypeString,
@@ -76,22 +80,35 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	filters := getTLSCertificateFilters(d)
+	var certificate *fastly.CustomTLSCertificate
 
-	certificates, err := listTLSCertificates(conn, filters...)
-	if err != nil {
-		return err
+	if v, ok := d.GetOk("id"); ok {
+		cert, err := conn.GetCustomTLSCertificate(&fastly.GetCustomTLSCertificateInput{
+			ID: v.(string),
+		})
+		if err != nil {
+			return err
+		}
+
+		certificate = cert
+	} else {
+		filters := getTLSCertificateFilters(d)
+
+		certificates, err := listTLSCertificates(conn, filters...)
+		if err != nil {
+			return err
+		}
+
+		if len(certificates) == 0 {
+			return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+		}
+
+		if len(certificates) > 1 {
+			return fmt.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
+		}
+
+		certificate = certificates[0]
 	}
-
-	if len(certificates) == 0 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	if len(certificates) > 1 {
-		return fmt.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
-	}
-
-	certificate := certificates[0]
 
 	return dataSourceFastlyTLSCertificateSetAttributes(certificate, d)
 }
