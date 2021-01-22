@@ -22,6 +22,7 @@ data "fastly_tls_certificate" "example" {
 
 ~> **Warning:** The data source's filters are applied using an **AND** boolean operator, so depending on the combination of filters, they may become mutually exclusive.
 
+* `id` - (Optional) Unique ID assigned to certificate by Fastly
 * `name` - (Optional) Human-readable name used to identify the certificate
 * `issued_to` - (Optional) The hostname for which a certificate was issued
 * `domains` - (Optional) Domains that are listed in any certificate's Subject Alternative Names (SAN) list
