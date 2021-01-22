@@ -47,7 +47,7 @@ func dataSourceFastlyTLSActivation() *schema.Resource {
 
 func dataSourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{}) error {
 
-	activations, err := locateActivation(d, meta)
+	activations, err := locateActivations(d, meta)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func dataSourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{})
 	return err
 }
 
-func locateActivation(d *schema.ResourceData, meta interface{}) ([]*fastly.TLSActivation, error) {
+func locateActivations(d *schema.ResourceData, meta interface{}) ([]*fastly.TLSActivation, error) {
 	conn := meta.(*FastlyClient).conn
 
 	var activations = make([]*fastly.TLSActivation, 0)
