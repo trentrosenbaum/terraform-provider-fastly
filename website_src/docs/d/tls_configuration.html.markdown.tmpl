@@ -25,7 +25,7 @@ resource "fastly_tls_activation" "example" {
 
 ## Argument Reference
 
-~> **Warning:** The data source's filters are applied using an **AND** boolean operator, so depending on the combination of filters, they may become mutually exclusive. The `configuration_id` filter is excluded from this as it overrides the others.
+~> **Warning:** The data source's filters are applied using an **AND** boolean operator, so depending on the combination of filters, they may become mutually exclusive.
 
 * `id` - (Optional) ID of the TLS configuration obtained from the Fastly API or another data source. Overrides any other filters
 * `name` - (Optional) Custom name of the TLS configuration 
