@@ -16,7 +16,7 @@ func dataSourceTLSPrivateKey() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				Description: "",
+				Description: "Fastly private key ID",
 			},
 			"name": {
 				Type:        schema.TypeString,

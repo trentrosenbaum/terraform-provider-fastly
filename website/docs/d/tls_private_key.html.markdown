@@ -25,10 +25,10 @@ output "private_key_needs_replacing" {
 ## Arguments Reference
 
 * `id` - (Optional) Fastly private key ID
-* `name` - The human-readable name assigned to the private key when uploaded.
-* `key_length` - The key length used to generate the private key.
-* `key_type` - The algorithm used to generate the private key. Must be RSA.
-* `public_key_sha1` - A hash of the associated public key useful for safely identifying the key.
+* `name` - (Optional) The human-readable name assigned to the private key when uploaded.
+* `key_length` - (Optional) The key length used to generate the private key.
+* `key_type` - (Optional) The algorithm used to generate the private key. Must be RSA.
+* `public_key_sha1` - (Optional) A hash of the associated public key useful for safely identifying the key.
 
 ~> **Note:** If more or less than a single match is returned by the search, Terraform will fail. Ensure that your search is specific enough to return a single key.
 
