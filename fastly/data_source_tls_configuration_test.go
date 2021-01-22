@@ -33,3 +33,31 @@ data "fastly_tls_configuration" "subject" {
   tls_service = "CUSTOM"
 }
 `
+
+func TestAccFastlyDataSourceTLSConfigurationWithPlural(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccFastlyDataSourceTLSConfigurationWithPlural,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "name"),
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "tls_protocols.#"),
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "http_protocols.#"),
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "tls_service"),
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "default"),
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "created_at"),
+					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "updated_at"),
+				),
+			},
+		},
+	})
+}
+
+const testAccFastlyDataSourceTLSConfigurationWithPlural = `
+data "fastly_tls_configuration_ids" "test" {}
+data "fastly_tls_configuration" "subject" {
+  configuration_id = data.fastly_tls_configuration_ids.test.ids[0]
+}
+`
