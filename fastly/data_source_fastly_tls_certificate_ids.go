@@ -1,7 +1,8 @@
 package fastly
 
 import (
-	"github.com/fastly/go-fastly/v2/fastly"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -23,27 +24,21 @@ func dataSourceFastlyTLSCertificateIDs() *schema.Resource {
 func dataSourceFastlyTLSCertificateIDsRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	var certificateIDs []string
-	pageNumber := 1
-	for {
-		list, err := conn.ListCustomTLSCertificates(&fastly.ListCustomTLSCertificatesInput{
-			PageNumber: pageNumber,
-		})
-		if err != nil {
-			return err
-		}
-		if len(list) == 0 {
-			break
-		}
-		pageNumber++
-
-		for _, certificate := range list {
-			certificateIDs = append(certificateIDs, certificate.ID)
-		}
+	certificates, err := listTLSCertificates(conn)
+	if err != nil {
+		return err
 	}
 
-	d.SetId("all") // FIXME: use something more robust when there are some filters
-	err := d.Set("ids", certificateIDs)
+	var ids []string
+	for _, certificate := range certificates {
+		ids = append(ids, certificate.ID)
+	}
+
+	// 2.x upgrade note - `hashcode.String` was removed from the SDK
+	// Code will need to be copied into this repository
+	// https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html#removal-of-helper-hashcode-package
+	d.SetId(fmt.Sprintf("%d", hashcode.String(""))) // hashCode should include any filters set when they are added
+	err = d.Set("ids", ids)
 	if err != nil {
 		return err
 	}

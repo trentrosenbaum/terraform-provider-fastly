@@ -13,6 +13,12 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 		Read: dataSourceFastlyTLSCertificateRead,
 
 		Schema: map[string]*schema.Schema{
+			"id": {
+				Type:        schema.TypeString,
+				Description: "Unique ID assigned to certificate by Fastly",
+				Optional:    true,
+				Computed:    true,
+			},
 			"name": {
 				Type:        schema.TypeString,
 				Description: "Human-readable name used to identify the certificate",
@@ -70,8 +76,36 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	var filters []func(certificate *fastly.CustomTLSCertificate) bool
+	filters := getTLSCertificateFilters(d)
 
+	certificates, err := listTLSCertificates(conn, filters...)
+	if err != nil {
+		return err
+	}
+
+	if len(certificates) == 0 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	}
+
+	if len(certificates) > 1 {
+		return fmt.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
+	}
+
+	certificate := certificates[0]
+
+	return dataSourceFastlyTLSCertificateSetAttributes(certificate, d)
+}
+
+type TLSCertificatePredicate func(*fastly.CustomTLSCertificate) bool
+
+func getTLSCertificateFilters(d *schema.ResourceData) []TLSCertificatePredicate {
+	var filters []TLSCertificatePredicate
+
+	if v, ok := d.GetOk("id"); ok {
+		filters = append(filters, func(c *fastly.CustomTLSCertificate) bool {
+			return c.ID == v.(string)
+		})
+	}
 	if v, ok := d.GetOk("name"); ok {
 		filters = append(filters, func(c *fastly.CustomTLSCertificate) bool {
 			return c.Name == v.(string)
@@ -99,6 +133,10 @@ func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}
 		})
 	}
 
+	return filters
+}
+
+func listTLSCertificates(conn *fastly.Client, filters ...TLSCertificatePredicate) ([]*fastly.CustomTLSCertificate, error) {
 	var certificates []*fastly.CustomTLSCertificate
 	pageNumber := 1
 	for {
@@ -107,7 +145,7 @@ func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}
 			PageSize:   10,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if len(list) == 0 {
 			break
@@ -121,44 +159,38 @@ func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	if len(certificates) == 0 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
+	return certificates, nil
+}
 
-	if len(certificates) > 1 {
-		return fmt.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
-	}
-
-	cert := certificates[0]
-
+func dataSourceFastlyTLSCertificateSetAttributes(certificate *fastly.CustomTLSCertificate, d *schema.ResourceData) error {
 	var domains []string
-	for _, domain := range cert.TLSDomains {
+	for _, domain := range certificate.TLSDomains {
 		domains = append(domains, domain.ID)
 	}
 
-	d.SetId(cert.ID)
-	if err := d.Set("name", cert.Name); err != nil {
+	d.SetId(certificate.ID)
+	if err := d.Set("name", certificate.Name); err != nil {
 		return err
 	}
-	if err := d.Set("created_at", cert.CreatedAt.Format(time.RFC3339)); err != nil {
+	if err := d.Set("created_at", certificate.CreatedAt.Format(time.RFC3339)); err != nil {
 		return err
 	}
-	if err := d.Set("updated_at", cert.UpdatedAt.Format(time.RFC3339)); err != nil {
+	if err := d.Set("updated_at", certificate.UpdatedAt.Format(time.RFC3339)); err != nil {
 		return err
 	}
-	if err := d.Set("issued_to", cert.IssuedTo); err != nil {
+	if err := d.Set("issued_to", certificate.IssuedTo); err != nil {
 		return err
 	}
-	if err := d.Set("issuer", cert.Issuer); err != nil {
+	if err := d.Set("issuer", certificate.Issuer); err != nil {
 		return err
 	}
-	if err := d.Set("replace", cert.Replace); err != nil {
+	if err := d.Set("replace", certificate.Replace); err != nil {
 		return err
 	}
-	if err := d.Set("serial_number", cert.SerialNumber); err != nil {
+	if err := d.Set("serial_number", certificate.SerialNumber); err != nil {
 		return err
 	}
-	if err := d.Set("signature_algorithm", cert.SignatureAlgorithm); err != nil {
+	if err := d.Set("signature_algorithm", certificate.SignatureAlgorithm); err != nil {
 		return err
 	}
 	if err := d.Set("domains", domains); err != nil {
@@ -168,7 +200,7 @@ func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func filterTLSCertificate(config *fastly.CustomTLSCertificate, filters []func(*fastly.CustomTLSCertificate) bool) bool {
+func filterTLSCertificate(config *fastly.CustomTLSCertificate, filters []TLSCertificatePredicate) bool {
 	for _, f := range filters {
 		if !f(config) {
 			return false
