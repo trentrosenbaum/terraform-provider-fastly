@@ -7,6 +7,7 @@ import (
 )
 
 func TestAccFastlyDataSourceTLSConfiguration(t *testing.T) {
+	resourceName := "data.fastly_tls_configuration.subject"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -14,13 +15,14 @@ func TestAccFastlyDataSourceTLSConfiguration(t *testing.T) {
 			{
 				Config: testAccFastlyDataSourceTLSConfiguration,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "name"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "tls_protocols.#"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "http_protocols.#"),
-					resource.TestCheckResourceAttr("data.fastly_tls_configuration.subject", "tls_service", "CUSTOM"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "default"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "created_at"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "updated_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name"),
+					resource.TestCheckResourceAttrSet(resourceName, "tls_protocols.#"),
+					resource.TestCheckResourceAttrSet(resourceName, "http_protocols.#"),
+					resource.TestCheckResourceAttr(resourceName, "tls_service", "CUSTOM"),
+					resource.TestCheckResourceAttrSet(resourceName, "default"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
 				),
 			},
 		},
@@ -35,6 +37,7 @@ data "fastly_tls_configuration" "subject" {
 `
 
 func TestAccFastlyDataSourceTLSConfigurationWithPlural(t *testing.T) {
+	resourceName := "data.fastly_tls_configuration.subject"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -42,13 +45,14 @@ func TestAccFastlyDataSourceTLSConfigurationWithPlural(t *testing.T) {
 			{
 				Config: testAccFastlyDataSourceTLSConfigurationWithPlural,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "name"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "tls_protocols.#"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "http_protocols.#"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "tls_service"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "default"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "created_at"),
-					resource.TestCheckResourceAttrSet("data.fastly_tls_configuration.subject", "updated_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "name"),
+					resource.TestCheckResourceAttrSet(resourceName, "tls_protocols.#"),
+					resource.TestCheckResourceAttrSet(resourceName, "http_protocols.#"),
+					resource.TestCheckResourceAttrSet(resourceName, "tls_service"),
+					resource.TestCheckResourceAttrSet(resourceName, "default"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
 				),
 			},
 		},
@@ -58,6 +62,6 @@ func TestAccFastlyDataSourceTLSConfigurationWithPlural(t *testing.T) {
 const testAccFastlyDataSourceTLSConfigurationWithPlural = `
 data "fastly_tls_configuration_ids" "test" {}
 data "fastly_tls_configuration" "subject" {
-  configuration_id = data.fastly_tls_configuration_ids.test.ids[0]
+  id = data.fastly_tls_configuration_ids.test.ids[0]
 }
 `

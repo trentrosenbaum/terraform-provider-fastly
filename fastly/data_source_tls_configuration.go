@@ -14,7 +14,7 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 		Read: dataSourceFastlyTLSConfigurationRead,
 
 		Schema: map[string]*schema.Schema{
-			"configuration_id": {
+			"id": {
 				Type:        schema.TypeString,
 				Description: "Unique ID of the configuration",
 				Optional:    true,
@@ -75,11 +75,34 @@ const (
 func dataSourceFastlyTLSConfigurationRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	if _, ok := d.GetOk("configuration_id"); ok {
-		return dataSourceFastlyTLSConfigurationGetSingle(d, meta)
+	filters := getTLSConfigurationFilters(d)
+
+	configurations, err := listTLSConfigurations(conn, filters...)
+	if err != nil {
+		return err
 	}
 
+	if len(configurations) == 0 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	}
+
+	if len(configurations) > 1 {
+		return fmt.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
+	}
+
+	configuration := configurations[0]
+
+	return dataSourceFastlyTLSConfigurationSetAttributes(configuration, d)
+}
+
+func getTLSConfigurationFilters(d *schema.ResourceData) []func(*fastly.CustomTLSConfiguration) bool {
 	var filters []func(*fastly.CustomTLSConfiguration) bool
+
+	if v, ok := d.GetOk("id"); ok {
+		filters = append(filters, func(c *fastly.CustomTLSConfiguration) bool {
+			return c.ID == v.(string)
+		})
+	}
 
 	if v, ok := d.GetOk("name"); ok {
 		filters = append(filters, func(c *fastly.CustomTLSConfiguration) bool {
@@ -111,6 +134,10 @@ func dataSourceFastlyTLSConfigurationRead(d *schema.ResourceData, meta interface
 		})
 	}
 
+	return filters
+}
+
+func listTLSConfigurations(conn *fastly.Client, filters ...func(*fastly.CustomTLSConfiguration) bool) ([]*fastly.CustomTLSConfiguration, error) {
 	var configurations []*fastly.CustomTLSConfiguration
 	cursor := 0
 	for {
@@ -118,7 +145,7 @@ func dataSourceFastlyTLSConfigurationRead(d *schema.ResourceData, meta interface
 			PageNumber: cursor,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if len(list) == 0 {
 			break
@@ -131,31 +158,7 @@ func dataSourceFastlyTLSConfigurationRead(d *schema.ResourceData, meta interface
 			}
 		}
 	}
-
-	if len(configurations) == 0 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
-	}
-
-	if len(configurations) > 1 {
-		return fmt.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
-	}
-
-	configuration := configurations[0]
-
-	return dataSourceFastlyTLSConfigurationSetAttributes(configuration, d)
-}
-
-func dataSourceFastlyTLSConfigurationGetSingle(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*FastlyClient).conn
-
-	configuration, err := conn.GetCustomTLSConfiguration(&fastly.GetCustomTLSConfigurationInput{
-		ID: d.Get("configuration_id").(string),
-	})
-	if err != nil {
-		return err
-	}
-
-	return dataSourceFastlyTLSConfigurationSetAttributes(configuration, d)
+	return configurations, nil
 }
 
 func dataSourceFastlyTLSConfigurationSetAttributes(configuration *fastly.CustomTLSConfiguration, d *schema.ResourceData) error {
@@ -165,6 +168,9 @@ func dataSourceFastlyTLSConfigurationSetAttributes(configuration *fastly.CustomT
 	}
 
 	d.SetId(configuration.ID)
+	if err := d.Set("id", configuration.ID); err != nil {
+		return err
+	}
 	if err := d.Set("name", configuration.Name); err != nil {
 		return err
 	}
