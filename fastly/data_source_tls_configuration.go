@@ -168,9 +168,6 @@ func dataSourceFastlyTLSConfigurationSetAttributes(configuration *fastly.CustomT
 	}
 
 	d.SetId(configuration.ID)
-	if err := d.Set("id", configuration.ID); err != nil {
-		return err
-	}
 	if err := d.Set("name", configuration.Name); err != nil {
 		return err
 	}
