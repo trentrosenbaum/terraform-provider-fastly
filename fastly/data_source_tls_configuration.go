@@ -14,6 +14,12 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 		Read: dataSourceFastlyTLSConfigurationRead,
 
 		Schema: map[string]*schema.Schema{
+			"configuration_id": {
+				Type:        schema.TypeString,
+				Description: "Unique ID of the configuration",
+				Optional:    true,
+				Computed:    true,
+			},
 			"name": {
 				Type:        schema.TypeString,
 				Description: "Custom name of the TLS configuration",
@@ -68,6 +74,10 @@ const (
 
 func dataSourceFastlyTLSConfigurationRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
+
+	if _, ok := d.GetOk("configuration_id"); ok {
+		return dataSourceFastlyTLSConfigurationGetSingle(d, meta)
+	}
 
 	var filters []func(*fastly.CustomTLSConfiguration) bool
 
@@ -132,6 +142,23 @@ func dataSourceFastlyTLSConfigurationRead(d *schema.ResourceData, meta interface
 
 	configuration := configurations[0]
 
+	return dataSourceFastlyTLSConfigurationSetAttributes(configuration, d)
+}
+
+func dataSourceFastlyTLSConfigurationGetSingle(d *schema.ResourceData, meta interface{}) error {
+	conn := meta.(*FastlyClient).conn
+
+	configuration, err := conn.GetCustomTLSConfiguration(&fastly.GetCustomTLSConfigurationInput{
+		ID: d.Get("configuration_id").(string),
+	})
+	if err != nil {
+		return err
+	}
+
+	return dataSourceFastlyTLSConfigurationSetAttributes(configuration, d)
+}
+
+func dataSourceFastlyTLSConfigurationSetAttributes(configuration *fastly.CustomTLSConfiguration, d *schema.ResourceData) error {
 	tlsService := tlsCustomService
 	if configuration.Bulk {
 		tlsService = tlsPlatformService
