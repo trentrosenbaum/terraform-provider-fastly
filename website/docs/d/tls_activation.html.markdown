@@ -19,7 +19,7 @@ data "fastly_tls_activation" "example" {
 ```
 
 ## Argument Reference
-
+* `id` - (Optional) Fastly Activation ID
 * `certificate_id` - (Optional) ID of the TLS Certificate used
 * `configuration_id` - (Optional) ID of the TLS Configuration used.
 * `domain` - (Optional) Domain that TLS was enabled on.

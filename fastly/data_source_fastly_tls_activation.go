@@ -11,6 +11,12 @@ func dataSourceFastlyTLSActivation() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceFastlyTLSActivationRead,
 		Schema: map[string]*schema.Schema{
+			"id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "ID of TLS activation.",
+			},
 			"certificate_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -40,21 +46,8 @@ func dataSourceFastlyTLSActivation() *schema.Resource {
 }
 
 func dataSourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*FastlyClient).conn
 
-	var filters fastly.ListTLSActivationsInput
-
-	if v, ok := d.GetOk("certificate_id"); ok {
-		filters.FilterTLSCertificateID = v.(string)
-	}
-	if v, ok := d.GetOk("configuration_id"); ok {
-		filters.FilterTLSConfigurationID = v.(string)
-	}
-	if v, ok := d.GetOk("domain"); ok {
-		filters.FilterTLSDomainID = v.(string)
-	}
-
-	activations, err := conn.ListTLSActivations(&filters)
+	activations, err := locateActivation(d, meta)
 	if err != nil {
 		return err
 	}
@@ -85,4 +78,43 @@ func dataSourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{})
 	err = d.Set("created_at", activation.CreatedAt.Format(time.RFC3339))
 
 	return err
+}
+
+func locateActivation(d *schema.ResourceData, meta interface{}) ([]*fastly.TLSActivation, error) {
+	conn := meta.(*FastlyClient).conn
+
+	var activations = make([]*fastly.TLSActivation, 0)
+
+	if v, ok := d.GetOk("id"); ok {
+
+		foundActivation, err := conn.GetTLSActivation(&fastly.GetTLSActivationInput{
+			ID: v.(string),
+		})
+		if err != nil {
+			return nil, err
+		}
+		activations = append(activations, foundActivation)
+
+	} else {
+
+		var filters fastly.ListTLSActivationsInput
+
+		if v, ok := d.GetOk("certificate_id"); ok {
+			filters.FilterTLSCertificateID = v.(string)
+		}
+		if v, ok := d.GetOk("configuration_id"); ok {
+			filters.FilterTLSConfigurationID = v.(string)
+		}
+		if v, ok := d.GetOk("domain"); ok {
+			filters.FilterTLSDomainID = v.(string)
+		}
+
+		foundActivations, err := conn.ListTLSActivations(&filters)
+		if err != nil {
+			return nil, err
+		}
+		activations = append(activations, foundActivations...)
+	}
+
+	return activations, nil
 }
