@@ -2,15 +2,22 @@ package fastly
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"time"
 )
 
 func dataSourceTLSPrivateKey() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceTLSPrivateKeyRead,
 		Schema: map[string]*schema.Schema{
+			"id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "",
+			},
 			"name": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -56,6 +63,11 @@ func dataSourceTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error
 
 	var filters []func(*fastly.PrivateKey) bool
 
+	if v, ok := d.GetOk("id"); ok {
+		filters = append(filters, func(key *fastly.PrivateKey) bool {
+			return key.ID == v.(string)
+		})
+	}
 	if v, ok := d.GetOk("name"); ok {
 		filters = append(filters, func(key *fastly.PrivateKey) bool {
 			return key.Name == v.(string)
@@ -77,25 +89,9 @@ func dataSourceTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error
 		})
 	}
 
-	var privateKeys []*fastly.PrivateKey
-	pageNumber := 1
-	for {
-		list, err := conn.ListPrivateKeys(&fastly.ListPrivateKeysInput{
-			PageNumber: pageNumber,
-		})
-		if err != nil {
-			return err
-		}
-		if len(list) == 0 {
-			break
-		}
-		pageNumber++
-
-		for _, privateKey := range list {
-			if filterPrivateKey(privateKey, filters) {
-				privateKeys = append(privateKeys, privateKey)
-			}
-		}
+	privateKeys, err := listTLSPrivateKeys(conn, filters...)
+	if err != nil {
+		return err
 	}
 
 	if len(privateKeys) == 0 {
@@ -109,7 +105,7 @@ func dataSourceTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error
 	privateKey := privateKeys[0]
 
 	d.SetId(privateKey.ID)
-	err := d.Set("name", privateKey.Name)
+	err = d.Set("name", privateKey.Name)
 	if err != nil {
 		return err
 	}
@@ -134,6 +130,30 @@ func dataSourceTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 	return nil
+}
+
+func listTLSPrivateKeys(conn *fastly.Client, filters ...func(*fastly.PrivateKey) bool) ([]*fastly.PrivateKey, error) {
+	var privateKeys []*fastly.PrivateKey
+	pageNumber := 1
+	for {
+		list, err := conn.ListPrivateKeys(&fastly.ListPrivateKeysInput{
+			PageNumber: pageNumber,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(list) == 0 {
+			break
+		}
+		pageNumber++
+
+		for _, privateKey := range list {
+			if filterPrivateKey(privateKey, filters) {
+				privateKeys = append(privateKeys, privateKey)
+			}
+		}
+	}
+	return privateKeys, nil
 }
 
 func filterPrivateKey(privateKey *fastly.PrivateKey, filters []func(*fastly.PrivateKey) bool) bool {
