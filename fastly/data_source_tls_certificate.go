@@ -14,10 +14,11 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"id": {
-				Type:        schema.TypeString,
-				Description: "Unique ID assigned to certificate by Fastly",
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Description:   "Unique ID assigned to certificate by Fastly",
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name", "issued_to", "domains", "issuer"},
 			},
 			"name": {
 				Type:          schema.TypeString,
