@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
@@ -16,8 +17,7 @@ func TestAccDataSourceFastlyTLSActivationIdsBasic(t *testing.T) {
 	key = strings.ReplaceAll(key, "\n", `\n`)
 	cert = strings.ReplaceAll(cert, "\n", `\n`)
 
-	datasourceName := "data.fastly_tls_activation_ids.test"
-	activationDatasourceName := "data.fastly_tls_activation.test"
+	datasourceName := "data.fastly_tls_activation_ids.subject"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -26,14 +26,32 @@ func TestAccDataSourceFastlyTLSActivationIdsBasic(t *testing.T) {
 				Config: testAccDataSourceFastlyTLSActivationIdsConfig(key, cert, domain),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(datasourceName, "ids.#", "1"),
-					resource.TestCheckResourceAttrSet(activationDatasourceName, "certificate_id"),
-					resource.TestCheckResourceAttrSet(activationDatasourceName, "configuration_id"),
-					resource.TestCheckResourceAttr(activationDatasourceName, "domain", domain),
-					resource.TestCheckResourceAttrSet(activationDatasourceName, "created_at"),
+					testAccTLSActivationIDIncluded(datasourceName, "fastly_tls_activation.test"),
 				),
 			},
 		},
 	})
+}
+
+func testAccTLSActivationIDIncluded(dataSourceName string, resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		r := s.RootModule().Resources[resourceName]
+		d := s.RootModule().Resources[dataSourceName]
+
+		for k, v := range d.Primary.Attributes {
+			if k == "ids.#" {
+				continue
+			}
+			if !strings.HasPrefix(k, "ids.") {
+				continue
+			}
+			if v == r.Primary.ID {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("unable to find private key %s in list of private key ids", r.Primary.ID)
+	}
 }
 
 func testAccDataSourceFastlyTLSActivationIdsConfig(key, cert, domain string) string {
@@ -73,13 +91,10 @@ resource "fastly_tls_activation" "test" {
   depends_on = [fastly_service_v1.test]
 }
 
-data "fastly_tls_activation_ids" "test" {
+data "fastly_tls_activation_ids" "subject" {
   certificate_id = fastly_tls_activation.test.certificate_id
 }
 
-data "fastly_tls_activation" "test" {
-  id = tolist(data.fastly_tls_activation_ids.test.ids)[0]
-}
 `,
 		name,
 		domain,
