@@ -29,15 +29,29 @@ func dataSourceFastlyTLSActivationIds() *schema.Resource {
 func dataSourceFastlyTLSActivationIdsRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	var filters fastly.ListTLSActivationsInput
+	var certificateID string
 
 	if v, ok := d.GetOk("certificate_id"); ok {
-		filters.FilterTLSCertificateID = v.(string)
+		certificateID = v.(string)
 	}
 
-	activations, err := conn.ListTLSActivations(&filters)
-	if err != nil {
-		return err
+	var activations []*fastly.TLSActivation
+	pageNumber := 1
+	for {
+		list, err := conn.ListTLSActivations(&fastly.ListTLSActivationsInput{
+			FilterTLSCertificateID: certificateID,
+			PageNumber:             pageNumber,
+			PageSize:               10,
+		})
+		if err != nil {
+			return err
+		}
+		if len(list) == 0 {
+			break
+		}
+		pageNumber++
+
+		activations = append(activations, list...)
 	}
 
 	if len(activations) == 0 {
@@ -50,8 +64,8 @@ func dataSourceFastlyTLSActivationIdsRead(d *schema.ResourceData, meta interface
 		activationIds = append(activationIds, activation.ID)
 	}
 
-	d.SetId(fmt.Sprintf("%d", hashcode.String(filters.FilterTLSCertificateID)))
+	d.SetId(fmt.Sprintf("%d", hashcode.String(certificateID)))
 	d.Set("ids", activationIds)
 
-	return err
+	return nil
 }
