@@ -12,36 +12,36 @@ func dataSourceFastlyTLSActivation() *schema.Resource {
 		Read: dataSourceFastlyTLSActivationRead,
 		Schema: map[string]*schema.Schema{
 			"id": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
-				Description: "ID of TLS activation.",
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Description:   "ID of TLS activation.",
+				ConflictsWith: []string{"certificate_id", "configuration_id", "domain"},
 			},
 			"certificate_id": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"id"},
-				Description: "ID of TLS certificate to enable.",
+				Description:   "ID of TLS certificate to enable.",
 			},
 			"configuration_id": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"id"},
-				Description: "ID of TLS configuration to be used to terminate TLS traffic, or use the default one if missing.",
+				Description:   "ID of TLS configuration to be used to terminate TLS traffic, or use the default one if missing.",
 			},
 			"domain": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"id"},
-				Description: "Domain to enable TLS traffic on.",
+				Description:   "Domain to enable TLS traffic on.",
 			},
 			"created_at": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				ConflictsWith: []string{"id"},
 				Description: "Time-stamp (GMT) when TLS was enabled.",
 			},
 		},
@@ -50,43 +50,9 @@ func dataSourceFastlyTLSActivation() *schema.Resource {
 
 func dataSourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{}) error {
 
-	activations, err := locateActivations(d, meta)
-	if err != nil {
-		return err
-	}
-
-	if len(activations) == 0 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again")
-	}
-
-	if len(activations) > 1 {
-		return fmt.Errorf("Your query returned more than one result. Please change to a more specific search criteria")
-	}
-
-	activation := activations[0]
-
-	d.SetId(activation.ID)
-	err = d.Set("certificate_id", activation.Certificate.ID)
-	if err != nil {
-		return err
-	}
-	err = d.Set("configuration_id", activation.Configuration.ID)
-	if err != nil {
-		return err
-	}
-	err = d.Set("domain", activation.Domain.ID)
-	if err != nil {
-		return err
-	}
-	err = d.Set("created_at", activation.CreatedAt.Format(time.RFC3339))
-
-	return err
-}
-
-func locateActivations(d *schema.ResourceData, meta interface{}) ([]*fastly.TLSActivation, error) {
 	conn := meta.(*FastlyClient).conn
 
-	var activations = make([]*fastly.TLSActivation, 0)
+	var activation *fastly.TLSActivation
 
 	if v, ok := d.GetOk("id"); ok {
 
@@ -94,30 +60,113 @@ func locateActivations(d *schema.ResourceData, meta interface{}) ([]*fastly.TLSA
 			ID: v.(string),
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
-		activations = append(activations, foundActivation)
+		activation = foundActivation
 
 	} else {
 
-		var filters fastly.ListTLSActivationsInput
+		filters := getTLSActivationFilters(d)
 
-		if v, ok := d.GetOk("certificate_id"); ok {
-			filters.FilterTLSCertificateID = v.(string)
-		}
-		if v, ok := d.GetOk("configuration_id"); ok {
-			filters.FilterTLSConfigurationID = v.(string)
-		}
-		if v, ok := d.GetOk("domain"); ok {
-			filters.FilterTLSDomainID = v.(string)
+		activations, err := listTLSActivations(conn, filters...)
+		if err != nil {
+			return err
 		}
 
-		foundActivations, err := conn.ListTLSActivations(&filters)
+		if len(activations) == 0 {
+			return fmt.Errorf("Your query returned no results. Please change your search criteria and try again")
+		}
+
+		if len(activations) > 1 {
+			return fmt.Errorf("Your query returned more than one result. Please change to a more specific search criteria")
+		}
+
+		activation = activations[0]
+	}
+
+	return dataSourceFastlyTLSActivationSetAttributes(activation, d)
+}
+
+type TLSActivationPredicate func(activation *fastly.TLSActivation) bool
+
+func getTLSActivationFilters(d *schema.ResourceData) []TLSActivationPredicate {
+	var filters []TLSActivationPredicate
+
+	if v, ok := d.GetOk("id"); ok {
+		filters = append(filters, func(c *fastly.TLSActivation) bool {
+			return c.ID == v.(string)
+		})
+	}
+	if v, ok := d.GetOk("certificate_id"); ok {
+		filters = append(filters, func(c *fastly.TLSActivation) bool {
+			return c.Certificate.ID == v.(string)
+		})
+	}
+	if v, ok := d.GetOk("configuration_id"); ok {
+		filters = append(filters, func(c *fastly.TLSActivation) bool {
+			return c.Configuration.ID == v.(string)
+		})
+	}
+	if v, ok := d.GetOk("domain"); ok {
+		filters = append(filters, func(c *fastly.TLSActivation) bool {
+			return c.Domain.ID == v.(string)
+		})
+	}
+
+	return filters
+}
+
+func listTLSActivations(conn *fastly.Client, filters ...TLSActivationPredicate) ([]*fastly.TLSActivation, error) {
+	var activations []*fastly.TLSActivation
+	pageNumber := 1
+	for {
+		list, err := conn.ListTLSActivations(&fastly.ListTLSActivationsInput{
+			PageNumber: pageNumber,
+			PageSize:   10,
+		})
 		if err != nil {
 			return nil, err
 		}
-		activations = append(activations, foundActivations...)
+		if len(list) == 0 {
+			break
+		}
+		pageNumber++
+
+		for _, activation := range list {
+			if filterTLSActivations(activation, filters) {
+				activations = append(activations, activation)
+			}
+		}
 	}
 
 	return activations, nil
+}
+
+func dataSourceFastlyTLSActivationSetAttributes(activation *fastly.TLSActivation, d *schema.ResourceData) error {
+
+	d.SetId(activation.ID)
+
+	if err := d.Set("certificate_id", activation.Certificate.ID); err != nil {
+		return err
+	}
+	if err := d.Set("configuration_id", activation.Configuration.ID); err != nil {
+		return err
+	}
+	if err := d.Set("domain", activation.Domain.ID); err != nil {
+		return err
+	}
+	if err := d.Set("created_at", activation.CreatedAt.Format(time.RFC3339)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func filterTLSActivations(config *fastly.TLSActivation, filters []TLSActivationPredicate) bool {
+	for _, f := range filters {
+		if !f(config) {
+			return false
+		}
+	}
+	return true
 }
