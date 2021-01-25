@@ -15,10 +15,11 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"id": {
-				Type:        schema.TypeString,
-				Description: "Unique ID of the configuration",
-				Optional:    true,
-				Computed:    true,
+				Type:          schema.TypeString,
+				Description:   "Unique ID of the configuration",
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name", "tls_protocols", "http_protocols", "tls_service", "default"},
 			},
 			"name": {
 				Type:          schema.TypeString,
