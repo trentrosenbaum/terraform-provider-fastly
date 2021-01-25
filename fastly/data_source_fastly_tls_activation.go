@@ -92,11 +92,6 @@ type TLSActivationPredicate func(activation *fastly.TLSActivation) bool
 func getTLSActivationFilters(d *schema.ResourceData) []TLSActivationPredicate {
 	var filters []TLSActivationPredicate
 
-	if v, ok := d.GetOk("id"); ok {
-		filters = append(filters, func(c *fastly.TLSActivation) bool {
-			return c.ID == v.(string)
-		})
-	}
 	if v, ok := d.GetOk("certificate_id"); ok {
 		filters = append(filters, func(c *fastly.TLSActivation) bool {
 			return c.Certificate.ID == v.(string)
