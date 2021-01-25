@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestAccDataSourceFastlyTLSActivationBasic(t *testing.T) {
+func TestAccDataSourceFastlyTLSActivation_basic(t *testing.T) {
 	domain := fmt.Sprintf("tf-test-%s.com", acctest.RandomWithPrefix("tf-test-"))
 	key, cert, err := generateKeyAndCert(domain)
 	require.NoError(t, err)
