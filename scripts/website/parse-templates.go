@@ -60,6 +60,10 @@ func main() {
 			path: docsDir + "docs/d/tls_certificate_ids.html.markdown",
 		},
 		{
+			name: "tls_domain",
+			path: docsDir + "docs/d/tls_domain.html.markdown",
+		},
+		{
 			name: "waf_rules",
 			path: docsDir + "docs/d/waf_rules.html.markdown",
 		},

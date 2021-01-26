@@ -26,14 +26,14 @@ func TestAccFastlyDataSourceTLSPrivateKeyIds_basic(t *testing.T) {
 			},
 			{
 				Config: testAccFastlyDataSourceTLSPrivateKeyIdsConfigTestKeyWithData(key, name),
-				Check:  testAccTLSCPrivateKeyIDIncluded("data.fastly_tls_private_key_ids.subject", "fastly_tls_private_key.test"),
+				Check:  testAccTLSPrivateKeyIDIncluded("data.fastly_tls_private_key_ids.subject", "fastly_tls_private_key.test"),
 			},
 		},
 	})
 }
 
 // This can be replaced with `TestCheckTypeSetElemNestedAttrs` when using SDK 2.x
-func testAccTLSCPrivateKeyIDIncluded(dataSourceName string, resourceName string) resource.TestCheckFunc {
+func testAccTLSPrivateKeyIDIncluded(dataSourceName string, resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		r := s.RootModule().Resources[resourceName]
 		d := s.RootModule().Resources[dataSourceName]
