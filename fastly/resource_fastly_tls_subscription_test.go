@@ -37,6 +37,11 @@ func TestAccResourceFastlyTLSSubscription(t *testing.T) {
 					testAccResourceFastlyTLSSubscriptionExists(resourceName),
 				),
 			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

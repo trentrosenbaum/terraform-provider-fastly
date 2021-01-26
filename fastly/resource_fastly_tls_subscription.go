@@ -11,6 +11,9 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 		Create: resourceFastlyTLSSubscriptionCreate,
 		Read:   resourceFastlyTLSSubscriptionRead,
 		Delete: resourceFastlyTLSSubscriptionDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough, // FIXME: might want to do something with adding a "subscription_validation" resource too
+		},
 		Schema: map[string]*schema.Schema{
 			"domains": {
 				Type:        schema.TypeList,
@@ -88,6 +91,18 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
+	var domains []string
+	for _, domain := range subscription.TLSDomains {
+		domains = append(domains, domain.ID)
+	}
+	err = d.Set("domains", domains)
+	if err != nil {
+		return err
+	}
+	err = d.Set("certificate_authority", subscription.CertificateAuthority)
+	if err != nil {
+		return err
+	}
 	err = d.Set("configuration_id", subscription.Configuration.ID)
 	if err != nil {
 		return err
