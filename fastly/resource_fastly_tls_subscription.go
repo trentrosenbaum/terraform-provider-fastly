@@ -1,9 +1,15 @@
 package fastly
 
-import "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+import (
+	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+)
 
 func resourceFastlyTLSSubscription() *schema.Resource {
 	return &schema.Resource{
+		Create: resourceFastlyTLSSubscriptionCreate,
+		Read:   resourceFastlyTLSSubscriptionRead,
+		Delete: resourceFastlyTLSSubscriptionDelete,
 		Schema: map[string]*schema.Schema{
 			"domains": {
 				Type:        schema.TypeList,
@@ -27,4 +33,58 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 			},
 		},
 	}
+}
+
+func resourceFastlyTLSSubscriptionCreate(d *schema.ResourceData, meta interface{}) error {
+	conn := meta.(*FastlyClient).conn
+
+	var configuration *fastly.TLSConfiguration
+	if v, ok := d.GetOk("configuration_id"); ok {
+		configuration = &fastly.TLSConfiguration{ID: v.(string)}
+	}
+
+	var domains []*fastly.TLSDomain
+	for _, domain := range d.Get("domains").([]interface{}) {
+		domains = append(domains, &fastly.TLSDomain{ID: domain.(string)})
+	}
+
+	subscription, err := conn.CreateTLSSubscription(&fastly.CreateTLSSubscriptionInput{
+		CertificateAuthority: d.Get("certificate_authority").(string),
+		Configuration:        configuration,
+		Domain:               domains,
+	})
+	if err != nil {
+		return err
+	}
+
+	d.SetId(subscription.ID)
+
+	return resourceFastlyTLSSubscriptionRead(d, meta)
+}
+
+func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
+	conn := meta.(*FastlyClient).conn
+
+	subscription, err := conn.GetTLSSubscription(&fastly.GetTLSSubscriptionInput{
+		ID: d.Id(),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = d.Set("configuration_id", subscription.Configuration.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func resourceFastlyTLSSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
+	conn := meta.(*FastlyClient).conn
+
+	err := conn.DeleteTLSSubscription(&fastly.DeleteTLSSubscriptionInput{
+		ID: d.Id(),
+	})
+	return err
 }
