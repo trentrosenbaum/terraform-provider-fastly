@@ -3,6 +3,7 @@ package fastly
 import (
 	"github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"time"
 )
 
@@ -21,12 +22,14 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 				Required:    true,
 				ForceNew:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
+				MinItems:    1,
 			},
 			"certificate_authority": {
-				Type:        schema.TypeString,
-				Description: "The entity that issues and certifies the TLS certificates for your subscription. Valid values are `lets-encrypt` or `globalsign`.",
-				Required:    true,
-				ForceNew:    true,
+				Type:         schema.TypeString,
+				Description:  "The entity that issues and certifies the TLS certificates for your subscription. Valid values are `lets-encrypt` or `globalsign`.",
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"lets-encrypt", "globalsign"}, false),
 			},
 			"configuration_id": {
 				Type:        schema.TypeString,

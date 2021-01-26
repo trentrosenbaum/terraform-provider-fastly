@@ -20,7 +20,7 @@ func init() {
 
 func TestAccResourceFastlyTLSSubscription(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	domain := fmt.Sprintf("%s.com", name)
+	domain := fmt.Sprintf("%s.test", name)
 
 	resourceName := "fastly_tls_subscription.subject"
 	resource.ParallelTest(t, resource.TestCase{
