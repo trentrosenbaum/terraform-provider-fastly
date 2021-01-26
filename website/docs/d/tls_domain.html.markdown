@@ -20,8 +20,6 @@ data "fastly_tls_domain" "example" {
 
 ## Argument Reference
 
-This data source has no arguments.
-
 * `domain` - (Required) Domain name
 
 ## Attribute Reference
