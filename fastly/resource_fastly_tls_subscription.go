@@ -3,6 +3,7 @@ package fastly
 import (
 	"github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"time"
 )
 
 func resourceFastlyTLSSubscription() *schema.Resource {
@@ -30,6 +31,21 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 				ForceNew:    true,
+			},
+			"created_at": {
+				Type:        schema.TypeString,
+				Description: "Timestamp (GMT) when the subscription was created.",
+				Computed:    true,
+			},
+			"updated_at": {
+				Type:        schema.TypeString,
+				Description: "Timestamp (GMT) when the subscription was updated.",
+				Computed:    true,
+			},
+			"state": {
+				Type:        schema.TypeString,
+				Description: "The current state of the subscription. The list of possible states are: `pending`, `processing`, `issued`, and `renewing`.",
+				Computed:    true,
 			},
 		},
 	}
@@ -73,6 +89,18 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 	}
 
 	err = d.Set("configuration_id", subscription.Configuration.ID)
+	if err != nil {
+		return err
+	}
+	err = d.Set("created_at", subscription.CreatedAt.Format(time.RFC3339))
+	if err != nil {
+		return err
+	}
+	err = d.Set("updated_at", subscription.UpdatedAt.Format(time.RFC3339))
+	if err != nil {
+		return err
+	}
+	err = d.Set("state", subscription.State)
 	if err != nil {
 		return err
 	}
