@@ -2,11 +2,20 @@ package fastly
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("fastly_tls_subscription", &resource.Sweeper{
+		Name: "fastly_tls_subscription",
+		F:    testSweepTLSSubscription,
+	})
+}
 
 func TestAccResourceFastlyTLSSubscription(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -44,4 +53,34 @@ resource "fastly_tls_subscription" "subject" {
   certificate_authority = "lets-encrypt"
 }
 `, name, domain)
+}
+
+func testSweepTLSSubscription(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	subscriptions, err := client.ListTLSSubscriptions(&fastly.ListTLSSubscriptionsInput{PageSize: 1000})
+	if err != nil {
+		return err
+	}
+
+	for _, subscription := range subscriptions {
+		for _, domain := range subscription.TLSDomains {
+			if !strings.HasPrefix(domain.ID, testResourcePrefix) {
+				continue
+			}
+
+			err = client.DeleteTLSSubscription(&fastly.DeleteTLSSubscriptionInput{
+				ID: subscription.ID,
+			})
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	return nil
 }
