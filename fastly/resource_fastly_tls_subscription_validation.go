@@ -34,21 +34,9 @@ const (
 func resourceFastlyTLSSubscriptionValidationCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
-	subscriptionID := d.Get("subscription_id").(string)
-	subscription, err := conn.GetTLSSubscription(&fastly.GetTLSSubscriptionInput{
-		ID: subscriptionID,
-	})
-	if err != nil {
-		return err
-	}
-
-	if subscription.State == subscriptionStateIssued {
-		return resourceFastlyTLSSubscriptionRead(d, meta)
-	}
-
 	return resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		subscription, err := conn.GetTLSSubscription(&fastly.GetTLSSubscriptionInput{
-			ID: subscriptionID,
+			ID: d.Get("subscription_id").(string),
 		})
 		if err != nil {
 			return resource.NonRetryableError(err)
