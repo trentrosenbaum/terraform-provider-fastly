@@ -124,6 +124,10 @@ func main() {
 			name: "tls_private_key",
 			path: docsDir + "docs/r/tls_private_key.html.markdown",
 		},
+		{
+			name: "tls_subscription",
+			path: docsDir + "docs/r/tls_subscription.html.markdown",
+		},
 	}
 
 	var pages = append(resourcePages, Page{
