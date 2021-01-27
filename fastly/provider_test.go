@@ -46,15 +46,78 @@ func generateKey() (string, error) {
 	return string(bytes), nil
 }
 
-func generateKeyAndCert(SANs ...string) (key, cert string, err error) {
-	key, cert, _, err = generateKeyAndMultipleCerts(SANs...)
-	return
+func generateKeyAndCert(SANs ...string) (string, string, error) {
+	privKey, key, err := buildPrivateKey()
+	if err != nil {
+		return "", "", err
+	}
+
+	cert, err := buildCertificate(privKey, SANs...)
+	if err != nil {
+		return "", "", err
+	}
+
+	return key, cert, nil
 }
 
-func generateKeyAndMultipleCerts(SANs ...string) (key, cert, cert2 string, err error) {
+func generateKeyAndMultipleCerts(SANs ...string) (string, string, string, error) {
+	privKey, key, err := buildPrivateKey()
+	if err != nil {
+		return "", "", "", err
+	}
+
+	cert, err := buildCertificate(privKey, SANs...)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	cert2, err := buildCertificate(privKey, SANs...)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return key, cert, cert2, nil
+}
+
+func generateKeyAndCertWithCA(domains ...string) (string, string, string, error) {
+	caCert, caPEM, caKey, err := buildCACertificate()
+	if err != nil {
+		return "", "", "", err
+	}
+
+	privateKey, key, err := buildPrivateKey()
+	if err != nil {
+		return "", "", "", err
+	}
+
+	cert, err := buildCertificateFromCA(caCert, privateKey, caKey, domains...)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return key, cert, caPEM, nil
+}
+
+func buildPrivateKey() (*rsa.PrivateKey, string, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to generate private key: %s", err)
+	}
+	privKeyBytes, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, "", fmt.Errorf("unable to marshal private key: %v", err)
+	}
+	keyBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privKeyBytes,
+	}
+	return key, strings.TrimSpace(string(pem.EncodeToMemory(keyBlock))), nil
+}
+
+func buildCertificate(privateKey *rsa.PrivateKey, domains ...string) (string, error) {
 	now := time.Now()
 	serialNumber := new(big.Int).SetInt64(rnd.Int63())
-	template := x509.Certificate{
+	template := &x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			SerialNumber: fmt.Sprintf("%d", serialNumber),
@@ -66,81 +129,96 @@ func generateKeyAndMultipleCerts(SANs ...string) (key, cert, cert2 string, err e
 		BasicConstraintsValid: true,
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		IsCA:                  true,
-		DNSNames:              SANs,
+		DNSNames:              domains,
 	}
 
-	serialNumber2 := new(big.Int).SetInt64(rnd.Int63())
-	template2 := x509.Certificate{
-		SerialNumber: serialNumber2,
+	if len(domains) != 0 {
+		template.Subject.CommonName = domains[0]
+	}
+
+	c, err := formatCertificate(template, template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return "", err
+	}
+	return c, nil
+}
+
+func buildCertificateFromCA(ca *x509.Certificate, privateKey *rsa.PrivateKey, caKey *rsa.PrivateKey, domains ...string) (string, error) {
+	now := time.Now()
+	serialNumber := new(big.Int).SetInt64(rnd.Int63())
+	template := &x509.Certificate{
+		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			SerialNumber: fmt.Sprintf("%d", serialNumber2),
+			SerialNumber: fmt.Sprintf("%d", serialNumber),
 		},
 		NotBefore:             now,
-		NotAfter:              now.Add(24 * 120 * time.Hour),
+		NotAfter:              now.Add(24 * 90 * time.Hour),
 		KeyUsage:              x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageCodeSigning},
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		IsCA:                  true,
-		DNSNames:              SANs,
+		DNSNames:              domains,
 	}
 
-	if len(SANs) != 0 {
-		template.Subject.CommonName = SANs[0]
-		template2.Subject.CommonName = SANs[0]
+	if len(domains) != 0 {
+		template.Subject.CommonName = domains[0]
 	}
 
-	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	c, err := formatCertificate(template, ca, &privateKey.PublicKey, caKey)
 	if err != nil {
-		err = fmt.Errorf("Failed to generate private key: %s", err)
-		return
+		return "", err
 	}
-	privKeyBytes, err := x509.MarshalPKCS8PrivateKey(privKey)
-	if err != nil {
-		err = fmt.Errorf("Unable to marshal private key: %v", err)
-		return
-	}
-	keyBlock := &pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: privKeyBytes,
-	}
-	key = strings.TrimSpace(string(pem.EncodeToMemory(keyBlock)))
+	return c, nil
+}
 
+func buildCACertificate() (*x509.Certificate, string, *rsa.PrivateKey, error) {
+	now := time.Now()
+	serialNumber := new(big.Int).SetInt64(rnd.Int63())
+	template := &x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			Country:      []string{"UK"},
+			Organization: []string{"Test CA"},
+			CommonName:   "Test Root CA",
+		},
+		NotBefore:             now.Add(-24 * time.Hour),
+		NotAfter:              now.Add(24 * 120 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		SignatureAlgorithm:    x509.SHA256WithRSA,
+		IsCA:                  true,
+	}
+
+	privateKey, _, err := buildPrivateKey()
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	c, err := formatCertificate(template, template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	return template, c, privateKey, nil
+}
+
+func formatCertificate(certificate *x509.Certificate, parent *x509.Certificate, publicKey *rsa.PublicKey, privateKey *rsa.PrivateKey) (string, error) {
 	derBytes, err := x509.CreateCertificate(
 		rand.Reader,
-		&template,
-		&template,
-		&privKey.PublicKey,
-		privKey,
+		certificate,
+		parent,
+		publicKey,
+		privateKey,
 	)
 	if err != nil {
-		err = fmt.Errorf("Failed to create certificate: %s", err)
-		return
+		return "", err
 	}
 	certBlock := &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: derBytes,
 	}
-	cert = strings.TrimSpace(string(pem.EncodeToMemory(certBlock)))
-
-	derBytes2, err := x509.CreateCertificate(
-		rand.Reader,
-		&template2,
-		&template2,
-		&privKey.PublicKey,
-		privKey,
-	)
-	if err != nil {
-		err = fmt.Errorf("Failed to create certificate: %s", err)
-		return
-	}
-	certBlock2 := &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: derBytes2,
-	}
-	cert2 = strings.TrimSpace(string(pem.EncodeToMemory(certBlock2)))
-
-	return
+	return strings.TrimSpace(string(pem.EncodeToMemory(certBlock))), nil
 }
 
 func TestProvider(t *testing.T) {
