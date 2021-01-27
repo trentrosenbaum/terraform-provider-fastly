@@ -173,6 +173,8 @@ github.com/opencredo/go-fastly/v2 v2.0.0-20210121142953-eeab9a460968 h1:21iGUZY4
 github.com/opencredo/go-fastly/v2 v2.0.0-20210121142953-eeab9a460968/go.mod h1:+gom+YR+9Q5I4biSk/ZjHQGWXxqpRxC3YDVYQcRpZwQ=
 github.com/opencredo/go-fastly/v2 v2.0.0-20210126112544-99fe821f5a7c h1:xTwjrS8/8JizdXbFqchsZZ+W139P3JNdrrZgMiain20=
 github.com/opencredo/go-fastly/v2 v2.0.0-20210126112544-99fe821f5a7c/go.mod h1:+gom+YR+9Q5I4biSk/ZjHQGWXxqpRxC3YDVYQcRpZwQ=
+github.com/opencredo/go-fastly/v2 v2.0.0-20210127101404-890bd76303f3 h1:ZJC8/QOCmUuXiNaPghMO9oWvLKSBhXSnKZ3cYd4H+w4=
+github.com/opencredo/go-fastly/v2 v2.0.0-20210127101404-890bd76303f3/go.mod h1:+gom+YR+9Q5I4biSk/ZjHQGWXxqpRxC3YDVYQcRpZwQ=
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
