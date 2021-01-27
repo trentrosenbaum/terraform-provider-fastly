@@ -2,6 +2,7 @@ package fastly
 
 import (
 	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"time"
@@ -17,12 +18,13 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"domains": {
-				Type:        schema.TypeList,
+				Type:        schema.TypeSet,
 				Description: "List of domains on which to enable TLS.",
 				Required:    true,
 				ForceNew:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				MinItems:    1,
+				Set:         schema.HashString,
 			},
 			"certificate_authority": {
 				Type:         schema.TypeString,
@@ -53,6 +55,34 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 				Description: "The current state of the subscription. The list of possible states are: `pending`, `processing`, `issued`, and `renewing`.",
 				Computed:    true,
 			},
+			"tls_authorization_challenges": {
+				Type:        schema.TypeSet,
+				Description: "Data required to set up DNS to respond to domain ownership challenge.",
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"challenge_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"record_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"record_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"record_values": {
+							Type:     schema.TypeSet,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
+					},
+				},
+				Set: authorisationChallengesHash,
+			},
 		},
 	}
 }
@@ -66,7 +96,7 @@ func resourceFastlyTLSSubscriptionCreate(d *schema.ResourceData, meta interface{
 	}
 
 	var domains []*fastly.TLSDomain
-	for _, domain := range d.Get("domains").([]interface{}) {
+	for _, domain := range d.Get("domains").(*schema.Set).List() {
 		domains = append(domains, &fastly.TLSDomain{ID: domain.(string)})
 	}
 
@@ -87,8 +117,10 @@ func resourceFastlyTLSSubscriptionCreate(d *schema.ResourceData, meta interface{
 func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*FastlyClient).conn
 
+	include := "tls_authorizations"
 	subscription, err := conn.GetTLSSubscription(&fastly.GetTLSSubscriptionInput{
-		ID: d.Id(),
+		ID:      d.Id(),
+		Include: &include,
 	})
 	if err != nil {
 		return err
@@ -98,6 +130,17 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 	for _, domain := range subscription.TLSDomains {
 		domains = append(domains, domain.ID)
 	}
+
+	var authorisationChallenges []map[string]interface{}
+	for _, challenge := range subscription.Authorizations[0].Challenges {
+		authorisationChallenges = append(authorisationChallenges, map[string]interface{}{
+			"challenge_type": challenge.Type,
+			"record_type":    challenge.RecordType,
+			"record_name":    challenge.RecordName,
+			"record_values":  challenge.Values,
+		})
+	}
+
 	err = d.Set("domains", domains)
 	if err != nil {
 		return err
@@ -122,6 +165,10 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return err
 	}
+	err = d.Set("tls_authorization_challenges", authorisationChallenges)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -133,4 +180,18 @@ func resourceFastlyTLSSubscriptionDelete(d *schema.ResourceData, meta interface{
 		ID: d.Id(),
 	})
 	return err
+}
+
+func authorisationChallengesHash(value interface{}) int {
+	m, ok := value.(map[string]interface{})
+	if !ok {
+		return 0
+	}
+
+	challengeType, ok := m["challenge_type"].(string)
+	if ok {
+		return hashcode.String(challengeType)
+	}
+
+	return 0
 }

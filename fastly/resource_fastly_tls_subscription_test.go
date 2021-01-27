@@ -34,6 +34,7 @@ func TestAccResourceFastlyTLSSubscription(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
 					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
 					resource.TestCheckResourceAttrSet(resourceName, "state"),
+					resource.TestCheckResourceAttrSet(resourceName, "tls_authorization_challenges.#"),
 					testAccResourceFastlyTLSSubscriptionExists(resourceName),
 				),
 			},
