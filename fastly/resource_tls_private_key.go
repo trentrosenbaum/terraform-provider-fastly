@@ -16,11 +16,12 @@ func resourceTLSPrivateKey() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"key_pem": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "Private key in PEM format.",
-				Sensitive:   true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				Description:  "Private key in PEM format.",
+				Sensitive:    true,
+				ValidateFunc: validatePEMBlock("PRIVATE KEY"),
 			},
 			"name": {
 				Type:        schema.TypeString,
