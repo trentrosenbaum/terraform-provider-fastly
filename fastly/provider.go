@@ -48,6 +48,7 @@ func Provider() terraform.ResourceProvider {
 			"fastly_tls_certificate":                    resourceTLSCertificate(),
 			"fastly_tls_private_key":                    resourceTLSPrivateKey(),
 			"fastly_tls_platform_certificate":           resourceTLSPlatformCertificate(),
+			"fastly_tls_subscription":                   resourceFastlyTLSSubscription(),
 			"fastly_user_v1":                            resourceUserV1(),
 		},
 	}
