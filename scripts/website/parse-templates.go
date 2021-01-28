@@ -128,6 +128,10 @@ func main() {
 			name: "tls_subscription",
 			path: docsDir + "docs/r/tls_subscription.html.markdown",
 		},
+		{
+			name: "tls_subscription_validation",
+			path: docsDir + "docs/r/tls_subscription_validation.html.markdown",
+		},
 	}
 
 	var pages = append(resourcePages, Page{
