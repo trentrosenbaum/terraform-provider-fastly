@@ -57,16 +57,18 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 				Description: "The current state of the subscription. The list of possible states are: `pending`, `processing`, `issued`, and `renewing`.",
 				Computed:    true,
 			},
-			"tls_authorization_challenges": {
+			"managed_dns_challenge": {
+				Type:        schema.TypeMap,
+				Description: "Data required to create DNS records for managed DNS domain ownership challenge.",
+				Computed:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+			"managed_http_challenges": {
 				Type:        schema.TypeSet,
-				Description: "Data required to set up DNS to respond to domain ownership challenge.",
+				Description: "Data required to set up DNS to respond to managed HTTP domain ownership challenges.",
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"challenge_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"record_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -133,14 +135,26 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 		domains = append(domains, domain.ID)
 	}
 
-	var authorisationChallenges []map[string]interface{}
+	var managedHTTPChallenges []map[string]interface{}
+	var managedDNSChallenge map[string]string
 	for _, challenge := range subscription.Authorizations[0].Challenges {
-		authorisationChallenges = append(authorisationChallenges, map[string]interface{}{
-			"challenge_type": challenge.Type,
-			"record_type":    challenge.RecordType,
-			"record_name":    challenge.RecordName,
-			"record_values":  challenge.Values,
-		})
+		if challenge.Type == "managed-dns" {
+			if len(challenge.Values) < 1 {
+				return fmt.Errorf("Fastly API returned no record values for Managed DNS Challenge")
+			}
+
+			managedDNSChallenge = map[string]string{
+				"record_type":  challenge.RecordType,
+				"record_name":  challenge.RecordName,
+				"record_value": challenge.Values[0],
+			}
+		} else {
+			managedHTTPChallenges = append(managedHTTPChallenges, map[string]interface{}{
+				"record_type":   challenge.RecordType,
+				"record_name":   challenge.RecordName,
+				"record_values": challenge.Values,
+			})
+		}
 	}
 
 	err = d.Set("domains", domains)
@@ -167,7 +181,11 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return err
 	}
-	err = d.Set("tls_authorization_challenges", authorisationChallenges)
+	err = d.Set("managed_dns_challenge", managedDNSChallenge)
+	if err != nil {
+		return err
+	}
+	err = d.Set("managed_http_challenges", managedHTTPChallenges)
 	if err != nil {
 		return err
 	}
@@ -211,9 +229,14 @@ func authorisationChallengesHash(value interface{}) int {
 		return 0
 	}
 
-	challengeType, ok := m["challenge_type"].(string)
+	recordType, ok := m["record_type"].(string)
+	if !ok {
+		return 0
+	}
+
+	recordName, ok := m["record_name"].(string)
 	if ok {
-		return hashcode.String(challengeType)
+		return hashcode.String(fmt.Sprintf("%s_%s", recordType, recordName))
 	}
 
 	return 0
