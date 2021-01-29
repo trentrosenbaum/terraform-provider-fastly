@@ -57,6 +57,7 @@ func resourceTLSCertificate() *schema.Resource {
 			},
 			"serial_number": {
 				Type:        schema.TypeString,
+
 				Description: "A value assigned by the issuer that is unique to a certificate",
 				Computed:    true,
 			},

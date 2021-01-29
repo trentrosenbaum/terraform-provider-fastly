@@ -33,9 +33,8 @@ func resourceTLSPlatformCertificate() *schema.Resource {
 			"configuration_id": {
 				Type:        schema.TypeString,
 				Description: "ID of TLS configuration to be used to terminate TLS traffic, or use the default one if missing.",
-				Optional:    true,
+				Required:    true,
 				ForceNew:    true,
-				Computed:    true,
 			},
 			"not_after": {
 				Type:        schema.TypeString,
@@ -78,15 +77,12 @@ func resourceTLSPlatformCertificateCreate(d *schema.ResourceData, meta interface
 	input := &fastly.CreateBulkCertificateInput{
 		CertBlob:          d.Get("certificate_body").(string),
 		IntermediatesBlob: d.Get("intermediates_blob").(string),
+		TLSConfigurations: []*fastly.TLSConfiguration{{
+			ID: d.Get("configuration_id").(string),
+		}},
+		AllowUntrusted: true,
 	}
 
-	if v, ok := d.GetOk("configuration_id"); ok {
-		input.TLSConfigurations = []*fastly.TLSConfiguration{ // TODO multiple configurations?
-			{
-				ID: v.(string),
-			},
-		}
-	}
 	certificate, err := conn.CreateBulkCertificate(input)
 	if err != nil {
 		return err
