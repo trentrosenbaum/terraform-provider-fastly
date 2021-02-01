@@ -142,9 +142,9 @@ func validateHTTPSURL() schema.SchemaValidateFunc {
 	}
 }
 
-func validatePEMBlock(pemType string) schema.SchemaValidateFunc { // TODO should we even care about this?
+func validatePEMBlock(pemType string) schema.SchemaValidateFunc {
 	return func(val interface{}, key string) ([]string, []error) {
-		b, _ := pem.Decode([]byte(val.(string)))
+		b, _ := pem.Decode([]byte(val.(string))) // TODO: might want to loop here to support multiple PEM resources in one string for intermediates blob?
 		if b == nil {
 			return nil, []error{fmt.Errorf("expected %s to be a valid PEM-format block", key)}
 		}

@@ -20,19 +20,19 @@ func resourceTLSPlatformCertificate() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"certificate_body": {
 				Type:         schema.TypeString,
-				Description:  "PEM-formatted certificate",
+				Description:  "PEM-formatted certificate.",
 				Required:     true,
 				ValidateFunc: validatePEMBlock("CERTIFICATE"),
 			},
 			"intermediates_blob": {
-				Type:         schema.TypeString, // TODO should this be a list? It's just a string for the AWS ACM cert
-				Description:  "PEM-formatted certificate",
+				Type:         schema.TypeString,
+				Description:  "PEM-formatted certificate chain.",
 				Required:     true,
-				ValidateFunc: validatePEMBlock("CERTIFICATE"), // TODO is this validation correct if there's more than one?
+				ValidateFunc: validatePEMBlock("CERTIFICATE"),
 			},
 			"configuration_id": {
 				Type:        schema.TypeString,
-				Description: "ID of TLS configuration to be used to terminate TLS traffic, or use the default one if missing.",
+				Description: "ID of TLS configuration to be used to terminate TLS traffic.",
 				Required:    true,
 				ForceNew:    true,
 			},
@@ -44,32 +44,32 @@ func resourceTLSPlatformCertificate() *schema.Resource {
 			},
 			"not_after": {
 				Type:        schema.TypeString,
-				Description: "Time-stamp (GMT) when the certificate will expire",
+				Description: "Timestamp (GMT) when the certificate will expire.",
 				Computed:    true,
 			},
 			"not_before": {
 				Type:        schema.TypeString,
-				Description: "Time-stamp (GMT) when the certificate will become valid",
+				Description: "Timestamp (GMT) when the certificate will become valid.",
 				Computed:    true,
 			},
 			"created_at": {
 				Type:        schema.TypeString,
-				Description: "Timestamp (GMT) when the certificate was created",
+				Description: "Timestamp (GMT) when the certificate was created.",
 				Computed:    true,
 			},
 			"updated_at": {
 				Type:        schema.TypeString,
-				Description: "Timestamp (GMT) when the certificate was last updated",
+				Description: "Timestamp (GMT) when the certificate was last updated.",
 				Computed:    true,
 			},
 			"replace": {
 				Type:        schema.TypeBool,
-				Description: "A recommendation from Fastly indicating the key associated with this certificate is in need of rotation",
+				Description: "A recommendation from Fastly indicating the key associated with this certificate is in need of rotation.",
 				Computed:    true,
 			},
 			"domains": {
 				Type:        schema.TypeSet,
-				Description: "All the domains (including wildcard domains) that are listed in any certificate's Subject Alternative Names (SAN) list",
+				Description: "All the domains (including wildcard domains) that are listed in any certificate's Subject Alternative Names (SAN) list.",
 				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
