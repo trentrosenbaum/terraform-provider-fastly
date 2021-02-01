@@ -27,7 +27,7 @@ func resourceTLSPlatformCertificate() *schema.Resource {
 			"intermediates_blob": {
 				Type:         schema.TypeString, // TODO should this be a list? It's just a string for the AWS ACM cert
 				Description:  "PEM-formatted certificate",
-				Required:     true,                            // TODO?
+				Required:     true,
 				ValidateFunc: validatePEMBlock("CERTIFICATE"), // TODO is this validation correct if there's more than one?
 			},
 			"configuration_id": {
@@ -35,6 +35,12 @@ func resourceTLSPlatformCertificate() *schema.Resource {
 				Description: "ID of TLS configuration to be used to terminate TLS traffic, or use the default one if missing.",
 				Required:    true,
 				ForceNew:    true,
+			},
+			"allow_untrusted_root": {
+				Type:        schema.TypeBool,
+				Description: "Skip checking that the root of the certificate chain is trusted. Only works for creating the certificate, not updating it.",
+				Optional:    true,
+				Default:     false,
 			},
 			"not_after": {
 				Type:        schema.TypeString,
@@ -80,7 +86,7 @@ func resourceTLSPlatformCertificateCreate(d *schema.ResourceData, meta interface
 		TLSConfigurations: []*fastly.TLSConfiguration{{
 			ID: d.Get("configuration_id").(string),
 		}},
-		AllowUntrusted: true,
+		AllowUntrusted: d.Get("allow_untrusted_root").(bool),
 	}
 
 	certificate, err := conn.CreateBulkCertificate(input)
