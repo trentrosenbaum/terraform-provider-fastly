@@ -21,7 +21,7 @@ func resourceTLSPrivateKey() *schema.Resource {
 				ForceNew:     true,
 				Description:  "Private key in PEM format.",
 				Sensitive:    true,
-				ValidateFunc: validatePEMBlock("PRIVATE KEY"),
+				ValidateFunc: validatePEMBlock("RSA PRIVATE KEY"),
 			},
 			"name": {
 				Type:        schema.TypeString,
