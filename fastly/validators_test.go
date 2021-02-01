@@ -389,7 +389,7 @@ func TestValidateHTTPSURL(t *testing.T) {
 }
 
 func TestValidatePEMCertificate(t *testing.T) {
-	key, cert, ca, _, err := generateKeyAndCertWithCA()
+	key, cert, ca, err := generateKeyAndCertWithCA()
 	if err != nil {
 		t.Fatal(err)
 	}

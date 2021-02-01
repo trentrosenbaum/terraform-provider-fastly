@@ -64,23 +64,23 @@ func generateKeyAndMultipleCerts(SANs ...string) (string, string, string, error)
 	return key, cert, cert2, nil
 }
 
-func generateKeyAndCertWithCA(domains ...string) (string, string, string, string, error) {
-	caCert, caPEM, caKey, caKeyPEM, err := buildCACertificate(domains...)
+func generateKeyAndCertWithCA(domains ...string) (string, string, string, error) {
+	caCert, caPEM, caKey, err := buildCACertificate(domains...)
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", err
 	}
 
 	privateKey, key, err := buildPrivateKey()
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", err
 	}
 
 	cert, err := buildCertificateFromCA(caCert, privateKey, caKey, domains...)
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", err
 	}
 
-	return key, cert, caPEM, caKeyPEM, nil
+	return key, cert, caPEM, nil
 }
 
 func buildPrivateKey() (*rsa.PrivateKey, string, error) {
@@ -156,7 +156,7 @@ func buildCertificateFromCA(ca *x509.Certificate, privateKey *rsa.PrivateKey, ca
 	return c, nil
 }
 
-func buildCACertificate(domains ...string) (*x509.Certificate, string, *rsa.PrivateKey, string, error) {
+func buildCACertificate(domains ...string) (*x509.Certificate, string, *rsa.PrivateKey, error) {
 	now := time.Now()
 	serialNumber := new(big.Int).SetInt64(rnd.Int63())
 	template := &x509.Certificate{
@@ -174,16 +174,16 @@ func buildCACertificate(domains ...string) (*x509.Certificate, string, *rsa.Priv
 		DNSNames:              domains,
 	}
 
-	privateKey, key, err := buildPrivateKey()
+	privateKey, _, err := buildPrivateKey()
 	if err != nil {
-		return nil, "", nil, "", err
+		return nil, "", nil, err
 	}
 
 	c, err := formatCertificate(template, template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return nil, "", nil, "", err
+		return nil, "", nil, err
 	}
-	return template, c, privateKey, key, nil
+	return template, c, privateKey, nil
 }
 
 func formatCertificate(certificate *x509.Certificate, parent *x509.Certificate, publicKey *rsa.PublicKey, privateKey *rsa.PrivateKey) (string, error) {

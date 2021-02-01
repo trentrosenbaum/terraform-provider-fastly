@@ -23,7 +23,7 @@ func TestAccFastlyTLSPlatformCertificate_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	domain := fmt.Sprintf("%s.test", name)
 
-	key, cert, ca, _, err := generateKeyAndCertWithCA(domain)
+	key, cert, ca, err := generateKeyAndCertWithCA(domain)
 	require.NoError(t, err)
 
 	resourceName := "fastly_tls_platform_certificate.subject"
@@ -48,7 +48,7 @@ func TestAccFastlyTLSPlatformCertificate_basic(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"certificate_body", "intermediates_blob"},
+				ImportStateVerifyIgnore: []string{"certificate_body", "intermediates_blob", "allow_untrusted_root"},
 			},
 		},
 	})
@@ -114,6 +114,7 @@ EOF
 %[4]s
 EOF
   configuration_id = data.fastly_tls_configuration.config.id
+  allow_untrusted_root = true
   depends_on = [fastly_tls_private_key.key]
 }
 `, name, key, cert, ca)
