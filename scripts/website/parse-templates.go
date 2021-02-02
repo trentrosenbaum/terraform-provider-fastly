@@ -75,6 +75,14 @@ func main() {
 			name: "tls_private_key_ids",
 			path: docsDir + "docs/d/tls_private_key_ids.html.markdown",
 		},
+		{
+			name: "tls_subscription",
+			path: docsDir + "docs/d/tls_subscription.html.markdown",
+		},
+		{
+			name: "tls_subscription_ids",
+			path: docsDir + "docs/d/tls_subscription_ids.html.markdown",
+		},
 	}
 
 	var resourcePages = []Page{

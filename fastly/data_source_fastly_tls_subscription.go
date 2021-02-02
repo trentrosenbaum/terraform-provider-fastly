@@ -48,7 +48,7 @@ func dataSourceFastlyTLSSubscription() *schema.Resource {
 			"updated_at": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Timestamp (GMT) when subscription was created.",
+				Description: "Timestamp (GMT) when subscription was last updated.",
 			},
 			"state": {
 				Type:        schema.TypeString,
