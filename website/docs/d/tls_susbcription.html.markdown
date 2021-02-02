@@ -1,0 +1,33 @@
+---
+layout: "fastly"
+page_title: "Fastly: fastly_tls_subscription"
+sidebar_current: "docs-fastly-datasource-tls_subscription"
+description: |-
+Get information on Fastly TLS subscription.
+---
+
+# fastly_tls_subscription
+
+Use this data source to get information about a TLS subscription.
+
+## Example Usage
+
+```hcl
+data "fastly_tls_subscription" "example" {
+  domains = ["example.com"]
+}
+```
+
+## Argument Reference
+
+-> **Note:** The data source's filters are applied using an **AND** boolean operator, so depending on the combination of filters, they may become mutually exclusive. The exception to this is `id` which must not be specified in combination with any of the others.
+* `id` - (Optional) ID of TLS subscription. Conflicts with all the other filters.
+* `configuration_id` - (Optional) ID of TLS configuration used to terminate TLS traffic.
+* `domains` - (Optional) List of domains on which to enable TLS.
+* `certificate_authority` - (Optional) The entity that issues and certifies the TLS certificates for the subscription.
+
+## Attribute Reference
+
+* `created_at` - Timestamp (GMT) when the subscription was created.
+* `updated_at` - Timestamp (GMT) when the subscription was last updated.
+* `state` - The current state of the subscription. The list of possible states are: `pending`, `processing`, `issued`, and `renewing`.
