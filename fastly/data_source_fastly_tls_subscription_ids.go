@@ -2,7 +2,6 @@ package fastly
 
 import (
 	"fmt"
-	"github.com/fastly/go-fastly/v2/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -42,26 +41,4 @@ func dataSourceFastlyTLSSubscriptionIDsRead(d *schema.ResourceData, meta interfa
 		return err
 	}
 	return nil
-}
-
-func listTLSSubscriptions(conn *fastly.Client) ([]*fastly.TLSSubscription, error) {
-	var subscriptions []*fastly.TLSSubscription
-	pageNumber := 1
-	for {
-		list, err := conn.ListTLSSubscriptions(&fastly.ListTLSSubscriptionsInput{
-			PageNumber: pageNumber,
-			PageSize:   10,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if len(list) == 0 {
-			break
-		}
-		pageNumber++
-
-		subscriptions = append(subscriptions, list...)
-	}
-
-	return subscriptions, nil
 }

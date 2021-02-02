@@ -34,6 +34,7 @@ func Provider() terraform.ResourceProvider {
 			"fastly_tls_domain":            dataSourceTLSDomain(),
 			"fastly_tls_private_key":       dataSourceTLSPrivateKey(),
 			"fastly_tls_private_key_ids":   dataSourceTLSPrivateKeyIDs(),
+			"fastly_tls_subscription":      dataSourceFastlyTLSSubscription(),
 			"fastly_tls_subscription_ids":  dataSourceFastlyTLSSubscriptionIDs(),
 			"fastly_waf_rules":             dataSourceFastlyWAFRules(),
 		},
