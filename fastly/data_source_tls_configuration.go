@@ -88,7 +88,7 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 						},
 						"region": {
 							Type:        schema.TypeString,
-							Description: "The regions that will be used to route traffic. Select DNS Records with a `global` region to route traffic to the most performant point of presence (POP) worldwide (global pricing will apply). Select DNS records with a `us-eu region` to exclusively land traffic on North American and European POPs.",
+							Description: "The regions that will be used to route traffic. Select DNS Records with a `global` region to route traffic to the most performant point of presence (POP) worldwide (global pricing will apply). Select DNS records with a `us-eu` region to exclusively land traffic on North American and European POPs.",
 							Computed:    true,
 						},
 					},
