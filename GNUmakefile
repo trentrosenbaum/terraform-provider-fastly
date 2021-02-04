@@ -52,11 +52,17 @@ test-compile:
 	fi
 	go test -c $(TEST) $(TESTARGS)
 
-generate-docs:
-	go run scripts/generate-docs.go
+# Install tool locally to ./bin directory, using vendored copy
+BIN = $(CURDIR)/bin
+$(BIN)/tfplugindocs:
+	@GOBIN=$(BIN) go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
-validate-docs:
-	tfplugindocs validate
+# Inject ./bin into PATH to allow scripts/generate-docs.go to access local tfplugindocs binary
+generate-docs: $(BIN)/tfplugindocs
+	@PATH=$(PATH):$(BIN) go run scripts/generate-docs.go
+
+validate-docs: $(BIN)/tfplugindocs
+	$(BIN)/tfplugindocs validate
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
