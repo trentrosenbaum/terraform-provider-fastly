@@ -1,14 +1,14 @@
-{{define "fastly_data_tls_platform_certificate"}}---
+{{define "data_source_tls_certificate"}}---
 layout: "fastly"
-page_title: "Fastly: fastly_tls_platform_certificate"
-sidebar_current: "docs-fastly-datasource-tls_platform_certificate"
+page_title: "Fastly: fastly_tls_certificate"
+sidebar_current: "docs-fastly-datasource-tls_certificate"
 description: |-
-Get information on Fastly Platform TLS certificate.
+Get information on Fastly TLS certificate.
 ---
 
-# fastly_tls_platform_certificate
+# fastly_tls_certificate
 
-Use this data source to get information of a Platform TLS certificate for use with other resources.
+Use this data source to get information of a TLS certificate for use with other resources.
 
 ~> **Warning:** The data source's filters are applied using an **AND** boolean operator, so depending on the combination
 of filters, they may become mutually exclusive. The exception to this is `id` which must not be specified in combination
@@ -19,8 +19,8 @@ with any of the others.
 ## Example Usage
 
 ```hcl
-data "fastly_tls_platform_certificate" "example" {
-  domains = ["example.com"]
+data "fastly_tls_certificate" "example" {
+  name = "example.com"
 }
 ```
 {{end}}

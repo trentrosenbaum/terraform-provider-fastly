@@ -75,6 +75,46 @@ func main() {
 			path: tempDir + "/data-sources/ip_ranges.md.tmpl",
 		},
 		{
+			name: "data_source_tls_activation",
+			path: tempDir + "/data-sources/tls_activation.md.tmpl",
+		},
+		{
+			name: "data_source_tls_activation_ids",
+			path: tempDir + "/data-sources/tls_activation_ids.md.tmpl",
+		},
+		{
+			name: "data_source_tls_certificate",
+			path: tempDir + "/data-sources/tls_certificate.md.tmpl",
+		},
+		{
+			name: "data_source_tls_certificate_ids",
+			path: tempDir + "/data-sources/tls_certificate_ids.md.tmpl",
+		},
+		{
+			name: "data_source_tls_configuration",
+			path: tempDir + "/data-sources/tls_configuration.md.tmpl",
+		},
+		{
+			name: "data_source_tls_configuration_ids",
+			path: tempDir + "/data-sources/tls_configuration_ids.md.tmpl",
+		},
+		{
+			name: "data_source_tls_platform_certificate",
+			path: tempDir + "/data-sources/tls_platform_certificate.md.tmpl",
+		},
+		{
+			name: "data_source_tls_platform_certificate_ids",
+			path: tempDir + "/data-sources/tls_platform_certificate_ids.md.tmpl",
+		},
+		{
+			name: "data_source_tls_private_key",
+			path: tempDir + "/data-sources/tls_private_key.md.tmpl",
+		},
+		{
+			name: "data_source_tls_private_key_ids",
+			path: tempDir + "/data-sources/tls_private_key_ids.md.tmpl",
+		},
+		{
 			name: "waf_rules",
 			path: tempDir + "/data-sources/waf_rules.md.tmpl",
 		},
@@ -114,6 +154,22 @@ func main() {
 		{
 			name: "user_v1",
 			path: tempDir + "/resources/user_v1.md.tmpl",
+		},
+		{
+			name: "tls_activation",
+			path: tempDir + "/resources/tls_activation.md.tmpl",
+		},
+		{
+			name: "tls_certificate",
+			path: tempDir + "/resources/tls_certificate.md.tmpl",
+		},
+		{
+			name: "tls_platform_certificate",
+			path: tempDir + "/resources/tls_platform_certificate.md.tmpl",
+		},
+		{
+			name: "tls_private_key",
+			path: tempDir + "/resources/tls_private_key.md.tmpl",
 		},
 	}
 
@@ -283,7 +339,7 @@ func replaceTemplatesDir(tmplDir string, tempDir string) {
 //
 // NOTE: it is presumed that the /templates directory that is referenced will
 // consist of precompiled templates and that the original untouched templates
-// will still exist in the /templates-backup directory ready to be restored
+// will still exist in the /templates directory ready to be restored
 // once the /docs content has been generated.
 func runTFPluginDocs() {
 	cmd := exec.Command("tfplugindocs", "generate")
