@@ -17,21 +17,21 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:          schema.TypeString,
-				Description:   "Unique ID of the configuration",
+				Description:   "ID of the TLS configuration obtained from the Fastly API or another data source. Conflicts with all the other filters.",
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"name", "tls_protocols", "http_protocols", "tls_service", "default"},
 			},
 			"name": {
 				Type:          schema.TypeString,
-				Description:   "Custom name of the TLS configuration",
+				Description:   "Custom name of the TLS configuration.",
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"id"},
 			},
 			"tls_protocols": {
 				Type:          schema.TypeSet,
-				Description:   "TLS protocols available on the TLS configuration",
+				Description:   "TLS protocols available on the TLS configuration.",
 				Optional:      true,
 				Computed:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
@@ -39,7 +39,7 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 			},
 			"http_protocols": {
 				Type:          schema.TypeSet,
-				Description:   "HTTP protocols available on the TLS configuration",
+				Description:   "HTTP protocols available on the TLS configuration.",
 				Optional:      true,
 				Computed:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
@@ -47,7 +47,7 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 			},
 			"tls_service": {
 				Type:          schema.TypeString,
-				Description:   fmt.Sprintf("Whether the configuration should support the `%s` or `%s` TLS service", tlsPlatformService, tlsCustomService),
+				Description:   fmt.Sprintf("Whether the configuration should support the `%s` or `%s` TLS service.", tlsPlatformService, tlsCustomService),
 				Optional:      true,
 				Computed:      true,
 				ValidateFunc:  validation.StringInSlice([]string{tlsPlatformService, tlsCustomService}, false),
@@ -55,19 +55,19 @@ func dataSourceFastlyTLSConfiguration() *schema.Resource {
 			},
 			"default": {
 				Type:          schema.TypeBool,
-				Description:   "Signifies whether Fastly will use this configuration as a default when creating a new TLS activation",
+				Description:   "Signifies whether Fastly will use this configuration as a default when creating a new TLS activation.",
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"id"},
 			},
 			"created_at": {
 				Type:        schema.TypeString,
-				Description: "Timestamp (GMT) when the configuration was created",
+				Description: "Timestamp (GMT) when the configuration was created.",
 				Computed:    true,
 			},
 			"updated_at": {
 				Type:        schema.TypeString,
-				Description: "Timestamp (GMT) when the configuration was last updated",
+				Description: "Timestamp (GMT) when the configuration was last updated.",
 				Computed:    true,
 			},
 			"dns_records": {

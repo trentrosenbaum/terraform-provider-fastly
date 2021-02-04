@@ -22,21 +22,21 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 			},
 			"name": {
 				Type:          schema.TypeString,
-				Description:   "Human-readable name used to identify the certificate",
+				Description:   "Human-readable name used to identify the certificate. Defaults to the certificate's Common Name or first Subject Alternative Name entry.",
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"id"},
 			},
 			"issued_to": {
 				Type:          schema.TypeString,
-				Description:   "The hostname for which a certificate was issued",
+				Description:   "The hostname for which a certificate was issued.",
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"id"},
 			},
 			"domains": {
 				Type:          schema.TypeSet,
-				Description:   "Domains that are listed in any certificate's Subject Alternative Names (SAN) list",
+				Description:   "Domains that are listed in any certificates' Subject Alternative Names (SAN) list.",
 				Optional:      true,
 				Computed:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
@@ -44,7 +44,7 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 			},
 			"issuer": {
 				Type:          schema.TypeString,
-				Description:   "The certificate authority that issued the certificate",
+				Description:   "The certificate authority that issued the certificate.",
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"id"},

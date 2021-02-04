@@ -14,7 +14,7 @@ func dataSourceTLSPrivateKeyIDs() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:        schema.TypeList,
-				Description: "List of IDs of the TLS private keys",
+				Description: "List of IDs of the TLS private keys.",
 				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},

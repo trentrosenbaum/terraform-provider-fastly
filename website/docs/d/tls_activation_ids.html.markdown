@@ -31,10 +31,10 @@ output "activation_domains" {
 
 ## Argument Reference
 
-* `certificate_id` - (Optional) ID of the TLS Certificate to be used with activations
+* `certificate_id` - (Optional) ID of TLS certificate used to filter activations.
 
 ## Attribute Reference
 
 In addition to the arguments specified above, the following attributes are also supported:
 
-* `ids` - List of IDs of the TLS Activations
+* `ids` - List of IDs of the TLS Activations.

@@ -24,8 +24,8 @@ data "fastly_tls_activation" "example" {
 of filters, they may become mutually exclusive. The exception to this is `id` which must not be specified in combination
 with any of the others.
 
-* `id` - (Optional) Fastly Activation ID. Conflicts with all other other filters.
-* `certificate_id` - (Optional) ID of the TLS Certificate used
+* `id` - (Optional) Fastly Activation ID. Conflicts with all other filters.
+* `certificate_id` - (Optional) ID of the TLS Certificate used.
 * `configuration_id` - (Optional) ID of the TLS Configuration used.
 * `domain` - (Optional) Domain that TLS was enabled on.
 
@@ -35,4 +35,4 @@ with any of the others.
 
 In addition to the arguments specified above, the following attributes are also supported:
 
-* `created_at` - Timestamp (GMT) when TLS was activated.
+* `created_at` - Timestamp (GMT) when TLS was enabled.
