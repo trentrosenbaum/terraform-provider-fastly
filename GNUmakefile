@@ -52,17 +52,17 @@ test-compile:
 	fi
 	go test -c $(TEST) $(TESTARGS)
 
-website:
-	go run "scripts/website/parse-templates.go"
+generate-docs:
+	go run scripts/generate-docs.go
 
-website-test:
-	go run "scripts/website/parse-templates.go"
+validate-docs:
+	tfplugindocs validate
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./fastly -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
-.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile website website-test sweep build_local clean install_local
+.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile sweep build_local clean install_local validate-docs generate-docs
 
 PROVIDER_HOSTNAME=registry.terraform.io
 PROVIDER_NAMESPACE=fastly
