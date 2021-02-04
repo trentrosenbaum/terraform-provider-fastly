@@ -144,7 +144,11 @@ func getTemplate(tmplDir string) *template.Template {
 		}
 		return nil
 	})
-	return template.Must(template.ParseFiles(templateFiles...))
+	template, err := template.ParseFiles(templateFiles...)
+	if err != nil {
+		log.Fatalf("Error parsing template files: %s", err)
+	}
+	return template
 }
 
 // renderPages iterates over the given pages and renders each element.
