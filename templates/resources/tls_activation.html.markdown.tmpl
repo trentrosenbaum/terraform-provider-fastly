@@ -50,20 +50,6 @@ resource "fastly_tls_activation" "test" {
 }
 ```
 
-## Argument Reference
-
-The following arguments are supported:
-
-* `certificate_id` - (Required) ID of certificate to use. Must have the domain of the service specified in the certificate's Subject Alternative Names.
-* `domain` - (Required) Domain to enable TLS on. Must be assigned to an existing Fastly Service.
-* `configuration_id` - (Optional) TLS Configuration to use. Defaults to the default TLS Configuration.
-
-## Attributes Reference
-
-In addition to the arguments listed above, the following attributes are exported:
-
-* `created_at` - Timestamp (GMT) when TLS was enabled.
-
 ## Import
 
 A TLS activation can be imported using its ID, e.g.

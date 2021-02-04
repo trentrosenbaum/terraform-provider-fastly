@@ -88,28 +88,6 @@ resource "fastly_tls_platform_certificate" "cert" {
 }
 ```
 
-## Argument Reference
-
-The following arguments are supported:
-
-* `certificate_body` - (Required) PEM-formatted certificate
-* `intermediates_blob` - (Required) PEM-formatted certificate chain from the `certificate_body` to its root.
-* `configuration_id` - (Required) ID of TLS configuration to be used to terminate TLS traffic.
-* `allow_untrusted_root` - (Optional) Disable checking whether the root of the certificate chain is trusted. Useful for development purposes to allow use of self-signed CAs. Defaults to false.
-
-## Attributes Reference
-
-In addition to the arguments listed above, the following attributes are exported:
-
-* `created_at` - Timestamp (GMT) when the certificate was created.
-* `updated_at` - Timestamp (GMT) when the certificate was last updated.
-* `not_after` - Timestamp (GMT) when the certificate will expire.
-* `not_before` - Timestamp (GMT) when the certificate will become valid.
-* `replace` - A recommendation from Fastly indicating the key associated with this certificate is in need of rotation.
-* `domains` - All the domains (including wildcard domains) that are listed in any certificate's Subject Alternative
-  Names (SAN) list.
-
-
 ## Import
 
 A certificate can be imported using its Fastly certificate ID, e.g.

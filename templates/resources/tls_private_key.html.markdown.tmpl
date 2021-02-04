@@ -27,23 +27,6 @@ resource "fastly_tls_private_key" "demo" {
 }
 ```
 
-## Argument Reference
-
-The following arguments are supported:
-
-* `key_pem` - (Required) Private key in PEM format. Not readable after uploading.
-* `name` - (Required) Human-readable name used to identify the private key.
-
-## Attributes Reference
-
-In addition to the arguments listed above, the following attributes are exported:
-
-* `created_at` - Timestamp (GMT) when the private key was created.
-* `key_length` - The key length used to generate the private key.
-* `key_type` - The algorithm used to generate the private key. Must be RSA.
-* `replace` - A boolean indicating whether Fastly recommends replacing this private key.
-* `public_key_sha1` - A hash of the associated public key useful for safely identifying the key after it has been uploaded.
-
 ## Import
 
 A Private Key can be imported using its ID, e.g.
