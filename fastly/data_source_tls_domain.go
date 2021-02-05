@@ -48,15 +48,15 @@ func dataSourceTLSDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	var activations []string
-	for _, activation := range domain.TLSActivations {
+	for _, activation := range domain.Activations {
 		activations = append(activations, activation.ID)
 	}
 	var certificates []string
-	for _, certificate := range domain.TLSCertificates {
+	for _, certificate := range domain.Certificates {
 		certificates = append(certificates, certificate.ID)
 	}
 	var subscriptions []string
-	for _, subscription := range domain.TLSSubscriptions {
+	for _, subscription := range domain.Subscriptions {
 		subscriptions = append(subscriptions, subscription.ID)
 	}
 
