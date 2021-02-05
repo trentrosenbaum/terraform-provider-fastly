@@ -96,7 +96,7 @@ func testSweepTLSSubscription(region string) error {
 	}
 
 	for _, subscription := range subscriptions {
-		for _, domain := range subscription.TLSDomains {
+		for _, domain := range subscription.Domains {
 			if !strings.HasPrefix(domain.ID, testResourcePrefix) {
 				continue
 			}
