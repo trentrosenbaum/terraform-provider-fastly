@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/fastly/go-fastly/v3/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -46,7 +46,7 @@ func TestAccFastlyTLSCertificate_withName(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "serial_number"),
 					resource.TestCheckResourceAttrSet(resourceName, "signature_algorithm"),
 					resource.TestCheckResourceAttr(resourceName, "domains.#", "1"),
-					testAccTLSConfigurationExists(resourceName),
+					testAccTLSCertificateExists(resourceName),
 				),
 			},
 			{
@@ -88,14 +88,14 @@ func TestAccFastlyTLSCertificate_withoutName(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "serial_number"),
 					resource.TestCheckResourceAttrSet(resourceName, "signature_algorithm"),
 					resource.TestCheckResourceAttr(resourceName, "domains.#", "1"),
-					testAccTLSConfigurationExists(resourceName),
+					testAccTLSCertificateExists(resourceName),
 				),
 			},
 		},
 	})
 }
 
-func testAccTLSConfigurationExists(resourceName string) resource.TestCheckFunc {
+func testAccTLSCertificateExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		r := s.RootModule().Resources[resourceName]
 

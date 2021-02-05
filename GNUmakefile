@@ -85,7 +85,7 @@ $(BIN)/%:
 	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
 generate-docs: $(BIN)/tfplugindocs
-	PATH=$(PATH):$(BIN) go run scripts/generate-docs.go
+	@PATH=$(PATH):$(BIN) go run scripts/generate-docs.go
 
 validate-docs: $(BIN)/tfplugindocs
 	$(BIN)/tfplugindocs validate

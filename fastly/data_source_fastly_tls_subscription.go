@@ -2,7 +2,7 @@ package fastly
 
 import (
 	"fmt"
-	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/fastly/go-fastly/v3/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"time"
 )
@@ -108,7 +108,7 @@ func getTLSSubscriptionFilters(d *schema.ResourceData) []TLSSubscriptionPredicat
 		filters = append(filters, func(s *fastly.TLSSubscription) bool {
 			// Pull domain strings out of struct slice
 			var foundDomains []string
-			for _, domain := range s.TLSDomains {
+			for _, domain := range s.Domains {
 				foundDomains = append(foundDomains, domain.ID)
 			}
 
@@ -154,7 +154,7 @@ func dataSourceFastlyTLSSubscriptionSetAttributes(subscription *fastly.TLSSubscr
 	d.SetId(subscription.ID)
 
 	var domains []string
-	for _, domain := range subscription.TLSDomains {
+	for _, domain := range subscription.Domains {
 		domains = append(domains, domain.ID)
 	}
 

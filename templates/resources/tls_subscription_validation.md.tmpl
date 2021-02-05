@@ -64,21 +64,4 @@ resource "fastly_tls_subscription_validation" "example" {
   depends_on      = [aws_route53_record.domain_validation]
 }
 ```
-
-
-## Argument Reference
-
-The following arguments are supported:
-
-* `subscription_id` - (Required) The ID of the TLS Subscription that should be validated.
-
-## Attributes Reference
-
-No other attributes are available for this resource.
-
-## Timeouts
-
-`fastly_tls_subscription_validation` supports the following [Timeouts](https://www.terraform.io/docs/configuration/blocks/resources/syntax.html#operation-timeouts) configuration options:
-
-* `create` - (Default `45m`) How long to wait for the subscription to be validated.
 {{end}}

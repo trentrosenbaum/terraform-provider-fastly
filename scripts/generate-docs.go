@@ -99,6 +99,14 @@ func main() {
 			path: tempDir + "/data-sources/tls_configuration_ids.md.tmpl",
 		},
 		{
+			name: "data_source_tls_platform_certificate",
+			path: tempDir + "/data-sources/tls_platform_certificate.md.tmpl",
+		},
+		{
+			name: "data_source_tls_platform_certificate_ids",
+			path: tempDir + "/data-sources/tls_platform_certificate_ids.md.tmpl",
+		},
+		{
 			name: "data_source_tls_private_key",
 			path: tempDir + "/data-sources/tls_private_key.md.tmpl",
 		},
@@ -164,12 +172,20 @@ func main() {
 			path: tempDir + "/resources/tls_certificate.md.tmpl",
 		},
 		{
+			name: "tls_platform_certificate",
+			path: tempDir + "/resources/tls_platform_certificate.md.tmpl",
+		},
+		{
 			name: "tls_private_key",
 			path: tempDir + "/resources/tls_private_key.md.tmpl",
 		},
 		{
 			name: "tls_subscription",
 			path: tempDir + "/resources/tls_subscription.md.tmpl",
+		},
+		{
+			name: "tls_subscription_validation",
+			path: tempDir + "/resources/tls_subscription_validation.md.tmpl",
 		},
 	}
 
