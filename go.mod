@@ -2,7 +2,7 @@ module github.com/fastly/terraform-provider-fastly
 
 go 1.14
 
-replace github.com/fastly/go-fastly/v3 v3.0.0 => github.com/opencredo/go-fastly/v3 v3.0.0-20210205141901-c8e273bb87bf
+replace github.com/fastly/go-fastly/v3 v3.0.0 => github.com/opencredo/go-fastly/v3 v3.0.0-20210205153750-3d6f7c2829dd
 
 require (
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f // indirect

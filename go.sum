@@ -205,8 +205,8 @@ github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+W
 github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/opencredo/go-fastly/v3 v3.0.0-20210203163134-a9cbdebbd5c8 h1:O+F/6xI1fB73dIFXnEBVatdhjgzrScIsfm99GoxK/UA=
 github.com/opencredo/go-fastly/v3 v3.0.0-20210203163134-a9cbdebbd5c8/go.mod h1:KOaCWsmkIKSASPzADl8PT/bTQIghOw/eEaxlHOu3jMA=
-github.com/opencredo/go-fastly/v3 v3.0.0-20210205141901-c8e273bb87bf h1:fFeojo5MY7pSo7zJipdWzHL3/633OCStgabwwuujmyw=
-github.com/opencredo/go-fastly/v3 v3.0.0-20210205141901-c8e273bb87bf/go.mod h1:KOaCWsmkIKSASPzADl8PT/bTQIghOw/eEaxlHOu3jMA=
+github.com/opencredo/go-fastly/v3 v3.0.0-20210205153750-3d6f7c2829dd h1:zFordG4ktOYu+bhxL28tQbIusuo3xpVNM0f50bB1NFs=
+github.com/opencredo/go-fastly/v3 v3.0.0-20210205153750-3d6f7c2829dd/go.mod h1:KOaCWsmkIKSASPzADl8PT/bTQIghOw/eEaxlHOu3jMA=
 github.com/pierrec/lz4 v2.0.5+incompatible/go.mod h1:pdkljMzZIN41W+lC3N2tnIh5sFi+IEE17M5jbnwPHcY=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
