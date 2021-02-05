@@ -15,7 +15,7 @@ func dataSourceFastlyTLSSubscription() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Description:   "ID of TLS subscription.",
+				Description:   "ID of TLS subscription. Conflicts with all the other filters.",
 				ConflictsWith: []string{"configuration_id", "domains", "certificate_authority"},
 			},
 			"configuration_id": {
