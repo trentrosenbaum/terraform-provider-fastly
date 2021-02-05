@@ -3,35 +3,35 @@ package fastly
 import (
 	"fmt"
 
-	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/fastly/go-fastly/v3/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceTLSDomain() *schema.Resource {
+func dataSourceFastlyTLSDomain() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceTLSDomainsRead,
 
 		Schema: map[string]*schema.Schema{
 			"domain": {
 				Type:        schema.TypeString,
-				Description: "Domain name to look up activations, certificates and subscriptions for",
+				Description: "Domain name to look up activations, certificates and subscriptions for.",
 				Required:    true,
 			},
 			"tls_activation_ids": {
 				Type:        schema.TypeSet,
-				Description: "IDs of the activations associated with the domain",
+				Description: "IDs of the activations associated with the domain.",
 				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"tls_certificate_ids": {
 				Type:        schema.TypeSet,
-				Description: "IDs of the certificates associated with the domain",
+				Description: "IDs of the certificates associated with the domain.",
 				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"tls_subscription_ids": {
 				Type:        schema.TypeSet,
-				Description: "IDs of the subscriptions associated with the domain",
+				Description: "IDs of the subscriptions associated with the domain.",
 				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},

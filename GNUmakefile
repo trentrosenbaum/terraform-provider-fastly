@@ -52,17 +52,9 @@ test-compile:
 	fi
 	go test -c $(TEST) $(TESTARGS)
 
-website:
-	go run "scripts/website/parse-templates.go"
-
-website-test:
-	go run "scripts/website/parse-templates.go"
-
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./fastly -v -sweep=ALL $(SWEEPARGS) -timeout 30m
-
-.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile website website-test sweep build_local clean install_local
 
 PROVIDER_HOSTNAME=registry.terraform.io
 PROVIDER_NAMESPACE=fastly
@@ -86,3 +78,16 @@ install_local: build_local
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
 	@mkdir -p $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
 	@cp ./bin/terraform-provider-$(PROVIDER_TYPE)_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
+
+BIN=$(CURDIR)/bin
+$(BIN)/%:
+	@echo "Installing tools from tools/tools.go"
+	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
+
+generate-docs: $(BIN)/tfplugindocs
+	@PATH=$(PATH):$(BIN) go run scripts/generate-docs.go
+
+validate-docs: $(BIN)/tfplugindocs
+	$(BIN)/tfplugindocs validate
+
+.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile sweep build_local clean install_local validate-docs generate-docs

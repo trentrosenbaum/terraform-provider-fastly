@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/fastly/go-fastly/v3/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -96,7 +96,7 @@ func testSweepTLSSubscription(region string) error {
 	}
 
 	for _, subscription := range subscriptions {
-		for _, domain := range subscription.TLSDomains {
+		for _, domain := range subscription.Domains {
 			if !strings.HasPrefix(domain.ID, testResourcePrefix) {
 				continue
 			}

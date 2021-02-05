@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fastly/go-fastly/v2/fastly"
+	"github.com/fastly/go-fastly/v3/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -16,7 +16,7 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 		Read:   resourceFastlyTLSSubscriptionRead,
 		Delete: resourceFastlyTLSSubscriptionDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough, // FIXME: might want to do something with adding a "subscription_validation" resource too
+			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
 			"domains": {
@@ -59,29 +59,32 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 			},
 			"managed_dns_challenge": {
 				Type:        schema.TypeMap,
-				Description: "Data required to create DNS records for managed DNS domain ownership challenge.",
+				Description: "The details required to configure DNS to respond to ACME DNS challenge in order to verify domain ownership.",
 				Computed:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"managed_http_challenges": {
 				Type:        schema.TypeSet,
-				Description: "Data required to set up DNS to respond to managed HTTP domain ownership challenges.",
+				Description: "A list of options for configuring DNS to respond to ACME HTTP challenge in order to verify domain ownership. Best accessed through a `for` expression to filter the relevant record.",
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"record_type": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Description: "The name of the DNS record to add. For example `example.com`.",
+							Computed:    true,
 						},
 						"record_name": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Description: "The type of DNS record to add, e.g. `A`, or `CNAME`.",
+							Computed:    true,
 						},
 						"record_values": {
-							Type:     schema.TypeSet,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							Set:      schema.HashString,
+							Type:        schema.TypeSet,
+							Description: "A list with the value(s) to which the DNS record should point.",
+							Computed:    true,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Set:         schema.HashString,
 						},
 					},
 				},
@@ -131,7 +134,7 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 	}
 
 	var domains []string
-	for _, domain := range subscription.TLSDomains {
+	for _, domain := range subscription.Domains {
 		domains = append(domains, domain.ID)
 	}
 
