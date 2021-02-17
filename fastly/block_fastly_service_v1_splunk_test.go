@@ -141,6 +141,7 @@ func TestAccFastlyServiceV1_splunk_basic(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1_splunk_basic_compute(t *testing.T) {
+	t.SkipNow()
 	var service gofastly.ServiceDetail
 	serviceName := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 

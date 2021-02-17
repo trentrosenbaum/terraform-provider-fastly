@@ -82,6 +82,7 @@ func TestAccFastlyServiceV1_gcslogging(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1_gcslogging_compute(t *testing.T) {
+	t.SkipNow()
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	gcsName := fmt.Sprintf("gcs %s", acctest.RandString(10))
