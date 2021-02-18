@@ -25,8 +25,7 @@ github.com/apparentlymart/go-cidr/cidr
 github.com/apparentlymart/go-textseg/textseg
 # github.com/apparentlymart/go-textseg/v12 v12.0.0
 github.com/apparentlymart/go-textseg/v12/textseg
-# github.com/armon/go-radix v1.0.0
-## explicit
+# github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310
 github.com/armon/go-radix
 # github.com/aws/aws-sdk-go v1.25.3
 github.com/aws/aws-sdk-go/aws
@@ -221,8 +220,7 @@ github.com/mitchellh/reflectwalk
 github.com/oklog/run
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/posener/complete v1.2.1
-## explicit
+# github.com/posener/complete v1.1.1
 github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
