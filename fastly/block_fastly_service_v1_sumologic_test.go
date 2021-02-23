@@ -100,7 +100,6 @@ func TestAccFastlyServiceV1_sumologic(t *testing.T) {
 }
 
 func TestAccFastlyServiceV1_sumologic_compute(t *testing.T) {
-	t.SkipNow()
 	var service gofastly.ServiceDetail
 	name := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
 	backendName := fmt.Sprintf("%s.aws.amazon.com", acctest.RandString(3))
