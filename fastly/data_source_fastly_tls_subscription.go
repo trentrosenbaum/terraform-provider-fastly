@@ -1,7 +1,9 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"time"
 
 	"github.com/fastly/go-fastly/v3/fastly"
@@ -10,7 +12,7 @@ import (
 
 func dataSourceFastlyTLSSubscription() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceFastlyTLSSubscriptionRead,
+		ReadContext: dataSourceFastlyTLSSubscriptionRead,
 		Schema: map[string]*schema.Schema{
 			"id": {
 				Type:          schema.TypeString,
@@ -65,7 +67,7 @@ func dataSourceFastlyTLSSubscription() *schema.Resource {
 	}
 }
 
-func dataSourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFastlyTLSSubscriptionRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	var subscription *fastly.TLSSubscription

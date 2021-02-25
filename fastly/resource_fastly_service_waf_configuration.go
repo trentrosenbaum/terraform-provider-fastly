@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"sort"
 
@@ -14,10 +15,10 @@ import (
 
 func resourceServiceWAFConfigurationV1() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceServiceWAFConfigurationV1Create,
-		Read:   resourceServiceWAFConfigurationV1Read,
-		Update: resourceServiceWAFConfigurationV1Update,
-		Delete: resourceServiceWAFConfigurationV1Delete,
+		CreateContext: resourceServiceWAFConfigurationV1Create,
+		ReadContext:   resourceServiceWAFConfigurationV1Read,
+		UpdateContext: resourceServiceWAFConfigurationV1Update,
+		DeleteContext: resourceServiceWAFConfigurationV1Delete,
 		Importer: &schema.ResourceImporter{
 			State: resourceServiceWAFConfigurationV1Import,
 		},
@@ -214,13 +215,13 @@ func resourceServiceWAFConfigurationV1() *schema.Resource {
 
 // this method calls update because the creation of the waf (within the service resource) automatically creates
 // the first waf version, and this makes both a create and an updating exactly the same operation.
-func resourceServiceWAFConfigurationV1Create(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceWAFConfigurationV1Create(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] creating configuration for WAF: %s", d.Get("waf_id").(string))
 	d.SetId(d.Get("waf_id").(string))
 	return resourceServiceWAFConfigurationV1Update(d, meta)
 }
 
-func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceWAFConfigurationV1Update(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	latestVersion, err := getLatestVersion(d, meta)
@@ -281,7 +282,7 @@ func resourceServiceWAFConfigurationV1Update(d *schema.ResourceData, meta interf
 	return resourceServiceWAFConfigurationV1Read(d, meta)
 }
 
-func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceWAFConfigurationV1Read(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	latestVersion, err := getLatestVersion(d, meta)
 	if errRes, ok := err.(*gofastly.HTTPError); ok {
@@ -313,7 +314,7 @@ func resourceServiceWAFConfigurationV1Read(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceServiceWAFConfigurationV1Delete(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceWAFConfigurationV1Delete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	wafID := d.Get("waf_id").(string)

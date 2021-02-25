@@ -1,7 +1,9 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"strings"
 
 	gofastly "github.com/fastly/go-fastly/v3/fastly"
@@ -10,10 +12,10 @@ import (
 
 func resourceServiceDynamicSnippetContentV1() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceServiceDynamicSnippetV1Create,
-		Read:   resourceServiceDynamicSnippetV1Read,
-		Update: resourceServiceDynamicSnippetV1Update,
-		Delete: resourceServiceDynamicSnippetV1Delete,
+		CreateContext: resourceServiceDynamicSnippetV1Create,
+		ReadContext:   resourceServiceDynamicSnippetV1Read,
+		UpdateContext: resourceServiceDynamicSnippetV1Update,
+		DeleteContext: resourceServiceDynamicSnippetV1Delete,
 		Importer: &schema.ResourceImporter{
 			State: resourceServiceDynamicSnippetContentV1Import,
 		},
@@ -39,7 +41,7 @@ func resourceServiceDynamicSnippetContentV1() *schema.Resource {
 	}
 }
 
-func resourceServiceDynamicSnippetV1Create(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceDynamicSnippetV1Create(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	conn := meta.(*FastlyClient).conn
 
@@ -65,7 +67,7 @@ func resourceServiceDynamicSnippetV1Create(d *schema.ResourceData, meta interfac
 	return resourceServiceDynamicSnippetV1Read(d, meta)
 }
 
-func resourceServiceDynamicSnippetV1Update(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceDynamicSnippetV1Update(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	conn := meta.(*FastlyClient).conn
 
@@ -90,7 +92,7 @@ func resourceServiceDynamicSnippetV1Update(d *schema.ResourceData, meta interfac
 	return resourceServiceDynamicSnippetV1Read(d, meta)
 }
 
-func resourceServiceDynamicSnippetV1Read(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceDynamicSnippetV1Read(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	serviceID := d.Get("service_id").(string)
@@ -112,7 +114,7 @@ func resourceServiceDynamicSnippetV1Read(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceServiceDynamicSnippetV1Delete(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceDynamicSnippetV1Delete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// Dynamic snippet content cannot be deleted. Removing from state only
 	d.SetId("")
 	return nil

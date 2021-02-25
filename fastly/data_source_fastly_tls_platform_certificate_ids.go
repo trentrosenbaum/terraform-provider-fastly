@@ -1,14 +1,16 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
 	"github.com/fastly/terraform-provider-fastly/fastly/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceFastlyTLSPlatformCertificateIDs() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceFastlyTLSPlatformCertificateIDsRead,
+		ReadContext: dataSourceFastlyTLSPlatformCertificateIDsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:        schema.TypeSet,
@@ -20,7 +22,7 @@ func dataSourceFastlyTLSPlatformCertificateIDs() *schema.Resource {
 	}
 }
 
-func dataSourceFastlyTLSPlatformCertificateIDsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFastlyTLSPlatformCertificateIDsRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	certificates, err := listPlatformTLSCertificates(conn)

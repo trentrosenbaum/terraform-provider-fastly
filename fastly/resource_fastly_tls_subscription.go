@@ -1,7 +1,9 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"time"
 
 	"github.com/fastly/go-fastly/v3/fastly"
@@ -11,9 +13,9 @@ import (
 
 func resourceFastlyTLSSubscription() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceFastlyTLSSubscriptionCreate,
-		Read:   resourceFastlyTLSSubscriptionRead,
-		Delete: resourceFastlyTLSSubscriptionDelete,
+		CreateContext: resourceFastlyTLSSubscriptionCreate,
+		ReadContext:   resourceFastlyTLSSubscriptionRead,
+		DeleteContext: resourceFastlyTLSSubscriptionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -104,7 +106,7 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 	}
 }
 
-func resourceFastlyTLSSubscriptionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSSubscriptionCreate(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	var configuration *fastly.TLSConfiguration
@@ -143,7 +145,7 @@ func resourceFastlyTLSSubscriptionCreate(d *schema.ResourceData, meta interface{
 	return resourceFastlyTLSSubscriptionRead(d, meta)
 }
 
-func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSSubscriptionRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	include := "tls_authorizations"
@@ -222,7 +224,7 @@ func resourceFastlyTLSSubscriptionRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceFastlyTLSSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSSubscriptionDelete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	err := conn.DeleteTLSSubscription(&fastly.DeleteTLSSubscriptionInput{

@@ -1,8 +1,10 @@
 package fastly
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"sort"
 	"strconv"
@@ -14,7 +16,7 @@ import (
 
 func dataSourceFastlyWAFRules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceFastlyWAFRulesRead,
+		ReadContext: dataSourceFastlyWAFRulesRead,
 
 		Schema: map[string]*schema.Schema{
 			"publishers": {
@@ -63,7 +65,7 @@ func dataSourceFastlyWAFRules() *schema.Resource {
 	}
 }
 
-func dataSourceFastlyWAFRulesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFastlyWAFRulesRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	conn := meta.(*FastlyClient).conn
 	input := &gofastly.ListAllWAFRulesInput{}

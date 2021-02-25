@@ -1,16 +1,18 @@
 package fastly
 
 import (
+	"context"
 	gofastly "github.com/fastly/go-fastly/v3/fastly"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"time"
 )
 
 func resourceFastlyTLSPrivateKey() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceFastlyTLSPrivateKeyCreate,
-		Read:   resourceFastlyTLSPrivateKeyRead,
-		Delete: resourceFastlyTLSPrivateKeyDelete,
+		CreateContext: resourceFastlyTLSPrivateKeyCreate,
+		ReadContext:   resourceFastlyTLSPrivateKeyRead,
+		DeleteContext: resourceFastlyTLSPrivateKeyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -57,7 +59,7 @@ func resourceFastlyTLSPrivateKey() *schema.Resource {
 	}
 }
 
-func resourceFastlyTLSPrivateKeyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSPrivateKeyCreate(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	privateKey, err := conn.CreatePrivateKey(&gofastly.CreatePrivateKeyInput{
@@ -73,7 +75,7 @@ func resourceFastlyTLSPrivateKeyCreate(d *schema.ResourceData, meta interface{})
 	return resourceFastlyTLSPrivateKeyRead(d, meta)
 }
 
-func resourceFastlyTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSPrivateKeyRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	privateKey, err := conn.GetPrivateKey(&gofastly.GetPrivateKeyInput{
@@ -111,7 +113,7 @@ func resourceFastlyTLSPrivateKeyRead(d *schema.ResourceData, meta interface{}) e
 	return err
 }
 
-func resourceFastlyTLSPrivateKeyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSPrivateKeyDelete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	err := conn.DeletePrivateKey(&gofastly.DeletePrivateKeyInput{

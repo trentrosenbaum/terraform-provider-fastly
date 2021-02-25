@@ -3,6 +3,7 @@ package fastly
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"time"
 
@@ -141,11 +142,11 @@ func (d *BaseServiceDefinition) GetAttributeHandler() []ServiceAttributeDefiniti
 // resourceService returns a Terraform resource schema for VCL or Compute.
 func resourceService(serviceDef ServiceDefinition) *schema.Resource {
 	s := &schema.Resource{
-		Create:   resourceCreate(serviceDef),
-		Read:     resourceRead(serviceDef),
-		Update:   resourceUpdate(serviceDef),
-		Delete:   resourceDelete(serviceDef),
-		Importer: resourceImport(serviceDef),
+		CreateContext: resourceCreate(serviceDef),
+		ReadContext:   resourceRead(serviceDef),
+		UpdateContext: resourceUpdate(serviceDef),
+		DeleteContext: resourceDelete(serviceDef),
+		Importer:      resourceImport(serviceDef),
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -261,7 +262,7 @@ func resourceImport(serviceDef ServiceDefinition) *schema.ResourceImporter {
 }
 
 // resourceServiceCreate provides service resource Create functionality.
-func resourceServiceCreate(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) error {
+func resourceServiceCreate(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) diag.Diagnostics {
 	if err := validateVCLs(d); err != nil {
 		return err
 	}
@@ -282,7 +283,7 @@ func resourceServiceCreate(d *schema.ResourceData, meta interface{}, serviceDef 
 }
 
 // resourceServiceUpdate provides service resource Update functionality.
-func resourceServiceUpdate(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) error {
+func resourceServiceUpdate(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) diag.Diagnostics {
 	if err := validateVCLs(d); err != nil {
 		return err
 	}
@@ -433,7 +434,7 @@ func resourceServiceUpdate(d *schema.ResourceData, meta interface{}, serviceDef 
 }
 
 // resourceServiceRead provides service resource Read functionality.
-func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition, isImport bool) error {
+func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition, isImport bool) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	s, err := conn.GetServiceDetails(&gofastly.GetServiceInput{
@@ -494,7 +495,7 @@ func resourceServiceRead(d *schema.ResourceData, meta interface{}, serviceDef Se
 }
 
 // resourceServiceDelete provides service resource Delete functionality.
-func resourceServiceDelete(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) error {
+func resourceServiceDelete(d *schema.ResourceData, meta interface{}, serviceDef ServiceDefinition) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	// Fastly will fail to delete any service with an Active Version.

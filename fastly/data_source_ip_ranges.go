@@ -1,7 +1,9 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"sort"
 
@@ -15,7 +17,7 @@ type dataSourceFastlyIPRangesResult struct {
 
 func dataSourceFastlyIPRanges() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceFastlyIPRangesRead,
+		ReadContext: dataSourceFastlyIPRangesRead,
 
 		Schema: map[string]*schema.Schema{
 			"cidr_blocks": {
@@ -34,7 +36,7 @@ func dataSourceFastlyIPRanges() *schema.Resource {
 	}
 }
 
-func dataSourceFastlyIPRangesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFastlyIPRangesRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	conn := meta.(*FastlyClient).conn
 

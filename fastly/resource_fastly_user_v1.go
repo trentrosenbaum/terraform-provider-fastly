@@ -1,16 +1,18 @@
 package fastly
 
 import (
+	"context"
 	gofastly "github.com/fastly/go-fastly/v3/fastly"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceUserV1() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceUserV1Create,
-		Read:   resourceUserV1Read,
-		Update: resourceUserV1Update,
-		Delete: resourceUserV1Delete,
+		CreateContext: resourceUserV1Create,
+		ReadContext:   resourceUserV1Read,
+		UpdateContext: resourceUserV1Update,
+		DeleteContext: resourceUserV1Delete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,7 +42,7 @@ func resourceUserV1() *schema.Resource {
 	}
 }
 
-func resourceUserV1Create(d *schema.ResourceData, meta interface{}) error {
+func resourceUserV1Create(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	u, err := conn.CreateUser(&gofastly.CreateUserInput{
@@ -58,7 +60,7 @@ func resourceUserV1Create(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceUserV1Read(d *schema.ResourceData, meta interface{}) error {
+func resourceUserV1Read(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	u, err := conn.GetUser(&gofastly.GetUserInput{
@@ -76,7 +78,7 @@ func resourceUserV1Read(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceUserV1Update(d *schema.ResourceData, meta interface{}) error {
+func resourceUserV1Update(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	// Update Name and/or Role.
@@ -95,7 +97,7 @@ func resourceUserV1Update(d *schema.ResourceData, meta interface{}) error {
 	return resourceUserV1Read(d, meta)
 }
 
-func resourceUserV1Delete(d *schema.ResourceData, meta interface{}) error {
+func resourceUserV1Delete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	err := conn.DeleteUser(&gofastly.DeleteUserInput{

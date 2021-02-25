@@ -1,6 +1,8 @@
 package fastly
 
 import (
+	"context"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"time"
 
@@ -10,10 +12,10 @@ import (
 
 func resourceFastlyTLSActivation() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceFastlyTLSActivationCreate,
-		Read:   resourceFastlyTLSActivationRead,
-		Update: resourceFastlyTLSActivationUpdate,
-		Delete: resourceFastlyTLSActivationDelete,
+		CreateContext: resourceFastlyTLSActivationCreate,
+		ReadContext:   resourceFastlyTLSActivationRead,
+		UpdateContext: resourceFastlyTLSActivationUpdate,
+		DeleteContext: resourceFastlyTLSActivationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +47,7 @@ func resourceFastlyTLSActivation() *schema.Resource {
 	}
 }
 
-func resourceFastlyTLSActivationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSActivationCreate(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	var configuration *fastly.TLSConfiguration
@@ -67,7 +69,7 @@ func resourceFastlyTLSActivationCreate(d *schema.ResourceData, meta interface{})
 	return resourceFastlyTLSActivationRead(d, meta)
 }
 
-func resourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSActivationRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	activation, err := conn.GetTLSActivation(&fastly.GetTLSActivationInput{
@@ -97,7 +99,7 @@ func resourceFastlyTLSActivationRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceFastlyTLSActivationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSActivationUpdate(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	_, err := conn.UpdateTLSActivation(&fastly.UpdateTLSActivationInput{
@@ -111,7 +113,7 @@ func resourceFastlyTLSActivationUpdate(d *schema.ResourceData, meta interface{})
 	return resourceFastlyTLSActivationRead(d, meta)
 }
 
-func resourceFastlyTLSActivationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceFastlyTLSActivationDelete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	err := conn.DeleteTLSActivation(&fastly.DeleteTLSActivationInput{

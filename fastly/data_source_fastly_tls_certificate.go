@@ -1,7 +1,9 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"time"
 
 	"github.com/fastly/go-fastly/v3/fastly"
@@ -10,7 +12,7 @@ import (
 
 func dataSourceFastlyTLSCertificate() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceFastlyTLSCertificateRead,
+		ReadContext: dataSourceFastlyTLSCertificateRead,
 
 		Schema: map[string]*schema.Schema{
 			"id": {
@@ -78,7 +80,7 @@ func dataSourceFastlyTLSCertificate() *schema.Resource {
 	}
 }
 
-func dataSourceFastlyTLSCertificateRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFastlyTLSCertificateRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	var certificate *fastly.CustomTLSCertificate

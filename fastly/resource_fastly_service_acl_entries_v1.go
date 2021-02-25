@@ -1,7 +1,9 @@
 package fastly
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"strings"
 
 	gofastly "github.com/fastly/go-fastly/v3/fastly"
@@ -10,10 +12,10 @@ import (
 
 func resourceServiceAclEntriesV1() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceServiceAclEntriesV1Create,
-		Read:   resourceServiceAclEntriesV1Read,
-		Update: resourceServiceAclEntriesV1Update,
-		Delete: resourceServiceAclEntriesV1Delete,
+		CreateContext: resourceServiceAclEntriesV1Create,
+		ReadContext:   resourceServiceAclEntriesV1Read,
+		UpdateContext: resourceServiceAclEntriesV1Update,
+		DeleteContext: resourceServiceAclEntriesV1Delete,
 		Importer: &schema.ResourceImporter{
 			State: resourceServiceACLEntriesV1Import,
 		},
@@ -72,7 +74,7 @@ func resourceServiceAclEntriesV1() *schema.Resource {
 	}
 }
 
-func resourceServiceAclEntriesV1Create(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceAclEntriesV1Create(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	serviceID := d.Get("service_id").(string)
@@ -103,7 +105,7 @@ func resourceServiceAclEntriesV1Create(d *schema.ResourceData, meta interface{})
 	return resourceServiceAclEntriesV1Read(d, meta)
 }
 
-func resourceServiceAclEntriesV1Read(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceAclEntriesV1Read(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	serviceID := d.Get("service_id").(string)
@@ -122,7 +124,7 @@ func resourceServiceAclEntriesV1Read(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceServiceAclEntriesV1Update(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceAclEntriesV1Update(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
 	conn := meta.(*FastlyClient).conn
 
@@ -205,7 +207,7 @@ func resourceServiceAclEntriesV1Update(d *schema.ResourceData, meta interface{})
 	return resourceServiceAclEntriesV1Read(d, meta)
 }
 
-func resourceServiceAclEntriesV1Delete(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceAclEntriesV1Delete(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	conn := meta.(*FastlyClient).conn
 
 	serviceID := d.Get("service_id").(string)
