@@ -2,8 +2,9 @@ package fastly
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 
 	"github.com/fastly/go-fastly/v3/fastly"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
@@ -50,8 +51,7 @@ func resourceFastlyTLSSubscription() *schema.Resource {
 			"configuration_id": {
 				Type:        schema.TypeString,
 				Description: "The ID of the set of TLS configuration options that apply to the enabled domains on this subscription.",
-				Optional:    true,
-				Computed:    true,
+				Required:    true,
 			},
 			"created_at": {
 				Type:        schema.TypeString,
